@@ -23,28 +23,32 @@ simple DecisionMaker
     parameters:
         @class(DecisionMaker);
 
-        bool debug = default(false);
-        bool infoLogging = default(true);
+     	// G5 
+        @signal[G5MessagesSent](type="long");
+        @statistic[G5MessagesSent](title="G5MessagesSent"; source="G5MessagesSent"; record=vector,stats,histogram);  
+        @signal[G5MessagesReceived](type="long");
+        @statistic[G5MessagesReceived](title="G5MessagesReceived"; source="G5MessagesReceived"; record=vector,stats,histogram);
+      
+        
+        // Mode 4
+        @signal[mode4MsgReceived](type="long");
+        @statistic[mode4MsgReceived](title="mode4MsgReceived"; source="mode4MsgReceived"; record=vector,stats,histogram);
+        @signal[mode4MsgSent](type="long");
+        @statistic[mode4MsgSent](title="mode4MsgSent"; source="mode4MsgSent"; record=vector,stats,histogram);
 
-        @signal[DSRCMessagesSent](type="long");
-        @statistic[DSRCMessagesSent](title="DSRCMessagesSent"; source="DSRCMessagesSent"; record=vector,stats,histogram);
-        @signal[lteMessagesSent](type="long");
-        @statistic[lteMessagesSent](title="lteMessagesSent"; source="lteMessagesSent"; record=vector,stats,histogram);
-        @signal[dontCareMessagesSent](type="long");
-        @statistic[dontCareMessagesSent](title="dontCareMessagesSent"; source="dontCareMessagesSent"; record=vector,stats,histogram);
-        @signal[DSRCMessagesReceived](type="long");
-        @statistic[DSRCMessagesReceived](title="DSRCMessagesReceived"; source="DSRCMessagesReceived"; record=vector,stats,histogram);
-        @signal[lteMessagesReceived](type="long");
-        @statistic[lteMessagesReceived](title="lteMessagesReceived"; source="lteMessagesReceived"; record=vector,stats,histogram);
-
+     	bool mode4IsActive=default(false);
+     	
+        
         @display("i=old/telnet");
     gates:
-        input fromApplication;
-        output toApplication;
+        
+        input  fromApplication[];
+        output toApplication[];
 
-        input fromLte;
-        output toLte;
-
-        input ifInRadio[];
-        output ifOutRadio[];
+        input  fromRadio[] @labels(Ieee802Ctrl/up);
+        output toRadio[] @labels(Ieee802Ctrl/down);
+        
+        
+        output toMode4;
+        input  fromMode4;
 }

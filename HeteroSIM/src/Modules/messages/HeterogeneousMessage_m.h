@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by nedtool 5.4 from DeciderModule/messages/HeterogeneousMessage.msg.
+// Generated file, do not edit! Created by nedtool 5.4 from Modules/messages/HeterogeneousMessage.msg.
 //
 
 #if defined(__clang__)
@@ -30,19 +30,21 @@
 
 
 // cplusplus {{
-#define LTE 100
-#define WLAN 101
-#define OTHER 103
+#define VANET 0
+#define WSN 1
+#define MODE4 2
+#define LTE 3
 // }}
 
 /**
- * Class generated from <tt>DeciderModule/messages/HeterogeneousMessage.msg:23</tt> by nedtool.
+ * Class generated from <tt>Modules/messages/HeterogeneousMessage.msg:24</tt> by nedtool.
  * <pre>
  * packet HeterogeneousMessage
  * {
  *     string sourceAddress;
  *     string destinationAddress;
  *     int networkType;
+ *     int nodeId;
  *     simtime_t sendingTime;
  * 
  * }
@@ -54,6 +56,7 @@ class HeteroSIM_API HeterogeneousMessage : public ::omnetpp::cPacket
     ::omnetpp::opp_string sourceAddress;
     ::omnetpp::opp_string destinationAddress;
     int networkType;
+    int nodeId;
     ::omnetpp::simtime_t sendingTime;
 
   private:
@@ -79,6 +82,8 @@ class HeteroSIM_API HeterogeneousMessage : public ::omnetpp::cPacket
     virtual void setDestinationAddress(const char * destinationAddress);
     virtual int getNetworkType() const;
     virtual void setNetworkType(int networkType);
+    virtual int getNodeId() const;
+    virtual void setNodeId(int nodeId);
     virtual ::omnetpp::simtime_t getSendingTime() const;
     virtual void setSendingTime(::omnetpp::simtime_t sendingTime);
 };

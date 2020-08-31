@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by nedtool 5.4 from DeciderModule/messages/HeterogeneousMessage.msg.
+// Generated file, do not edit! Created by nedtool 5.4 from Modules/messages/HeterogeneousMessage.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -26,7 +26,7 @@
 
 #include <iostream>
 #include <sstream>
-#include "../../Modules/messages/HeterogeneousMessage_m.h"
+#include "HeterogeneousMessage_m.h"
 
 namespace omnetpp {
 
@@ -182,6 +182,7 @@ Register_Class(HeterogeneousMessage)
 HeterogeneousMessage::HeterogeneousMessage(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
 {
     this->networkType = 0;
+    this->nodeId = 0;
     this->sendingTime = 0;
 }
 
@@ -207,6 +208,7 @@ void HeterogeneousMessage::copy(const HeterogeneousMessage& other)
     this->sourceAddress = other.sourceAddress;
     this->destinationAddress = other.destinationAddress;
     this->networkType = other.networkType;
+    this->nodeId = other.nodeId;
     this->sendingTime = other.sendingTime;
 }
 
@@ -216,6 +218,7 @@ void HeterogeneousMessage::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->sourceAddress);
     doParsimPacking(b,this->destinationAddress);
     doParsimPacking(b,this->networkType);
+    doParsimPacking(b,this->nodeId);
     doParsimPacking(b,this->sendingTime);
 }
 
@@ -225,6 +228,7 @@ void HeterogeneousMessage::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->sourceAddress);
     doParsimUnpacking(b,this->destinationAddress);
     doParsimUnpacking(b,this->networkType);
+    doParsimUnpacking(b,this->nodeId);
     doParsimUnpacking(b,this->sendingTime);
 }
 
@@ -256,6 +260,16 @@ int HeterogeneousMessage::getNetworkType() const
 void HeterogeneousMessage::setNetworkType(int networkType)
 {
     this->networkType = networkType;
+}
+
+int HeterogeneousMessage::getNodeId() const
+{
+    return this->nodeId;
+}
+
+void HeterogeneousMessage::setNodeId(int nodeId)
+{
+    this->nodeId = nodeId;
 }
 
 ::omnetpp::simtime_t HeterogeneousMessage::getSendingTime() const
@@ -333,7 +347,7 @@ const char *HeterogeneousMessageDescriptor::getProperty(const char *propertyname
 int HeterogeneousMessageDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 4+basedesc->getFieldCount() : 4;
+    return basedesc ? 5+basedesc->getFieldCount() : 5;
 }
 
 unsigned int HeterogeneousMessageDescriptor::getFieldTypeFlags(int field) const
@@ -349,8 +363,9 @@ unsigned int HeterogeneousMessageDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<4) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<5) ? fieldTypeFlags[field] : 0;
 }
 
 const char *HeterogeneousMessageDescriptor::getFieldName(int field) const
@@ -365,9 +380,10 @@ const char *HeterogeneousMessageDescriptor::getFieldName(int field) const
         "sourceAddress",
         "destinationAddress",
         "networkType",
+        "nodeId",
         "sendingTime",
     };
-    return (field>=0 && field<4) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<5) ? fieldNames[field] : nullptr;
 }
 
 int HeterogeneousMessageDescriptor::findField(const char *fieldName) const
@@ -377,7 +393,8 @@ int HeterogeneousMessageDescriptor::findField(const char *fieldName) const
     if (fieldName[0]=='s' && strcmp(fieldName, "sourceAddress")==0) return base+0;
     if (fieldName[0]=='d' && strcmp(fieldName, "destinationAddress")==0) return base+1;
     if (fieldName[0]=='n' && strcmp(fieldName, "networkType")==0) return base+2;
-    if (fieldName[0]=='s' && strcmp(fieldName, "sendingTime")==0) return base+3;
+    if (fieldName[0]=='n' && strcmp(fieldName, "nodeId")==0) return base+3;
+    if (fieldName[0]=='s' && strcmp(fieldName, "sendingTime")==0) return base+4;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -393,9 +410,10 @@ const char *HeterogeneousMessageDescriptor::getFieldTypeString(int field) const
         "string",
         "string",
         "int",
+        "int",
         "simtime_t",
     };
-    return (field>=0 && field<4) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<5) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **HeterogeneousMessageDescriptor::getFieldPropertyNames(int field) const
@@ -465,7 +483,8 @@ std::string HeterogeneousMessageDescriptor::getFieldValueAsString(void *object, 
         case 0: return oppstring2string(pp->getSourceAddress());
         case 1: return oppstring2string(pp->getDestinationAddress());
         case 2: return long2string(pp->getNetworkType());
-        case 3: return simtime2string(pp->getSendingTime());
+        case 3: return long2string(pp->getNodeId());
+        case 4: return simtime2string(pp->getSendingTime());
         default: return "";
     }
 }
@@ -483,7 +502,8 @@ bool HeterogeneousMessageDescriptor::setFieldValueAsString(void *object, int fie
         case 0: pp->setSourceAddress((value)); return true;
         case 1: pp->setDestinationAddress((value)); return true;
         case 2: pp->setNetworkType(string2long(value)); return true;
-        case 3: pp->setSendingTime(string2simtime(value)); return true;
+        case 3: pp->setNodeId(string2long(value)); return true;
+        case 4: pp->setSendingTime(string2simtime(value)); return true;
         default: return false;
     }
 }

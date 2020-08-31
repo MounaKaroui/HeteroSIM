@@ -17,32 +17,78 @@
 #define __HETEROSIM_DECISIONMAKER_H_
 
 #include <omnetpp.h>
+#include "../../Modules/messages/HeterogeneousMessage_m.h"
+#include <inet/common/ModuleAccess.h>
+#include "inet/linklayer/common/Ieee802Ctrl.h"
+#include <inet/common/InitStages.h>
+#include <inet/common/ModuleAccess.h>
+#include "common/LteControlInfo.h"
+#include "corenetwork/binder/LteBinder.h"
 
 using namespace omnetpp;
+using namespace inet;
 
 /**
  * TODO - Generated class
  */
 
+// forward declaration
+namespace inet {
+namespace ieee80211 { class Ieee80211Mac; }
+namespace physicallayer { class Ieee80211Radio; }
+} // namespace inet
 
-class DecisionMaker : public cSimpleModule
+
+class DecisionMaker : public cSimpleModule, public cListener
 {
 
 
 public:
-    int fromApplication;
-    int toApplication;
 
-    int fromRadio;
-    int toRadio;
+    ~DecisionMaker();
 
+    void filterMsg(HeterogeneousMessage *heterogeneousMessage);
   protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
-    void sendToRadio(cMessage* msg);
+    //int numInitStages() const override;
+    void initialize() override;
+
+    virtual void handleMessage(cMessage *msg)  override;
+    void sendToWlanRadio(cMessage* msg,int networkIndex);
+    void sendToApp(cMessage*  msg);
+
+    void sendToMode4(cPacket* packet);
+    void sendMsg(int networkType, cMessage* msg);
     void finish();
 
+    void registerNodeToBinder();
+    void handleLowerMessages(cMessage* msg);
+    Ieee802Ctrl* buildCtrlInfo();
+    // statistics
+    simsignal_t G5MessagesSent;
+    simsignal_t G5MessagesReceived;
 
+    simsignal_t mode4MsgSent;
+    simsignal_t mode4MsgReceived;
+
+    simsignal_t WSNMessagesSent;
+    simsignal_t WSNMessagesReceived;
+
+    bool mode4;
+    int toMode4;
+    int fromMode4;
+
+    int toVanetRadio;
+    int fromVanetRadio;
+
+    int to80215;
+    int from80215;
+
+    LteBinder* binder_;
+    MacNodeId nodeId_;
+
+
+  private:
+    cMessage* selfMsg;
 
 
 };

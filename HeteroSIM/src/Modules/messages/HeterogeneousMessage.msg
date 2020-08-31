@@ -15,9 +15,10 @@
 
 // The basic message for the heterogeneous network - it is used by the decision maker.
 cplusplus{{
-#define LTE 100
-#define WLAN 101
-#define OTHER 103
+#define VANET 0
+#define WSN 1
+#define MODE4 2
+#define LTE 3
 }}
 packet HeterogeneousMessage
 {
@@ -25,6 +26,7 @@ packet HeterogeneousMessage
 	string sourceAddress;
 	string destinationAddress;
 	int networkType;
+	int nodeId;
 	simtime_t sendingTime;
 	
 }

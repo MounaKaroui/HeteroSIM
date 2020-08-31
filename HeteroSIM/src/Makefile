@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for $(LIB_PREFIX)heteroSim
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -o heteroSim -O out -pHeteroSIM -S -KINET_PROJ=../../inet -KLTE_PROJ=../../lte -DINET_IMPORT -I. -I$$\(INET_PROJ\)/src -I$$\(LTE_PROJ\)/src -L$$\(INET_PROJ\)/src -L$$\(LTE_PROJ\)/src -lINET$$\(D\) -llte$$\(D\)
+#  opp_makemake --make-so -f --deep -o heteroSim -O out -pHeteroSIM -S -KINET_PROJ=../../inet -KLTE_PROJ=/home/mouna1/SimuLTE_comparison/simuLTE_mode4/simulte -DINET_IMPORT -I. -I$$\(INET_PROJ\)/src -I$$\(LTE_PROJ\)/src -L$$\(INET_PROJ\)/src -L$$\(LTE_PROJ\)/src -lINET$$\(D\) -llte$$\(D\)
 #
 
 # Name of target to be created (-o option)
@@ -24,7 +24,7 @@ PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
-OBJS = $O/Modules/DecisionMaker/DecisionMaker.o $O/Modules/application/SimpleApp.o $O/Modules/radioDriver/radioDriver.o $O/Modules/radioDriverBase/RadioDriverBase.o $O/Modules/messages/HeterogeneousMessage_m.o
+OBJS = $O/Modules/DecisionMaker/DecisionMaker.o $O/Modules/Mode4Driver/Mode4Driver.o $O/Modules/application/SimpleApp.o $O/VanetNic/VanetRadio.o $O/Modules/messages/HeterogeneousMessage_m.o
 
 # Message files
 MSGFILES = \
@@ -35,7 +35,7 @@ SMFILES =
 
 # Other makefile variables (-K)
 INET_PROJ=../../inet
-LTE_PROJ=../../lte
+LTE_PROJ=/home/mouna1/SimuLTE_comparison/simuLTE_mode4/simulte
 
 #------------------------------------------------------------------------------
 

@@ -3,10 +3,6 @@
  Modules/radioDriver/../../Modules/radioDriver/radioDriver.h \
  /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp.h \
  /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/clistener.h \
- Modules/radioDriver/../../Modules/radioDriver/../../Modules/radioDriverBase/RadioDriverBase.h \
- /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/ccomponent.h \
- /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/cmessage.h \
- /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/csimplemodule.h \
  ../../inet/src/inet/common/InitStages.h \
  ../../inet/src/inet/common/ModuleAccess.h \
  ../../inet/src/inet/common/INETDefs.h \
@@ -193,14 +189,6 @@ Modules/radioDriver/../../Modules/radioDriver/radioDriver.h:
 /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp.h:
 
 /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/clistener.h:
-
-Modules/radioDriver/../../Modules/radioDriver/../../Modules/radioDriverBase/RadioDriverBase.h:
-
-/home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/ccomponent.h:
-
-/home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/cmessage.h:
-
-/home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp/csimplemodule.h:
 
 ../../inet/src/inet/common/InitStages.h:
 

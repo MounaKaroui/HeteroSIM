@@ -17,7 +17,7 @@
 #define __HETEROSIM_SIMPLEAPP_H_
 
 #include <omnetpp.h>
-//#include "messages/HeterogeneousMessage_m.h"
+#include "Modules/messages/HeterogeneousMessage_m.h"
 using namespace omnetpp;
 
 /**
@@ -27,9 +27,24 @@ using namespace omnetpp;
 
 class SimpleApp : public cSimpleModule
 {
+ public:
+
+  int toDecisionMaker   ;
+  int fromDecisionMaker;
+  int msgLength;
+  int nodeId;
+  double updateInterval;
+  int extractNumber(std::string input);
+
+  HeterogeneousMessage* BuildMsg(int networkType, std::string name);
   protected:
-    virtual void initialize();
+    virtual void initialize(int stage);
     virtual void handleMessage(cMessage *msg);
+    void finish();
+  private:
+    cMessage* selfSender;
+
+
 };
 
 #endif

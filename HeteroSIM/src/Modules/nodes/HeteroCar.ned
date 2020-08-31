@@ -16,7 +16,7 @@
 package heterosim.Modules.nodes;
 import heterosim.Modules.DecisionMaker.DecisionMaker;
 import heterosim.Modules.application.SimpleApp;
-import heterosim.Modules.radioDriver.RadioDriver;
+import inet.linklayer.ieee802154.Ieee802154UWBIRNic;
 import inet.node.inet.WirelessHost;
 
 
@@ -33,59 +33,84 @@ import inet.networklayer.contract.IRoutingTable;
 import inet.networklayer.ipv4.IPv4;
 import inet.networklayer.ipv4.IPv4RoutingTable;
 import inet.transportlayer.udp.UDP;
+import inet.node.inet.INetworkNode;
+import lte.apps.mode4App.Mode4BaseApp;
+import lte.stack.phy.ILteNic;
 
-module car
+
+module car like INetworkNode
 {
     parameters:
         @display("i=block/wtx;bgb=805.156,545.184;is=vs");
+        @networkNode;
+        @labels(node,ethernet-node,wireless-node);
+
         int numApps = default(1);
         string wlanType = default("Ieee80211Nic");
         int numRadios = default(1);
         string mobilityType = default("LinearMobility");
         *.interfaceTableModule = default(absPath(".interfaceTable"));
 
+        bool withMode4 = default(false);
+        /// LTE params
+        int masterId = default(0); // Not yet removed from SimuLTE for Mode 4 simulations
+        int macNodeId = default(0); // TODO: this is not a real parameter
+        //int macCellId = default(0); // TODO: this is not a real parameter
+
     gates:
         input radioIn[numRadios] @directIn;
+        inout pppg[] @labels(PPPFrame-conn);
+        inout ethg[] @labels(EtherFRame-conn);
+
+        input lteRadioIn @directIn;
 
 
     submodules:
-        wlan[numRadios]: <wlanType> like IWirelessNic {
-            @display("p=607.022,350.836");
-            *.opMode = "p";
+        wlan[numRadios]: <default("Ieee80211Nic")> like IWirelessNic {
+            @display("p=286.578,346.968,row,100;q=queue");
+
         }
         mobility: <mobilityType> like IMobility {
-            @display("p=76.982,426.556");
-        }
-        radioDriver[numRadios]: RadioDriver {
-            @display("p=332.958,274.72202;i=block/layer");
+            @display("p=42.822,155.916");
         }
         interfaceTable: InterfaceTable {
-            @display("p=76.982,330.644;is=s");
+            @display("p=42.822,264.618;is=s");
         }
 
         decisionMaker: DecisionMaker {
-            @display("p=332.958,159.516");
+            @display("p=390.888,171.288");
+
         }
         simpleApp[numApps]: SimpleApp {
-            @display("p=332.958,34.182;i=block/app2");
+            @display("p=390.888,42.822;i=block/app2");
         }
-    connections allowunconnected:
 
-        // Apps to decider 
-        for i=0..sizeof(numApps)-1 {
-            simpleApp[i].toDecisionMaker --> decisionMaker.fromApplication;
-            decisionMaker.toApplication --> simpleApp[i].fromDecisionMaker;
+
+        lteNic: <default("LteNicVUeMode4")> like ILteNic if withMode4 {
+            @display("p=625.86,346.968");
+            //d2dCapable = true;
+            nodeType = "UE";  // DO NOT CHANGE
+        }
+
+    connections allowunconnected:
+        for i=0..numApps -1 {
+            decisionMaker.toApplication++ --> simpleApp[i].fromDecisionMaker;
+            simpleApp[i].toDecisionMaker --> decisionMaker.fromApplication++;
+        }
+
+		// with Mode4
+        if (withMode4) {
+            lteNic.radioIn <-- lteRadioIn;
+            lteNic.upperLayerOut --> decisionMaker.fromMode4;
+        	decisionMaker.toMode4 --> lteNic.upperLayerIn;
         }
 
         for i=0..sizeof(radioIn)-1 {
             radioIn[i] --> { @display("m=s"); } --> wlan[i].radioIn;
-            // radio deriver to WLAN
-            wlan[i].upperLayerOut --> radioDriver[i].lowerLayerIn;
-            wlan[i].upperLayerIn <-- radioDriver[i].lowerLayerOut;
-            // decider to radio driver 
-            decisionMaker.ifOutRadio++ --> radioDriver[0].lowerLayerIn;
-            radioDriver[0].properties --> decisionMaker.ifInRadio++;
+            decisionMaker.toRadio++ --> wlan[i].upperLayerIn;
+            wlan[i].upperLayerOut --> decisionMaker.fromRadio++;
         }
 
 
+   
 }

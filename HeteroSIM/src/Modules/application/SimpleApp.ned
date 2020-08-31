@@ -21,6 +21,9 @@ package heterosim.Modules.application;
 simple SimpleApp
 {
    
+    parameters:
+     int msgLength=default(10 B) @unit(B);  
+     double updateInterval=default(0.1 s) @unit(s);
     gates:
         
         input  fromDecisionMaker;

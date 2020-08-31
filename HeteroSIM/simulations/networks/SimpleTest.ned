@@ -16,34 +16,54 @@
 package heterosim.simulations.networks;
 
 import inet.environment.common.PhysicalEnvironment;
-import heterosim.Modules.nodes.HeterogeneousCarSimpleModel;
 import heterosim.Modules.nodes.car;
 import inet.physicallayer.common.packetlevel.RadioMedium;
 import inet.networklayer.configurator.ipv4.IPv4NetworkConfigurator;
-
+import inet.physicallayer.contract.packetlevel.IRadioMedium;
 import inet.physicallayer.ieee80211.packetlevel.Ieee80211ScalarRadioMedium;
 import inet.visualizer.integrated.IntegratedVisualizer;
 
-network SimpleTest
+import lte.corenetwork.binder.LteBinder;
+import lte.corenetwork.deployer.LteDeployer;
+import lte.world.radio.LteChannelControl;
+
+network SimpleNetwork
 {
     parameters:
-        int numCars = default(2);
-        @display("bgb=503,338");
-
+        int numCars = default(1);
+        @display("bgb=587,415;i=background/budapest");
+        bool visualize = default(false);
+        bool mode4isActive = default(false);
     submodules:
-        radioMedium: Ieee80211ScalarRadioMedium {
-            @display("p=49.704147,85.20711");
+
+
+        radioMedium: <default("Ieee80211ScalarRadioMedium")> like IRadioMedium {
+            parameters:
+                @display("p=60,20");
+                mediumLimitCache.carrierFrequency = 5.9GHz;
         }
-        
-        configurator: IPv4NetworkConfigurator {
-            @display("p=49.704147,35.502964");
+
+        car[numCars]: car {
+            @display("p=276,202;is=s");
         }
-        
-        car: car {
-            @display("p=109,119;is=s");
+
+        visualizer: IntegratedVisualizer if visualize {
+            parameters:
+                @display("p=61,86");
         }
-        
-        physicalEnvironment: PhysicalEnvironment {
-            @display("p=49.704147,135.50298");
+
+        channelControl: LteChannelControl if mode4isActive {
+            @display("p=60,268;is=s");
         }
+
+
+        binder: LteBinder if mode4isActive {
+            @display("p=61,179;is=s");
+        }
+
+
+        deployer: LteDeployer if mode4isActive {
+            @display("p=53,352;is=s");
+        }
+
 }
