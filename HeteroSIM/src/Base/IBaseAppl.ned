@@ -13,20 +13,19 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.Modules.application;
+package heterosim.Base;
 
-//
-// TODO auto-generated module
-//
-simple SimpleApp
+// Base module for Appl layer module
+moduleinterface IBaseAppl
 {
-   
+    
     parameters:
-     int msgLength=default(10 B) @unit(B);  
-     double updateInterval=default(0.1 s) @unit(s);
-    gates:
-        
+        @class(BaseAppl);
+        double updateInterval @unit(s);
+        int msgLength @unit(B);
+
+	gates:
         input  fromDecisionMaker;
         output toDecisionMaker;
 
-}
+} 

@@ -24,7 +24,14 @@ PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
-OBJS = $O/Modules/DecisionMaker/DecisionMaker.o $O/Modules/Mode4Driver/Mode4Driver.o $O/Modules/application/SimpleApp.o $O/VanetNic/VanetRadio.o $O/Modules/messages/HeterogeneousMessage_m.o
+OBJS = \
+    $O/Base/BaseAppl.o \
+    $O/Base/Builder.o \
+    $O/Modules/DecisionMaker/DecisionMaker.o \
+    $O/Modules/Mode4Driver/Mode4Driver.o \
+    $O/Modules/application/VanetApp.o \
+    $O/VanetNic/VanetRadio.o \
+    $O/Modules/messages/HeterogeneousMessage_m.o
 
 # Message files
 MSGFILES = \

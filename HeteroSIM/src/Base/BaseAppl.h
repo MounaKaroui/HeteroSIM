@@ -11,23 +11,38 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-//
+// 
 
-// The basic message for the heterogeneous network - it is used by the decision maker.
-cplusplus{{
-#define VANET 0
-#define WSN 1
-#define MODE4 2
-#define LTE 3
-}}
-packet HeterogeneousMessage
-{
+#ifndef BASE_BASEAPPL_H_
+#define BASE_BASEAPPL_H_
 
-	string sourceAddress;
-	string destinationAddress;
-	int applId;
-	int networkType;
-	int nodeId;
-	simtime_t sendingTime;
-	
-}
+#include<omnetpp.h>
+#include "Modules/messages/HeterogeneousMessage_m.h"
+
+using namespace omnetpp;
+
+class BaseAppl: public cSimpleModule{
+
+
+public:
+
+    int extractNumber(std::string input);
+    HeterogeneousMessage* BuildMsg(int networkType, std::string name);
+protected:
+
+    int toDecisionMaker ;
+    int fromDecisionMaker;
+    double updateInterval;
+    int nodeId;
+    int  msgLength;
+
+
+    virtual void initialize();
+    void setNodeId();
+
+
+
+
+};
+
+#endif /* BASE_BASEAPPL_H_ */

@@ -13,38 +13,21 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef __HETEROSIM_SIMPLEAPP_H_
-#define __HETEROSIM_SIMPLEAPP_H_
+package heterosim.Modules.application;
 
-#include <omnetpp.h>
-#include "Modules/messages/HeterogeneousMessage_m.h"
-using namespace omnetpp;
-
-/**
- * TODO - Generated class
- */
-
-
-class SimpleApp : public cSimpleModule
+//
+// TODO auto-generated module
+//
+import heterosim.Base.IBaseAppl;
+simple VanetApp like IBaseAppl
 {
- public:
+   
+    parameters:
+     int msgLength=default(10 B) @unit(B);  
+     double updateInterval=default(0.1 s) @unit(s);
+    gates:
+        
+        input  fromDecisionMaker;
+        output toDecisionMaker;
 
-  int toDecisionMaker   ;
-  int fromDecisionMaker;
-  int msgLength;
-  int nodeId;
-  double updateInterval;
-  int extractNumber(std::string input);
-
-  HeterogeneousMessage* BuildMsg(int networkType, std::string name);
-  protected:
-    virtual void initialize(int stage);
-    virtual void handleMessage(cMessage *msg);
-    void finish();
-  private:
-    cMessage* selfSender;
-
-
-};
-
-#endif
+}

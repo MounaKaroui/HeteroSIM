@@ -15,11 +15,7 @@
 // @author Mouna KAROUI
 
 #include "../../Modules/DecisionMaker/DecisionMaker.h"
-
-#include <inet/common/InitStages.h>
 #include <inet/common/ModuleAccess.h>
-#include <inet/linklayer/ieee80211/mac/Ieee80211Mac.h>
-#include <inet/physicallayer/ieee80211/packetlevel/Ieee80211Radio.h>
 #include "stack/phy/packet/cbr_m.h"
 
 Define_Module(DecisionMaker);
@@ -28,10 +24,10 @@ Define_Module(DecisionMaker);
 void DecisionMaker::initialize()
 {
 
+    // TODO: createStat method
     // G5 stats
     G5MessagesSent=registerSignal("G5MessagesSent");
     G5MessagesReceived=registerSignal("G5MessagesReceived");
-
     // stats mode4
     mode4MsgSent=registerSignal("mode4MsgSent");
     mode4MsgReceived=registerSignal("mode4MsgReceived");
@@ -41,7 +37,10 @@ void DecisionMaker::initialize()
 
     mode4=par("mode4IsActive").boolValue();
 
-
+    if(mode4)
+    {
+        registerNodeToBinder();
+    }
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -55,64 +54,38 @@ void DecisionMaker::registerNodeToBinder()
     binder_->setMacNodeId(nodeId_, nodeId_);
 }
 
-Ieee802Ctrl* DecisionMaker::buildCtrlInfo()
+
+
+
+
+
+void DecisionMaker::takeDecision()
 {
+        // TODO: call mcdm prodecures here
 
-    cModule* host = inet::getContainingNode(this);
-    std::string name=host->getFullName();
-    auto controlInfo = new Ieee802Ctrl();
-    inet::MACAddress srcAdr;
-    char* c = const_cast<char*>(name.c_str());
-    srcAdr.setAddressBytes(c);
-    controlInfo->setSourceAddress(srcAdr);
-
-    inet::MACAddress destAdress;
-    destAdress.setBroadcast();
-    controlInfo->setDest(destAdress);
-    return controlInfo;
 }
 
-
+// TODO: merge sendToMode4 and sendToRadio
+// --> sendToLower() if possible
 
 void DecisionMaker::sendToMode4(cPacket* packet)
 {
 
+     packet->setControlInfo(Builder::LteCtrlInfo(nodeId_));
 
-     packet->setByteLength(10); // TODO to override
-     auto lteControlInfo = new FlowControlInfoNonIp();
-     lteControlInfo->setSrcAddr(nodeId_);
-     lteControlInfo->setDirection(D2D_MULTI);
-     lteControlInfo->setCreationTime(simTime());
-     //lteControlInfo->setPriority(priority_); // optional
-     //lteControlInfo->setDuration(duration_);
-     packet->setControlInfo(lteControlInfo);
-
+     //FixME bug about range of mode4 physical layer
+     //send(packet, toMode4);
 }
 
-void DecisionMaker::sendToApp(cMessage*  msg)
-{
-
-    for(int i=0; i<gateSize("toApplication");i++)
-    {
-    int gateId=gate("toApplication",i)->getId();
-    send(msg,gateId);
-    }
-}
-
-void DecisionMaker::filterMsg(HeterogeneousMessage *msg)
-{
-    if (!msg) {
-               std::cout<<"Message " << msg->getFullName() << " is not a HeterogeneousMessage, but a " << msg->getClassName();
-               delete msg;
-               return;
-           }
-}
 
 void DecisionMaker:: sendToWlanRadio(cMessage*  msg, int networkIndex)
 {
 
-    msg->setControlInfo(buildCtrlInfo());
-
+    cModule* host = inet::getContainingNode(this);
+    std::string name=host->getFullName();
+    // Control info is mandatory to pass message
+    //to Mgmt layer and then to MAC
+    msg->setControlInfo(Builder::Ieee802CtrlInfo(name));
     if(networkIndex<gateSize("toRadio"))
     {
         int gateId=gate("toRadio",networkIndex)->getId();
@@ -124,6 +97,20 @@ void DecisionMaker:: sendToWlanRadio(cMessage*  msg, int networkIndex)
         EV_INFO<<"interface index doesn't exist" <<endl;
     }
 }
+
+
+
+void DecisionMaker::sendToUpper(cMessage*  msg)
+{
+
+    for(int i=0; i<gateSize("toApplication");i++)
+    {
+    int gateId=gate("toApplication",i)->getId();
+    send(msg,gateId);
+    }
+}
+
+
 
 void DecisionMaker::sendMsg(int networkType, cMessage* msg)
 {
@@ -141,8 +128,10 @@ void DecisionMaker::sendMsg(int networkType, cMessage* msg)
                 std::cout<<"Message sent with sucess" ;
                 break;
             case MODE4:
-                // TODO LTE
-                sendToMode4(check_and_cast<cPacket *>(msg));
+                // TODO LTE check_and_cast<cPacket *>(msg):
+                //cPacket* because lower layers can't cast  msg type
+                //cPacket* test=new cPacket();
+                sendToMode4(check_and_cast<cPacket *>(msg)); // FixME: lte physical layer crash
                 emit(mode4MsgSent, 1);
                 break;
 
@@ -156,15 +145,13 @@ void DecisionMaker::sendMsg(int networkType, cMessage* msg)
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
-
           int arrivalGate = msg->getArrivalGateId();
           for(int i=0; i<gateSize("fromApplication");i++)
           {
           int gateId=gate("fromApplication",i)->getId();
           if (arrivalGate == gateId)
           {
-              HeterogeneousMessage *heterogeneousMessage =dynamic_cast<HeterogeneousMessage *>(msg);
-              filterMsg(heterogeneousMessage);
+              HeterogeneousMessage *heterogeneousMessage =dynamic_cast<HeterogeneousMessage*>(msg);
               int networkType=heterogeneousMessage->getNetworkType();
               sendMsg(networkType,heterogeneousMessage);
           }else
@@ -172,9 +159,6 @@ void DecisionMaker::handleMessage(cMessage *msg)
                   handleLowerMessages(msg);
           }
           }
-
-
-
 }
 
 
@@ -186,6 +170,9 @@ void  DecisionMaker::handleLowerMessages(cMessage* msg)
     int arrivalGateId=msg->getArrivalGateId();
     int gateId;
     int network;
+
+
+
     if(msg->isName("hetNets"))
     {
     HeterogeneousMessage* hetMsg=check_and_cast<HeterogeneousMessage*>(msg);
@@ -199,7 +186,7 @@ void  DecisionMaker::handleLowerMessages(cMessage* msg)
 
     if(arrivalGateId==gateId) // test for Wlans
     {
-            sendToApp(msg);
+
             if(network==VANET)
             {
                 emit(G5MessagesReceived,1);
@@ -207,28 +194,15 @@ void  DecisionMaker::handleLowerMessages(cMessage* msg)
             {
                 emit(WSNMessagesReceived, 1);
             }
-            else
+            else if(network==MODE4)
             {
-                EV_INFO<< "Unknown interface";
+                emit(mode4MsgReceived,1);
             }
+     }else
+     {
+         EV_INFO<<"Unknown gate" ;
      }
-     else if(arrivalGateId==fromMode4)
-            {
-            emit(mode4MsgReceived,1);
-//            if (msg->isName("CBR")) {
-//                 Cbr* cbrPkt = check_and_cast<Cbr*>(msg);
-//                 //double channel_load = cbrPkt->getCbr();
-//                 //emit(cbr_, channel_load);
-//                 delete cbrPkt;
-//            } else {
-                sendToApp(msg);
-           // }
 
-
-    }else
-    {
-        cRuntimeError("Unknown gate");
-    }
 }
 
 
@@ -241,8 +215,4 @@ DecisionMaker::~DecisionMaker()
     }
 
 }
-void DecisionMaker::finish()
-{
 
-
-}

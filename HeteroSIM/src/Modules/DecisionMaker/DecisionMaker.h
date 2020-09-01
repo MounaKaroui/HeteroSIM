@@ -18,13 +18,8 @@
 
 #include <omnetpp.h>
 #include "../../Modules/messages/HeterogeneousMessage_m.h"
-#include <inet/common/ModuleAccess.h>
-#include "inet/linklayer/common/Ieee802Ctrl.h"
-#include <inet/common/InitStages.h>
-#include <inet/common/ModuleAccess.h>
-#include "common/LteControlInfo.h"
 #include "corenetwork/binder/LteBinder.h"
-
+#include "Base/Builder.h"
 using namespace omnetpp;
 using namespace inet;
 
@@ -47,22 +42,21 @@ public:
 
     ~DecisionMaker();
 
-    void filterMsg(HeterogeneousMessage *heterogeneousMessage);
+    void takeDecision();
   protected:
     //int numInitStages() const override;
     void initialize() override;
 
     virtual void handleMessage(cMessage *msg)  override;
     void sendToWlanRadio(cMessage* msg,int networkIndex);
-    void sendToApp(cMessage*  msg);
+    void sendToUpper(cMessage*  msg);
 
     void sendToMode4(cPacket* packet);
     void sendMsg(int networkType, cMessage* msg);
-    void finish();
 
     void registerNodeToBinder();
     void handleLowerMessages(cMessage* msg);
-    Ieee802Ctrl* buildCtrlInfo();
+
     // statistics
     simsignal_t G5MessagesSent;
     simsignal_t G5MessagesReceived;

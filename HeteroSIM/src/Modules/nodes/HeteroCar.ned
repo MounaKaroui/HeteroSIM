@@ -14,8 +14,8 @@
 // 
 
 package heterosim.Modules.nodes;
+import heterosim.Base.IBaseAppl;
 import heterosim.Modules.DecisionMaker.DecisionMaker;
-import heterosim.Modules.application.SimpleApp;
 import inet.linklayer.ieee802154.Ieee802154UWBIRNic;
 import inet.node.inet.WirelessHost;
 
@@ -67,7 +67,7 @@ module car like INetworkNode
 
     submodules:
         wlan[numRadios]: <default("Ieee80211Nic")> like IWirelessNic {
-            @display("p=286.578,346.968,row,100;q=queue");
+            @display("p=289.872,355.752,row,100;q=queue");
 
         }
         mobility: <mobilityType> like IMobility {
@@ -78,31 +78,31 @@ module car like INetworkNode
         }
 
         decisionMaker: DecisionMaker {
-            @display("p=390.888,171.288");
+            @display("p=402.966,223.992");
 
         }
-        simpleApp[numApps]: SimpleApp {
-            @display("p=390.888,42.822;i=block/app2");
+        applLayer[numApps]: <default("VanetApp")> like IBaseAppl {
+            @display("p=402.966,43.92,row,200;q=queue,i=block/app2");
         }
 
 
         lteNic: <default("LteNicVUeMode4")> like ILteNic if withMode4 {
-            @display("p=625.86,346.968");
+            @display("p=587.43,340.38");
             //d2dCapable = true;
             nodeType = "UE";  // DO NOT CHANGE
         }
 
     connections allowunconnected:
         for i=0..numApps -1 {
-            decisionMaker.toApplication++ --> simpleApp[i].fromDecisionMaker;
-            simpleApp[i].toDecisionMaker --> decisionMaker.fromApplication++;
+            decisionMaker.toApplication++ --> applLayer[i].fromDecisionMaker;
+            applLayer[i].toDecisionMaker --> decisionMaker.fromApplication++;
         }
 
 		// with Mode4
         if (withMode4) {
             lteNic.radioIn <-- lteRadioIn;
-            lteNic.upperLayerOut --> decisionMaker.fromMode4;
-        	decisionMaker.toMode4 --> lteNic.upperLayerIn;
+              decisionMaker.toRadio++ --> lteNic.upperLayerIn;
+        	  lteNic.upperLayerOut --> decisionMaker.fromRadio++;
         }
 
         for i=0..sizeof(radioIn)-1 {
@@ -112,5 +112,6 @@ module car like INetworkNode
         }
 
 
-   
+
+      
 }

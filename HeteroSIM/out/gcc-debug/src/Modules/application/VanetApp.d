@@ -1,6 +1,5 @@
-../out/gcc-debug/src/Modules/application/SimpleApp.o: \
- Modules/application/SimpleApp.cc \
- Modules/application/../../Modules/application/SimpleApp.h \
+../out/gcc-debug/src/Modules/application/VanetApp.o: \
+ Modules/application/VanetApp.cc Modules/application/VanetApp.h \
  /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp.h \
  Base/BaseAppl.h Modules/messages/HeterogeneousMessage_m.h \
  ../../inet/src/inet/common/InitStages.h \
@@ -21,7 +20,7 @@
  ../../inet/src/inet/networklayer/common/InterfaceToken.h \
  ../../inet/src/inet/common/NotifierConsts.h
 
-Modules/application/../../Modules/application/SimpleApp.h:
+Modules/application/VanetApp.h:
 
 /home/mouna1/omnetpp-5.4.1-src-linux/omnetpp-5.4.1/include/omnetpp.h:
 

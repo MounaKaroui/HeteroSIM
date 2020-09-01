@@ -11,23 +11,32 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
-//
+// 
 
-// The basic message for the heterogeneous network - it is used by the decision maker.
-cplusplus{{
-#define VANET 0
-#define WSN 1
-#define MODE4 2
-#define LTE 3
-}}
-packet HeterogeneousMessage
+#ifndef __HETEROSIM_SIMPLEAPP_H_
+#define __HETEROSIM_SIMPLEAPP_H_
+
+#include <omnetpp.h>
+#include"Base/BaseAppl.h"
+using namespace omnetpp;
+
+
+/**
+ * TODO - Generated class
+ */
+
+
+class VanetApp : public BaseAppl
 {
 
-	string sourceAddress;
-	string destinationAddress;
-	int applId;
-	int networkType;
-	int nodeId;
-	simtime_t sendingTime;
-	
-}
+  protected:
+    void initialize(int stage);
+    virtual void handleMessage(cMessage *msg);
+    void finish();
+  private:
+    cMessage* selfSender;
+
+
+};
+
+#endif

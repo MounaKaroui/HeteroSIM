@@ -45,10 +45,10 @@ simple DecisionMaker
         input  fromApplication[];
         output toApplication[];
 
-        input  fromRadio[] @labels(Ieee802Ctrl/up);
-        output toRadio[] @labels(Ieee802Ctrl/down);
+        input  fromRadio[] ; //@labels(Ieee802Ctrl/up);
+        output toRadio[] ; //@labels(Ieee802Ctrl/down);
         
         
-        output toMode4;
-        input  fromMode4;
+        //output toMode4;
+        //input  fromMode4;
 }
