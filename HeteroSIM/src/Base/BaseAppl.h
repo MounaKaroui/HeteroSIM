@@ -18,7 +18,9 @@
 
 #include<omnetpp.h>
 #include "Modules/messages/HeterogeneousMessage_m.h"
+#include "Builder.h"
 
+using namespace Builder;
 using namespace omnetpp;
 
 class BaseAppl: public cSimpleModule{
@@ -26,8 +28,10 @@ class BaseAppl: public cSimpleModule{
 
 public:
 
-    int extractNumber(std::string input);
-    HeterogeneousMessage* BuildMsg(int networkType, std::string name);
+
+    HeterogeneousMessage* BuildMsg(std::string name);
+
+
 protected:
 
     int toDecisionMaker ;
@@ -35,12 +39,11 @@ protected:
     double updateInterval;
     int nodeId;
     int  msgLength;
-
+    int appIndex;
+    std::string appName;
 
     virtual void initialize();
     void setNodeId();
-
-
 
 
 };

@@ -31,7 +31,7 @@ void VanetApp::initialize(int stage)
         BaseAppl::initialize();
         selfSender=new cMessage("Send");
         const auto jitter = uniform(SimTime(0, SIMTIME_MS), updateInterval);
-        scheduleAt(simTime() + jitter + updateInterval, selfSender);
+        scheduleAt(simTime()+jitter  + updateInterval, selfSender);
     }
 
 }
@@ -44,9 +44,10 @@ void VanetApp::handleMessage(cMessage *msg)
     if(msg->isSelfMessage())
     {
         // vanet Msg
-        HeterogeneousMessage* vanetMsg=BaseAppl::BuildMsg(MODE4, "hetNets");
+        HeterogeneousMessage* vanetMsg=BaseAppl::BuildMsg("hetNets");
         send(vanetMsg, toDecisionMaker);
-        scheduleAt(simTime()+updateInterval, selfSender);
+        simtime_t offset = ((updateInterval*1000)/1000)+simTime();
+        scheduleAt(offset, selfSender);
     }
     else
     {

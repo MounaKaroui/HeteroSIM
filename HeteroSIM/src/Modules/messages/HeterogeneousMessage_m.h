@@ -43,9 +43,10 @@
  * {
  *     string sourceAddress;
  *     string destinationAddress;
- *     int applId;
- *     int networkType;
+ *     string appName;
+ *     int applId; // the index of the gate
  *     int nodeId;
+ *     int networkId; // for the stats
  *     simtime_t sendingTime;
  * 
  * }
@@ -56,9 +57,10 @@ class HeteroSIM_API HeterogeneousMessage : public ::omnetpp::cPacket
   protected:
     ::omnetpp::opp_string sourceAddress;
     ::omnetpp::opp_string destinationAddress;
+    ::omnetpp::opp_string appName;
     int applId;
-    int networkType;
     int nodeId;
+    int networkId;
     ::omnetpp::simtime_t sendingTime;
 
   private:
@@ -82,12 +84,14 @@ class HeteroSIM_API HeterogeneousMessage : public ::omnetpp::cPacket
     virtual void setSourceAddress(const char * sourceAddress);
     virtual const char * getDestinationAddress() const;
     virtual void setDestinationAddress(const char * destinationAddress);
+    virtual const char * getAppName() const;
+    virtual void setAppName(const char * appName);
     virtual int getApplId() const;
     virtual void setApplId(int applId);
-    virtual int getNetworkType() const;
-    virtual void setNetworkType(int networkType);
     virtual int getNodeId() const;
     virtual void setNodeId(int nodeId);
+    virtual int getNetworkId() const;
+    virtual void setNetworkId(int networkId);
     virtual ::omnetpp::simtime_t getSendingTime() const;
     virtual void setSendingTime(::omnetpp::simtime_t sendingTime);
 };

@@ -42,40 +42,28 @@ public:
 
     ~DecisionMaker();
 
-    void takeDecision();
+    int takeDecision(cMessage*  msg);
+    void ctrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
+
+
+    std::map<std::string,cMessage*> packetQueue;
+
   protected:
     //int numInitStages() const override;
     void initialize() override;
 
     virtual void handleMessage(cMessage *msg)  override;
-    void sendToWlanRadio(cMessage* msg,int networkIndex);
+    void sendToLower(cMessage* msg,int networkIndex);
     void sendToUpper(cMessage*  msg);
 
-    void sendToMode4(cPacket* packet);
-    void sendMsg(int networkType, cMessage* msg);
+   // void sendToMode4(cPacket* packet);
+    // void sendMsg(int networkType, cMessage* msg);
 
     void registerNodeToBinder();
-    void handleLowerMessages(cMessage* msg);
+    void handleLowerMsg(cMessage* msg);
 
-    // statistics
-    simsignal_t G5MessagesSent;
-    simsignal_t G5MessagesReceived;
-
-    simsignal_t mode4MsgSent;
-    simsignal_t mode4MsgReceived;
-
-    simsignal_t WSNMessagesSent;
-    simsignal_t WSNMessagesReceived;
 
     bool mode4;
-    int toMode4;
-    int fromMode4;
-
-    int toVanetRadio;
-    int fromVanetRadio;
-
-    int to80215;
-    int from80215;
 
     LteBinder* binder_;
     MacNodeId nodeId_;

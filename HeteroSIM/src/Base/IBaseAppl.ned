@@ -23,6 +23,8 @@ moduleinterface IBaseAppl
         @class(BaseAppl);
         double updateInterval @unit(s);
         int msgLength @unit(B);
+        int appIndex;
+        string appName;
 
 	gates:
         input  fromDecisionMaker;

@@ -15,6 +15,9 @@
 
 package heterosim.Modules.DecisionMaker;
 
+import inet.common.queue.DropTailQueue;
+
+
 //
 // TODO auto-generated module
 //
@@ -22,33 +25,22 @@ simple DecisionMaker
 {
     parameters:
         @class(DecisionMaker);
-
-     	// G5 
-        @signal[G5MessagesSent](type="long");
-        @statistic[G5MessagesSent](title="G5MessagesSent"; source="G5MessagesSent"; record=vector,stats,histogram);  
-        @signal[G5MessagesReceived](type="long");
-        @statistic[G5MessagesReceived](title="G5MessagesReceived"; source="G5MessagesReceived"; record=vector,stats,histogram);
-      
-        
-        // Mode 4
-        @signal[mode4MsgReceived](type="long");
-        @statistic[mode4MsgReceived](title="mode4MsgReceived"; source="mode4MsgReceived"; record=vector,stats,histogram);
-        @signal[mode4MsgSent](type="long");
-        @statistic[mode4MsgSent](title="mode4MsgSent"; source="mode4MsgSent"; record=vector,stats,histogram);
-
-     	bool mode4IsActive=default(false);
-     	
-        
+        bool mode4IsActive = default(false);
         @display("i=old/telnet");
-    gates:
         
-        input  fromApplication[];
+    gates:
+
+        input fromApplication[];
         output toApplication[];
 
-        input  fromRadio[] ; //@labels(Ieee802Ctrl/up);
-        output toRadio[] ; //@labels(Ieee802Ctrl/down);
+        input fromRadio[] @labels(Ieee802Ctrl/up);
+        output toRadio[] @labels(Ieee802Ctrl/down);
         
-        
-        //output toMode4;
-        //input  fromMode4;
+//    submodules:
+//
+//
+//        queue: DropTailQueue {
+//            @display("p=177,113");
+//        }
+//        connections allowunconnected:
 }

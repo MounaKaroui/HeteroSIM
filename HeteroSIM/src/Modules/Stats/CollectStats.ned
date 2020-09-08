@@ -11,24 +11,27 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
+// 
+
+package heterosim.Modules.Stats;
+
 //
+// TODO auto-generated module
+//
+import inet.linklayer.ieee80211.mac.contract.IStatistics;
 
-// The basic message for the heterogeneous network - it is used by the decision maker.
-cplusplus{{
-#define VANET 0
-#define WSN 1
-#define MODE4 2
-#define LTE 3
-}}
-packet HeterogeneousMessage
+
+simple CollectStats like IStatistics
 {
-
-	string sourceAddress;
-	string destinationAddress;
-	string appName;
-	int applId; // the index of the gate
-	int nodeId;
-	int networkId; // for the stats
-	simtime_t sendingTime;
-	
+    
+    
+    parameters:
+          
+          // 802.11
+          string radioModule80211;
+          string macModule80211;
+          
+          // 802.15
+          string radioModule80215;
+          string macModule80215;
 }

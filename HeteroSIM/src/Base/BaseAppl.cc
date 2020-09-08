@@ -23,6 +23,8 @@ void BaseAppl::initialize()
     fromDecisionMaker=findGate("toDecisionMaker");
     updateInterval=par("updateInterval").doubleValue();
     msgLength=par("msgLength").intValue();
+    appIndex=par("appIndex").intValue();
+    appName=par("appName").stringValue();
     setNodeId();
 }
 
@@ -30,32 +32,24 @@ void BaseAppl::setNodeId()
 {
     cModule* host = inet::getContainingNode(this);
     std::string name=host->getFullName();
-    nodeId=extractNumber(name.c_str());
+    nodeId=Builder::extractNumber(name.c_str());
 }
 
 
-HeterogeneousMessage* BaseAppl::BuildMsg(int networkType, std::string name)
+
+HeterogeneousMessage* BaseAppl::BuildMsg(std::string name)
         {
 
             HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
             heteroMsg->setName(name.c_str());
             heteroMsg->setByteLength(msgLength);
             heteroMsg->setTimestamp(simTime());
-            heteroMsg->setNetworkType(networkType); // to be overrrided in decider module
+            heteroMsg->setAppName(appName.c_str());
             heteroMsg->setNodeId(nodeId);
+            heteroMsg->setApplId(appIndex);
+
             return  heteroMsg;
         }
-
-int BaseAppl::extractNumber(std::string input)
-{
-    size_t i = 0;
-    for ( ; i < input.length(); i++ ){ if ( isdigit(input[i]) ) break; }
-    // remove the first chars, which aren't digits
-    input = input.substr(i, input.length() - i );
-    // convert the remaining text to an integer
-    int id = atoi(input.c_str());
-    return id;
-}
 
 
 

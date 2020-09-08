@@ -23,18 +23,6 @@ Define_Module(DecisionMaker);
 
 void DecisionMaker::initialize()
 {
-
-    // TODO: createStat method
-    // G5 stats
-    G5MessagesSent=registerSignal("G5MessagesSent");
-    G5MessagesReceived=registerSignal("G5MessagesReceived");
-    // stats mode4
-    mode4MsgSent=registerSignal("mode4MsgSent");
-    mode4MsgReceived=registerSignal("mode4MsgReceived");
-
-    toMode4=findGate("toMode4");
-    fromMode4=findGate("fromMode4");
-
     mode4=par("mode4IsActive").boolValue();
 
     if(mode4)
@@ -59,37 +47,58 @@ void DecisionMaker::registerNodeToBinder()
 
 
 
-void DecisionMaker::takeDecision()
+int DecisionMaker::takeDecision(cMessage* msg)
 {
         // TODO: call mcdm prodecures here
+       int networkIndex=2;
 
+       //HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+       //cQueue* packetsQueue=new cQueue();
+       //packetsQueue->insert(hetNetsMsg);
+       //std::cout<<"Queue length" <<packetsQueue->getLength();
+
+       return networkIndex;
 }
 
-// TODO: merge sendToMode4 and sendToRadio
-// --> sendToLower() if possible
-
-void DecisionMaker::sendToMode4(cPacket* packet)
+void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
 {
 
-     packet->setControlInfo(Builder::LteCtrlInfo(nodeId_));
 
-     //FixME bug about range of mode4 physical layer
-     //send(packet, toMode4);
+       if(networkType==MODE4)
+      {
+          //cPacket* packet=check_and_cast<cPacket *>(msg);
+          msg->setControlInfo(Builder::LteCtrlInfo(nodeId_));
+
+      }else
+      {
+                // WLAN
+
+                cModule* host = inet::getContainingNode(this);
+                std::string name=host->getFullName();
+                // Control info is mandatory to pass message
+                //to Mgmt layer and then to MAC
+                msg->setControlInfo(Builder::Ieee802CtrlInfo(name));
+      }
+
 }
-
-
-void DecisionMaker:: sendToWlanRadio(cMessage*  msg, int networkIndex)
+void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 {
 
-    cModule* host = inet::getContainingNode(this);
-    std::string name=host->getFullName();
-    // Control info is mandatory to pass message
-    //to Mgmt layer and then to MAC
-    msg->setControlInfo(Builder::Ieee802CtrlInfo(name));
+    ctrlInfoWithRespectToNetType(msg, networkIndex);
     if(networkIndex<gateSize("toRadio"))
     {
         int gateId=gate("toRadio",networkIndex)->getId();
-        send(msg,gateId);
+        if(mode4)
+        {
+               cPacket* packet=check_and_cast<cPacket *>(msg);
+               send(packet, gateId);
+        }
+        else
+        {
+            send(msg, gateId);
+        }
+
+
     }
     else
     {
@@ -102,109 +111,60 @@ void DecisionMaker:: sendToWlanRadio(cMessage*  msg, int networkIndex)
 
 void DecisionMaker::sendToUpper(cMessage*  msg)
 {
-
-    for(int i=0; i<gateSize("toApplication");i++)
+    int n=gateSize("toApplication");
+    for(int i=0; i<n;i++)
     {
-    int gateId=gate("toApplication",i)->getId();
-    send(msg,gateId);
+     //int gateId=gate("toApplication",i)->getId(); // To get Id
+     cMessage *copy = msg->dup(); // FixMe The problem is that this is a copy not the real msg
+     send(copy, "toApplication", i);
     }
+//    HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+//    int appId=hetNetsMsg->getApplId();
+//    send(msg->dup(), "toApplication", appId);
 }
-
-
-
-void DecisionMaker::sendMsg(int networkType, cMessage* msg)
-{
-
-    switch (networkType)
-            {
-            case VANET:
-                // TODO emit
-                emit(G5MessagesSent, 1);
-                sendToWlanRadio(msg,VANET); /// wlan[0] ---> Vanet radio
-                break;
-            case WSN:
-                emit(WSNMessagesSent, 1);
-                sendToWlanRadio(msg,WSN); /// wlan[1] ---> WSN radio
-                std::cout<<"Message sent with sucess" ;
-                break;
-            case MODE4:
-                // TODO LTE check_and_cast<cPacket *>(msg):
-                //cPacket* because lower layers can't cast  msg type
-                //cPacket* test=new cPacket();
-                sendToMode4(check_and_cast<cPacket *>(msg)); // FixME: lte physical layer crash
-                emit(mode4MsgSent, 1);
-                break;
-
-            }
-}
-
-
 
 
 
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
+          std::map<std::string,cMessage*>::iterator it;
           int arrivalGate = msg->getArrivalGateId();
+//
+//          int appId=hetNetsMsg->getApplId();
+
           for(int i=0; i<gateSize("fromApplication");i++)
           {
           int gateId=gate("fromApplication",i)->getId();
+
           if (arrivalGate == gateId)
           {
-              HeterogeneousMessage *heterogeneousMessage =dynamic_cast<HeterogeneousMessage*>(msg);
-              int networkType=heterogeneousMessage->getNetworkType();
-              sendMsg(networkType,heterogeneousMessage);
+              // enqueue packet from applications
+              HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+              std::string appName=hetNetsMsg->getAppName();
+
+              ////// Tests
+
+              packetQueue.insert(std::pair<std::string, cMessage*>(appName, msg));
+              int n=packetQueue.size();
+              std::cout << "test => " <<  packetQueue.find("Interactive")->second << '\n';
+              cMessage* test=packetQueue.find("Interactive")->second;
+
+              HeterogeneousMessage* testMsg=dynamic_cast<HeterogeneousMessage*>(test);
+              std::string appNam=testMsg->getAppName();
+              std::cout << "test => " <<appNam<<'\n';
+
+              /////////////
+              int networkIndex=takeDecision(msg);
+              sendToLower(msg, networkIndex);
           }else
           {
-                  handleLowerMessages(msg);
+              sendToUpper(msg);
+              handleLowerMsg(msg); // delete CBR packet of LTE
           }
+
           }
 }
-
-
-
-
-void  DecisionMaker::handleLowerMessages(cMessage* msg)
-{
-
-    int arrivalGateId=msg->getArrivalGateId();
-    int gateId;
-    int network;
-
-
-
-    if(msg->isName("hetNets"))
-    {
-    HeterogeneousMessage* hetMsg=check_and_cast<HeterogeneousMessage*>(msg);
-    network=hetMsg->getNetworkType();
-    gateId=gate("fromRadio",network)->getId(); // TODO --> Find the index of WLAN
-    }
-    else
-    {
-        EV_INFO<< "This is not my message";
-    }
-
-    if(arrivalGateId==gateId) // test for Wlans
-    {
-
-            if(network==VANET)
-            {
-                emit(G5MessagesReceived,1);
-            }else if(network==WSN)
-            {
-                emit(WSNMessagesReceived, 1);
-            }
-            else if(network==MODE4)
-            {
-                emit(mode4MsgReceived,1);
-            }
-     }else
-     {
-         EV_INFO<<"Unknown gate" ;
-     }
-
-}
-
 
 
 DecisionMaker::~DecisionMaker()
@@ -215,4 +175,19 @@ DecisionMaker::~DecisionMaker()
     }
 
 }
+
+void DecisionMaker::handleLowerMsg(cMessage* msg)
+{
+    if(mode4)
+    {
+    if (msg->isName("CBR")) {
+           Cbr* cbrPkt = check_and_cast<Cbr*>(msg);
+           //double channel_load = cbrPkt->getCbr();
+           //emit(cbr_, channel_load);
+           delete cbrPkt;
+       }
+    }
+
+}
+
 

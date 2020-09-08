@@ -27,8 +27,12 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 OBJS = \
     $O/Base/BaseAppl.o \
     $O/Base/Builder.o \
+    $O/Base/mcda/Matrix.o \
+    $O/Base/mcda/MatrixFunctions.o \
+    $O/Base/mcda/MCDM.o \
     $O/Modules/DecisionMaker/DecisionMaker.o \
     $O/Modules/Mode4Driver/Mode4Driver.o \
+    $O/Modules/Stats/CollectStats.o \
     $O/Modules/application/VanetApp.o \
     $O/VanetNic/VanetRadio.o \
     $O/Modules/messages/HeterogeneousMessage_m.o

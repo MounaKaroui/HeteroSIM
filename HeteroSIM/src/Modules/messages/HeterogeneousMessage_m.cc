@@ -182,8 +182,8 @@ Register_Class(HeterogeneousMessage)
 HeterogeneousMessage::HeterogeneousMessage(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
 {
     this->applId = 0;
-    this->networkType = 0;
     this->nodeId = 0;
+    this->networkId = 0;
     this->sendingTime = 0;
 }
 
@@ -208,9 +208,10 @@ void HeterogeneousMessage::copy(const HeterogeneousMessage& other)
 {
     this->sourceAddress = other.sourceAddress;
     this->destinationAddress = other.destinationAddress;
+    this->appName = other.appName;
     this->applId = other.applId;
-    this->networkType = other.networkType;
     this->nodeId = other.nodeId;
+    this->networkId = other.networkId;
     this->sendingTime = other.sendingTime;
 }
 
@@ -219,9 +220,10 @@ void HeterogeneousMessage::parsimPack(omnetpp::cCommBuffer *b) const
     ::omnetpp::cPacket::parsimPack(b);
     doParsimPacking(b,this->sourceAddress);
     doParsimPacking(b,this->destinationAddress);
+    doParsimPacking(b,this->appName);
     doParsimPacking(b,this->applId);
-    doParsimPacking(b,this->networkType);
     doParsimPacking(b,this->nodeId);
+    doParsimPacking(b,this->networkId);
     doParsimPacking(b,this->sendingTime);
 }
 
@@ -230,9 +232,10 @@ void HeterogeneousMessage::parsimUnpack(omnetpp::cCommBuffer *b)
     ::omnetpp::cPacket::parsimUnpack(b);
     doParsimUnpacking(b,this->sourceAddress);
     doParsimUnpacking(b,this->destinationAddress);
+    doParsimUnpacking(b,this->appName);
     doParsimUnpacking(b,this->applId);
-    doParsimUnpacking(b,this->networkType);
     doParsimUnpacking(b,this->nodeId);
+    doParsimUnpacking(b,this->networkId);
     doParsimUnpacking(b,this->sendingTime);
 }
 
@@ -256,6 +259,16 @@ void HeterogeneousMessage::setDestinationAddress(const char * destinationAddress
     this->destinationAddress = destinationAddress;
 }
 
+const char * HeterogeneousMessage::getAppName() const
+{
+    return this->appName.c_str();
+}
+
+void HeterogeneousMessage::setAppName(const char * appName)
+{
+    this->appName = appName;
+}
+
 int HeterogeneousMessage::getApplId() const
 {
     return this->applId;
@@ -266,16 +279,6 @@ void HeterogeneousMessage::setApplId(int applId)
     this->applId = applId;
 }
 
-int HeterogeneousMessage::getNetworkType() const
-{
-    return this->networkType;
-}
-
-void HeterogeneousMessage::setNetworkType(int networkType)
-{
-    this->networkType = networkType;
-}
-
 int HeterogeneousMessage::getNodeId() const
 {
     return this->nodeId;
@@ -284,6 +287,16 @@ int HeterogeneousMessage::getNodeId() const
 void HeterogeneousMessage::setNodeId(int nodeId)
 {
     this->nodeId = nodeId;
+}
+
+int HeterogeneousMessage::getNetworkId() const
+{
+    return this->networkId;
+}
+
+void HeterogeneousMessage::setNetworkId(int networkId)
+{
+    this->networkId = networkId;
 }
 
 ::omnetpp::simtime_t HeterogeneousMessage::getSendingTime() const
@@ -361,7 +374,7 @@ const char *HeterogeneousMessageDescriptor::getProperty(const char *propertyname
 int HeterogeneousMessageDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 6+basedesc->getFieldCount() : 6;
+    return basedesc ? 7+basedesc->getFieldCount() : 7;
 }
 
 unsigned int HeterogeneousMessageDescriptor::getFieldTypeFlags(int field) const
@@ -379,8 +392,9 @@ unsigned int HeterogeneousMessageDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<6) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<7) ? fieldTypeFlags[field] : 0;
 }
 
 const char *HeterogeneousMessageDescriptor::getFieldName(int field) const
@@ -394,12 +408,13 @@ const char *HeterogeneousMessageDescriptor::getFieldName(int field) const
     static const char *fieldNames[] = {
         "sourceAddress",
         "destinationAddress",
+        "appName",
         "applId",
-        "networkType",
         "nodeId",
+        "networkId",
         "sendingTime",
     };
-    return (field>=0 && field<6) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<7) ? fieldNames[field] : nullptr;
 }
 
 int HeterogeneousMessageDescriptor::findField(const char *fieldName) const
@@ -408,10 +423,11 @@ int HeterogeneousMessageDescriptor::findField(const char *fieldName) const
     int base = basedesc ? basedesc->getFieldCount() : 0;
     if (fieldName[0]=='s' && strcmp(fieldName, "sourceAddress")==0) return base+0;
     if (fieldName[0]=='d' && strcmp(fieldName, "destinationAddress")==0) return base+1;
-    if (fieldName[0]=='a' && strcmp(fieldName, "applId")==0) return base+2;
-    if (fieldName[0]=='n' && strcmp(fieldName, "networkType")==0) return base+3;
+    if (fieldName[0]=='a' && strcmp(fieldName, "appName")==0) return base+2;
+    if (fieldName[0]=='a' && strcmp(fieldName, "applId")==0) return base+3;
     if (fieldName[0]=='n' && strcmp(fieldName, "nodeId")==0) return base+4;
-    if (fieldName[0]=='s' && strcmp(fieldName, "sendingTime")==0) return base+5;
+    if (fieldName[0]=='n' && strcmp(fieldName, "networkId")==0) return base+5;
+    if (fieldName[0]=='s' && strcmp(fieldName, "sendingTime")==0) return base+6;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -426,12 +442,13 @@ const char *HeterogeneousMessageDescriptor::getFieldTypeString(int field) const
     static const char *fieldTypeStrings[] = {
         "string",
         "string",
+        "string",
         "int",
         "int",
         "int",
         "simtime_t",
     };
-    return (field>=0 && field<6) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<7) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **HeterogeneousMessageDescriptor::getFieldPropertyNames(int field) const
@@ -500,10 +517,11 @@ std::string HeterogeneousMessageDescriptor::getFieldValueAsString(void *object, 
     switch (field) {
         case 0: return oppstring2string(pp->getSourceAddress());
         case 1: return oppstring2string(pp->getDestinationAddress());
-        case 2: return long2string(pp->getApplId());
-        case 3: return long2string(pp->getNetworkType());
+        case 2: return oppstring2string(pp->getAppName());
+        case 3: return long2string(pp->getApplId());
         case 4: return long2string(pp->getNodeId());
-        case 5: return simtime2string(pp->getSendingTime());
+        case 5: return long2string(pp->getNetworkId());
+        case 6: return simtime2string(pp->getSendingTime());
         default: return "";
     }
 }
@@ -520,10 +538,11 @@ bool HeterogeneousMessageDescriptor::setFieldValueAsString(void *object, int fie
     switch (field) {
         case 0: pp->setSourceAddress((value)); return true;
         case 1: pp->setDestinationAddress((value)); return true;
-        case 2: pp->setApplId(string2long(value)); return true;
-        case 3: pp->setNetworkType(string2long(value)); return true;
+        case 2: pp->setAppName((value)); return true;
+        case 3: pp->setApplId(string2long(value)); return true;
         case 4: pp->setNodeId(string2long(value)); return true;
-        case 5: pp->setSendingTime(string2simtime(value)); return true;
+        case 5: pp->setNetworkId(string2long(value)); return true;
+        case 6: pp->setSendingTime(string2simtime(value)); return true;
         default: return false;
     }
 }

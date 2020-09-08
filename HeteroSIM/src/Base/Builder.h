@@ -19,7 +19,7 @@ namespace Builder {
 
 Ieee802Ctrl* Ieee802CtrlInfo(std::string moduleName);
 FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_);
-
+int extractNumber(std::string input);
 
 
 } /* namespace Builder */
