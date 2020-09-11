@@ -34,4 +34,6 @@ simple CollectStats like IStatistics
           // 802.15
           string radioModule80215;
           string macModule80215;
+          // Lte
+          string radioModuleLte;
 }

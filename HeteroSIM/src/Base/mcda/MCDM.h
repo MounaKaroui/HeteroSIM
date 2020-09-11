@@ -35,11 +35,16 @@ std::vector<Norma> selectNormCriteria(std::vector<Norma> norm, Matrix decisionCr
 
 Matrix enhMaxMin(Matrix a, std::vector<Norma> norm);
 
-// rank aggregation weighting
-Matrix agg_weighting(Matrix A, int k);
+
 
 //Weighting stage
 Matrix wls_weighting(Matrix A);
+
+// objective weighting
+Matrix obj_weighting(Matrix D);
+
+// hybrid weighting
+Matrix hybrid_weighting(Matrix w_s, Matrix w_obj, double k);
 
 //find ideal solution for MCDA
 Matrix idealSolution(Matrix D);
@@ -55,6 +60,7 @@ Matrix TOPSIS(Matrix D, Matrix W);
 
 // random numbers generated in a given range
 double random(int min, int max);
+
 
 /*if normalized matrix has values =1 or =0, it is very likely, that
 they are the same for several alternatives (from observations).
@@ -92,7 +98,6 @@ std::string buildAllPathThreeCriteria(std::vector<double> datarate,std::vector<d
 int  selectNetworkWithMCDA(std::string allPathsCriteriaValues,std::string algName,
                      std::string trafficType, int critNumb, double v);
 
-std::vector<double> calculateEWA(std::vector<double> crit, double beta, double newSample);
 
 }
 

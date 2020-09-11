@@ -22,6 +22,13 @@ static const simsignal_t packetSentToLowerSignal = cComponent::registerSignal("p
 static const simsignal_t packetReceivedFromLowerSignal = cComponent::registerSignal("packetReceivedFromLower");
 static const  simsignal_t packetErrorRateSignal = cComponent::registerSignal("packetErrorRate"); // reliability
 
+
+static const  simsignal_t interPacketDelay = cComponent::registerSignal("interPacketDelay"); // reliability
+static const  simsignal_t tbSent = cComponent::registerSignal("tbSent"); // reliability
+static const  simsignal_t tbReceived = cComponent::registerSignal("tbReceived"); // reliability
+static const  simsignal_t tbDecoded = cComponent::registerSignal("tbDecoded"); // reliability
+
+
 Define_Module(CollectStats);
 
 void CollectStats::initialize()
@@ -41,13 +48,17 @@ void CollectStats::initialize()
     // 802.15
     mLinkLayerNarrowBand=inet::findModuleFromPar<inet::CSMA>(par("macModule80215"), host);
     mRadioNarrowBand= inet::findModuleFromPar<inet::physicallayer::FlatRadioBase>(par("radioModule80215"), host);
-
     mLinkLayerNarrowBand->subscribe(packetSentToLowerSignal, this);
     mLinkLayerNarrowBand->subscribe(packetReceivedFromLowerSignal, this);
     mRadioNarrowBand->subscribe(packetErrorRateSignal, this);
 
 
-
+    // Lte
+    mRadioLte= inet::findModuleFromPar<LtePhyVUeMode4>(par("radioModuleLte"), host);
+    mRadioLte->subscribe(interPacketDelay,this);
+    mRadioLte->subscribe(tbReceived,this);
+    mRadioLte->subscribe(tbSent,this);
+    mRadioLte->subscribe(tbDecoded,this);
 
 
     // For throughput Measurement
@@ -136,6 +147,16 @@ void CollectStats::recordStats(simsignal_t signal,cObject* msg, listOfCriteria& 
     }
 }
 
+
+std::vector<double> CollectStats::convertStatsToVector(double cri_alter0, double cri_alter1 )
+{
+
+    std::vector<double> criteriaList;
+    criteriaList.push_back(cri_alter0);
+    criteriaList.push_back(cri_alter1);
+    return criteriaList;
+}
+
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
 
@@ -145,8 +166,6 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
       if(interfaceId==0)
       {
           recordStats(signal,msg,listOfCriteria80211);
-          double latency= listOfCriteria80211.latency;
-          double throughput=listOfCriteria80211.throughput;
       }
       else if(interfaceId==1)
       {
@@ -156,6 +175,12 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
       {
        EV_INFO<< " wrong interface Id "<<endl;
       }
+
+      std::vector<double> thList=convertStatsToVector(listOfCriteria80211.throughput, listOfCriteria80215.throughput);
+      std::vector<double> delayList=convertStatsToVector(listOfCriteria80211.latency, listOfCriteria80215.latency);
+      std::vector<double> relList=convertStatsToVector(listOfCriteria80211.reliability, listOfCriteria80215.reliability);
+
+      allPathsCriteriaValues=McdaAlg::buildAllPathThreeCriteria(thList, delayList, relList);
 
 }
 

@@ -130,6 +130,8 @@ Matrix enhMaxMin(Matrix a, std::vector<Norma> norm)
     return d;
 }
 
+
+
 Matrix readPreferences(std::string trafficType, int critNumb)
 {
 
@@ -159,21 +161,54 @@ Matrix readPreferences(std::string trafficType, int critNumb)
 }
 
 
-
-Matrix agg_weighting(Matrix A, int k)
+Matrix obj_weighting(Matrix D)
 {
- int n = A.size(1);
- Matrix w(n,1);
+    int n=D.size(1);
+    Matrix w(n,1);
+    Matrix xBar(n,1);
 
- for(int i=0; i<n; i++)
+    double alter=D.size(1);
+    for (int j=0; j<n; j++)
     {
-    w.at(i,0)=((sum(A,i,"column")+(n/2)-1)/(n*(n-1)))*pow(2*A.at(i,0),k);
+        xBar.at(j,0)=(1/alter)*sum(D,j,"column"); // x bar
     }
 
-    w.print();
+    double s=0;
+
+    for(int i=0; i<D.size(1);i++)
+    {
+    for(int j=0; j<D.size(2);j++)
+    {
+    s+=pow((D.at(i,j)-xBar.at(j,0)),2); // the sum of the power
+    }
+    }
+
+
+    for(int j=0; j<D.size(2);j++)
+    {
+
+        w.at(j,0)=sqrt(s/(alter*xBar.at(j,0))); // final formula
+    }
+
     return w;
 
 }
+
+
+
+Matrix hybrid_weighting(Matrix w_s, Matrix w_obj, double k)
+{
+
+    Matrix W(w_s.size(1),1);
+    for (int j=0; j<w_s.size(1);j++)
+    {
+        W.at(j,0)=k*w_s.at(j,0)+(1-k)*w_obj.at(j,0);
+    }
+    return W;
+
+
+}
+
 
 Matrix wls_weighting(Matrix A)
 {
@@ -463,18 +498,6 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes)
     return Acut;
 }
 
-std::vector<double> calculateEWA(std::vector<double> crit, double beta, double newSample)
-{
-
-    for (int i=1; i<crit.size(); i++)
-    {
-        crit.at(i)=crit.at(i-1)*beta +(1-beta)*newSample;
-    }
-
-    return crit;
-}
-
-
 int decisionProcess(std::string allPathsCriteriaValues,int critNumb,std::string trafficType,std::string algName)
 {
 
@@ -490,8 +513,17 @@ int decisionProcess(std::string allPathsCriteriaValues,int critNumb,std::string 
     D.print();
     // weighting stage ...
     Matrix A = readPreferences(trafficType,critNumb);
-    Matrix W = wls_weighting(A);
-    std::cout<<"Weighted matrix : " <<"\n";
+    Matrix W_s = wls_weighting(A);
+    std::cout<<"Subjective Weighted matrix : " <<"\n";
+    W_s.print();
+
+    Matrix W_obj= obj_weighting(D);
+
+    std::cout<<"Objective Weighted matrix : " <<"\n";
+    W_obj.print();
+
+    Matrix W=hybrid_weighting(W_s,W_obj,0.9);
+    std::cout<<"Hybrid Weighted matrix : " <<"\n";
     W.print();
     // decision stage ...
 
@@ -510,7 +542,7 @@ int decisionProcess(std::string allPathsCriteriaValues,int critNumb,std::string 
     else
         std::cerr<<"Wrong entered name!!\n";
 
-    std::cout<<"Score : " <<"\n";
+    std::cout<<"Score with " << algName << ": "<<"\n";
     score.print();
 
     int bestIndexFromGood=0;
