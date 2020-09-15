@@ -2,3 +2,7 @@
 	path = dependency/inet
 	url = https://github.com/MounaKaroui/inet.git
 	branch = v3.6.6-HeteroSIM
+[submodule "dependency/simulte"]
+	path = dependency/simulte
+	url = https://github.com/MounaKaroui/simulte.git
+	branch = v1.3.0-HeteroSIM
