@@ -1,0 +1,4 @@
+[submodule "dependency/inet"]
+	path = dependency/inet
+	url = https://github.com/MounaKaroui/inet.git
+	branch = v3.6.6-HeteroSIM
