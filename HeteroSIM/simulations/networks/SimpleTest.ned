@@ -21,10 +21,7 @@ import inet.physicallayer.common.packetlevel.RadioMedium;
 import inet.networklayer.configurator.ipv4.IPv4NetworkConfigurator;
 import inet.physicallayer.contract.packetlevel.IRadioMedium;
 import inet.physicallayer.ieee80211.packetlevel.Ieee80211ScalarRadioMedium;
-import inet.physicallayer.ieee802154.packetlevel.Ieee802154NarrowbandScalarRadioMedium;
-//import inet.visualizer.integrated.IntegratedVisualizer;
-//import inet.visualizer.integrated.IntegratedCanvasVisualizer;
-
+import inet.visualizer.integrated.IntegratedVisualizer;
 
 import lte.corenetwork.binder.LteBinder;
 import lte.corenetwork.deployer.LteDeployer;
@@ -46,15 +43,14 @@ network SimpleNetwork
                 mediumLimitCache.carrierFrequency = 5.9GHz;
         }
 
-
-
         car[numCars]: car {
             @display("p=276,202;is=s");
         }
 
-//        visualizer: IntegratedCanvasVisualizer if visualize {
-//            @display("p=50,50");
-//        }
+        visualizer: IntegratedVisualizer if visualize {
+            parameters:
+                @display("p=61,86");
+        }
 
         channelControl: LteChannelControl if mode4isActive {
             @display("p=60,268;is=s");
@@ -70,7 +66,4 @@ network SimpleNetwork
             @display("p=53,352;is=s");
         }
 
-//        narrowbandScalarRadioMedium: Ieee802154NarrowbandScalarRadioMedium {
-//            @display("p=392,328");
-//        }
 }

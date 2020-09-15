@@ -63,8 +63,11 @@ module car
 
         *.macModule80215 = absPath(".wlan[1].mac");
         *.radioModule80215 = absPath(".wlan[1].radio");
+        
 		*.macModule80211 = absPath(".wlan[0].mac");
         *.radioModule80211 = absPath(".wlan[0].radio");
+        
+        *.radioModuleLte=absPath(".lteNic.phy");
 
     gates:
         input radioIn[numRadios] @directIn;
