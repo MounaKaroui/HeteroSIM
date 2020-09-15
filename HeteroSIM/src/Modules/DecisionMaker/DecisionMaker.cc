@@ -17,18 +17,20 @@
 #include "../../Modules/DecisionMaker/DecisionMaker.h"
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
-
+#include "Modules/Stats/CollectStats.h"
 Define_Module(DecisionMaker);
 
 
 void DecisionMaker::initialize()
 {
-    mode4=par("mode4IsActive").boolValue();
 
+    critNumb=par("criteriaNum").intValue();
+    mode4=par("mode4IsActive").boolValue();
     if(mode4)
     {
         registerNodeToBinder();
     }
+
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -43,42 +45,24 @@ void DecisionMaker::registerNodeToBinder()
 }
 
 
-
-
-
-
-int DecisionMaker::takeDecision(cMessage* msg)
-{
-        // TODO: call mcdm prodecures here
-       int networkIndex=2;
-
-       //HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
-       //cQueue* packetsQueue=new cQueue();
-       //packetsQueue->insert(hetNetsMsg);
-       //std::cout<<"Queue length" <<packetsQueue->getLength();
-
-       return networkIndex;
-}
-
 void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
 {
 
 
-       if(networkType==MODE4)
-      {
-          //cPacket* packet=check_and_cast<cPacket *>(msg);
-          msg->setControlInfo(Builder::LteCtrlInfo(nodeId_));
+    if(networkType==MODE4)
+    {
+        //cPacket* packet=check_and_cast<cPacket *>(msg);
+        msg->setControlInfo(Builder::LteCtrlInfo(nodeId_));
 
-      }else
-      {
-                // WLAN
-
-                cModule* host = inet::getContainingNode(this);
-                std::string name=host->getFullName();
-                // Control info is mandatory to pass message
-                //to Mgmt layer and then to MAC
-                msg->setControlInfo(Builder::Ieee802CtrlInfo(name));
-      }
+    }else
+    {
+        // WLAN
+        cModule* host = inet::getContainingNode(this);
+        std::string name=host->getFullName();
+        // Control info is mandatory to pass message
+        //to Mgmt layer and then to MAC
+        msg->setControlInfo(Builder::Ieee802CtrlInfo(name));
+    }
 
 }
 void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
@@ -88,15 +72,15 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
     if(networkIndex<gateSize("toRadio"))
     {
         int gateId=gate("toRadio",networkIndex)->getId();
-        if(mode4)
-        {
-               cPacket* packet=check_and_cast<cPacket *>(msg);
-               send(packet, gateId);
-        }
-        else
-        {
+//        if(mode4)
+//        {
+//            cPacket* packet=check_and_cast<cPacket*>(msg);
+//            send(packet, gateId);
+//        }
+//        else
+//        {
             send(msg, gateId);
-        }
+        //}
 
 
     }
@@ -114,56 +98,72 @@ void DecisionMaker::sendToUpper(cMessage*  msg)
     int n=gateSize("toApplication");
     for(int i=0; i<n;i++)
     {
-     //int gateId=gate("toApplication",i)->getId(); // To get Id
-     cMessage *copy = msg->dup(); // FixMe The problem is that this is a copy not the real msg
-     send(copy, "toApplication", i);
+        //int gateId=gate("toApplication",i)->getId(); // To get Id
+        //cMessage *copy = msg->dup(); //  The problem is that this is a copy not the real msg
+        send(msg, "toApplication", i);
     }
-//    HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
-//    int appId=hetNetsMsg->getApplId();
-//    send(msg->dup(), "toApplication", appId);
+
 }
 
+void DecisionMaker::storeUpperPackets()
+{
+    // enqueue packet from applications
+    //HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+    //std::string appName=hetNetsMsg->getAppName();
+    ////// Tests
+    //packetQueue.insert(std::pair<std::string, cMessage*>(appName, msg));
+    //int n=packetQueue.size();
+    //std::cout << "test => " <<  packetQueue.find("Interactive")->second << '\n';
+    //cMessage* test=packetQueue.find("Interactive")->second;
+
+    //HeterogeneousMessage* testMsg=dynamic_cast<HeterogeneousMessage*>(test);
+    //std::string appNam=testMsg->getAppName();
+    //std::cout << "test => " <<appNam<<'\n';
+
+}
+
+
+
+
+
+int DecisionMaker::takeDecision(cMessage* msg)
+{
+
+    int networkIndex=2; // Just to test LTE
+
+    // MCDM_procedure
+    HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+    std::string trafficType=hetMsg->getTrafficType();
+    cModule* mStats=getParentModule()->getSubmodule("statistics");
+    CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+    //networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, critNumb, trafficType, "GRA");
+
+
+    return networkIndex;
+}
 
 
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
-          std::map<std::string,cMessage*>::iterator it;
-          int arrivalGate = msg->getArrivalGateId();
-//
-//          int appId=hetNetsMsg->getApplId();
+    std::map<std::string,cMessage*>::iterator it;
+    int arrivalGate = msg->getArrivalGateId();
 
-          for(int i=0; i<gateSize("fromApplication");i++)
-          {
-          int gateId=gate("fromApplication",i)->getId();
+    for(int i=0; i<gateSize("fromApplication");i++)
+    {
+        int gateId=gate("fromApplication",i)->getId();
 
-          if (arrivalGate == gateId)
-          {
-              // enqueue packet from applications
-              HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
-              std::string appName=hetNetsMsg->getAppName();
+        if (arrivalGate == gateId)
+        {
+            int networkIndex=takeDecision(msg);
+            sendToLower(msg, networkIndex);
 
-              ////// Tests
+        }else
+        {
+            sendToUpper(msg);
+        }
 
-              packetQueue.insert(std::pair<std::string, cMessage*>(appName, msg));
-              int n=packetQueue.size();
-              std::cout << "test => " <<  packetQueue.find("Interactive")->second << '\n';
-              cMessage* test=packetQueue.find("Interactive")->second;
-
-              HeterogeneousMessage* testMsg=dynamic_cast<HeterogeneousMessage*>(test);
-              std::string appNam=testMsg->getAppName();
-              std::cout << "test => " <<appNam<<'\n';
-
-              /////////////
-              int networkIndex=takeDecision(msg);
-              sendToLower(msg, networkIndex);
-          }else
-          {
-              sendToUpper(msg);
-              handleLowerMsg(msg); // delete CBR packet of LTE
-          }
-
-          }
+    }
 }
 
 
@@ -180,12 +180,12 @@ void DecisionMaker::handleLowerMsg(cMessage* msg)
 {
     if(mode4)
     {
-    if (msg->isName("CBR")) {
-           Cbr* cbrPkt = check_and_cast<Cbr*>(msg);
-           //double channel_load = cbrPkt->getCbr();
-           //emit(cbr_, channel_load);
-           delete cbrPkt;
-       }
+        if (msg->isName("CBR")) {
+            Cbr* cbrPkt = check_and_cast<Cbr*>(msg);
+            //double channel_load = cbrPkt->getCbr();
+            //emit(cbr_, channel_load);
+            delete cbrPkt;
+        }
     }
 
 }

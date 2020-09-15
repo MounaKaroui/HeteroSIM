@@ -25,9 +25,10 @@ simple DecisionMaker
 {
     parameters:
         @class(DecisionMaker);
-        bool mode4IsActive = default(false);
         @display("i=old/telnet");
         
+        bool mode4IsActive = default(false);
+        int criteriaNum=default(3);
     gates:
 
         input fromApplication[];

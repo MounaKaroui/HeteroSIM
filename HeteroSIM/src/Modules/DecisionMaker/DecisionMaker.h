@@ -20,6 +20,7 @@
 #include "../../Modules/messages/HeterogeneousMessage_m.h"
 #include "corenetwork/binder/LteBinder.h"
 #include "Base/Builder.h"
+#include "Base/mcda/MCDM.h"
 using namespace omnetpp;
 using namespace inet;
 
@@ -56,17 +57,15 @@ public:
     void sendToLower(cMessage* msg,int networkIndex);
     void sendToUpper(cMessage*  msg);
 
-   // void sendToMode4(cPacket* packet);
-    // void sendMsg(int networkType, cMessage* msg);
-
     void registerNodeToBinder();
     void handleLowerMsg(cMessage* msg);
 
+    void storeUpperPackets();
 
     bool mode4;
-
     LteBinder* binder_;
     MacNodeId nodeId_;
+    int critNumb;
 
 
   private:
