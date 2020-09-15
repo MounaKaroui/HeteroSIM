@@ -51,6 +51,8 @@ class CollectStats : public cListener, public cSimpleModule
 
     listOfCriteria listOfCriteria80211;
     listOfCriteria listOfCriteria80215;
+    listOfCriteria listOfCriteriaLte;
+
 
 
 
@@ -92,8 +94,7 @@ class CollectStats : public cListener, public cSimpleModule
 
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
     void beginNewInterval(simtime_t now, double& throughput);
-    void recordStats(simsignal_t signal,cObject* msg, listOfCriteria& l);
-
+    void recordStatsWlan(simsignal_t signal,cObject* msg, listOfCriteria& l);
     std::vector<double> convertStatsToVector(double cri_alter0, double cri_alter1);
 
 };
