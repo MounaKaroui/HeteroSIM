@@ -26,6 +26,7 @@ void DecisionMaker::initialize()
 
     critNumb=par("criteriaNum").intValue();
     mode4=par("mode4IsActive").boolValue();
+    pathToConfigFiles=par("pathToConfigFiles").stringValue();
     if(mode4)
     {
         registerNodeToBinder();
@@ -51,7 +52,6 @@ void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
 
     if(networkType==MODE4)
     {
-        //cPacket* packet=check_and_cast<cPacket *>(msg);
         msg->setControlInfo(Builder::LteCtrlInfo(nodeId_));
 
     }else
@@ -72,17 +72,7 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
     if(networkIndex<gateSize("toRadio"))
     {
         int gateId=gate("toRadio",networkIndex)->getId();
-//        if(mode4)
-//        {
-//            cPacket* packet=check_and_cast<cPacket*>(msg);
-//            send(packet, gateId);
-//        }
-//        else
-//        {
-            send(msg, gateId);
-        //}
-
-
+        send(msg, gateId);
     }
     else
     {
@@ -95,31 +85,29 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 
 void DecisionMaker::sendToUpper(cMessage*  msg)
 {
-    int n=gateSize("toApplication");
-    for(int i=0; i<n;i++)
-    {
-        //int gateId=gate("toApplication",i)->getId(); // To get Id
-        //cMessage *copy = msg->dup(); //  The problem is that this is a copy not the real msg
-        send(msg, "toApplication", i);
-    }
-
+    HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+    int id=hetNetsMsg->getApplId();
+    int gateId=gate("toApplication",id)->getId(); // To get Id
+    removePacketsFromQueue(id);
+    send(msg, gateId);
 }
 
-void DecisionMaker::storeUpperPackets()
+void DecisionMaker::pushPacketstoQueue(int id, HeterogeneousMessage* msg)
 {
     // enqueue packet from applications
-    //HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
-    //std::string appName=hetNetsMsg->getAppName();
-    ////// Tests
-    //packetQueue.insert(std::pair<std::string, cMessage*>(appName, msg));
+    packetQueue.insert(std::pair<int, HeterogeneousMessage*>(id, msg));
+
+    // test
     //int n=packetQueue.size();
-    //std::cout << "test => " <<  packetQueue.find("Interactive")->second << '\n';
-    //cMessage* test=packetQueue.find("Interactive")->second;
+    //HeterogeneousMessage* test=packetQueue.find(msg->getApplId())->second;
+    //std::string trafficType=test->getTrafficType();
+    //std::cout << "test => " <<trafficType<<'\n';
+}
 
-    //HeterogeneousMessage* testMsg=dynamic_cast<HeterogeneousMessage*>(test);
-    //std::string appNam=testMsg->getAppName();
-    //std::cout << "test => " <<appNam<<'\n';
-
+void DecisionMaker::removePacketsFromQueue(int id)
+{
+    // Delete msg given a key
+    packetQueue.erase(id);
 }
 
 
@@ -128,17 +116,22 @@ void DecisionMaker::storeUpperPackets()
 
 int DecisionMaker::takeDecision(cMessage* msg)
 {
-
-    int networkIndex=2; // Just to test LTE
-
+    int networkIndex=2;
     // MCDM_procedure
     HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
     std::string trafficType=hetMsg->getTrafficType();
     cModule* mStats=getParentModule()->getSubmodule("statistics");
     CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-    //networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, critNumb, trafficType, "GRA");
+    std::cout<< stats->allPathsCriteriaValues<< endl;
 
-
+//    if(stats->allPathsCriteriaValues!="")
+//    {
+//    networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, pathToConfigFiles,critNumb, trafficType, "VIKOR");
+//    }
+//    else
+//    {
+//    networkIndex=0; // random
+//    }
     return networkIndex;
 }
 
@@ -146,24 +139,33 @@ int DecisionMaker::takeDecision(cMessage* msg)
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
-    std::map<std::string,cMessage*>::iterator it;
-    int arrivalGate = msg->getArrivalGateId();
+    HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+    int id;
 
-    for(int i=0; i<gateSize("fromApplication");i++)
+
+    if(hetMsg!=nullptr)
     {
-        int gateId=gate("fromApplication",i)->getId();
+    id=hetMsg->getApplId();
+    pushPacketstoQueue(id, hetMsg);  // store Upper packets
 
-        if (arrivalGate == gateId)
-        {
-            int networkIndex=takeDecision(msg);
-            sendToLower(msg, networkIndex);
+    int arrivalGate = msg->getArrivalGateId();
+    int gateId=gate("fromApplication",id)->getId();
 
-        }else
-        {
-            sendToUpper(msg);
-        }
+    if (arrivalGate == gateId)
+    {
+        int networkIndex=takeDecision(msg);
+        sendToLower(msg, networkIndex);
+
+    }else
+    {
+        // from  radio
+        sendToUpper(msg);
 
     }
+    }
+
+    handleLteLowerMsg(msg);
+
 }
 
 
@@ -176,7 +178,7 @@ DecisionMaker::~DecisionMaker()
 
 }
 
-void DecisionMaker::handleLowerMsg(cMessage* msg)
+void DecisionMaker::handleLteLowerMsg(cMessage* msg)
 {
     if(mode4)
     {

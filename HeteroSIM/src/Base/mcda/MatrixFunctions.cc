@@ -328,6 +328,18 @@ int minIndex(Matrix a, int place, std::string dim)
     return mini;
 }
 
+// sum for entropy calculation
+double entropicSum(Matrix a, int place)
+{
+        int n=a.size(1);
+        double sum{0};
+        for (int i=0; i<n;i++)
+        {
+            sum+=a.at(i,place)*std::log(a.at(i,place));
+        }
+    return sum;
+}
+
 //find the sum of elements of a matrix in a given row  or column (1)
 double sum(Matrix a, int place, std::string dim)
 {

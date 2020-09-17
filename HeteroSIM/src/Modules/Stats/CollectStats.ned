@@ -28,12 +28,12 @@ simple CollectStats like IStatistics
     parameters:
           
           // 802.11
-          string radioModule80211;
-          string macModule80211;
+          string radioModule80211=default("");
+          string macModule80211=default("");
           
           // 802.15
-          string radioModule80215;
-          string macModule80215;
+          string radioModule80215=default("");
+          string macModule80215=default("");
           // Lte
-          string radioModuleLte;
+          string radioModuleLte=default("");
 }

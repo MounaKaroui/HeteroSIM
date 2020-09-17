@@ -47,7 +47,7 @@ public:
     void ctrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
 
 
-    std::map<std::string,cMessage*> packetQueue;
+    std::map<int,HeterogeneousMessage*> packetQueue;
 
   protected:
     //int numInitStages() const override;
@@ -58,15 +58,16 @@ public:
     void sendToUpper(cMessage*  msg);
 
     void registerNodeToBinder();
-    void handleLowerMsg(cMessage* msg);
+    void handleLteLowerMsg(cMessage* msg);
 
-    void storeUpperPackets();
+    void pushPacketstoQueue(int id, HeterogeneousMessage* msg);
+    void removePacketsFromQueue(int id);
 
     bool mode4;
     LteBinder* binder_;
     MacNodeId nodeId_;
     int critNumb;
-
+    std::string pathToConfigFiles;
 
   private:
     cMessage* selfMsg;

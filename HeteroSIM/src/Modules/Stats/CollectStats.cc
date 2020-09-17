@@ -21,16 +21,9 @@
 
 static const simsignal_t packetSentToLowerSignal = cComponent::registerSignal("packetSentToLower");
 static const simsignal_t packetReceivedFromLowerSignal = cComponent::registerSignal("packetReceivedFromLower");
-static const  simsignal_t packetErrorRateSignal = cComponent::registerSignal("packetErrorRate"); // reliability
 
-
-static const  simsignal_t interPacketDelay = cComponent::registerSignal("interPacketDelay"); // interPacket delay
-static const  simsignal_t tbSent = cComponent::registerSignal("tbSent"); // Transport block sent
-
-static const  simsignal_t tbReceived = cComponent::registerSignal("tbReceived"); // Transport Block received
-static const  simsignal_t tbDecoded = cComponent::registerSignal("tbDecoded"); // Transport Block decoded
-
-static const  simsignal_t cbrMsg = cComponent::registerSignal("cbrMsg"); // cbr Msg
+static const  simsignal_t lteSentMsg = cComponent::registerSignal("sentMsg"); // LTE sent Msg
+static const  simsignal_t lteRcvdMsg = cComponent::registerSignal("receivedMsg"); // LTE received Msg
 
 
 Define_Module(CollectStats);
@@ -38,35 +31,31 @@ Define_Module(CollectStats);
 void CollectStats::initialize()
 {
 
-
     cModule* host = inet::getContainingNode(this);
     // 802.11
     mLinkLayer80211 = inet::findModuleFromPar<inet::ieee80211::Ieee80211Mac>(par("macModule80211"), host);
     mRadio80211 = inet::findModuleFromPar<inet::physicallayer::Ieee80211Radio>(par("radioModule80211"), host);
-
-    // subscription to signals
     mLinkLayer80211->subscribe(packetSentToLowerSignal, this);
     mLinkLayer80211->subscribe(packetReceivedFromLowerSignal, this);
-    mRadio80211->subscribe(packetErrorRateSignal, this);
 
     // 802.15
+    int numRadios=getAncestorPar("numRadios");
+    if(numRadios>1)
+    {
     mLinkLayerNarrowBand=inet::findModuleFromPar<inet::CSMA>(par("macModule80215"), host);
     mRadioNarrowBand= inet::findModuleFromPar<inet::physicallayer::FlatRadioBase>(par("radioModule80215"), host);
     mLinkLayerNarrowBand->subscribe(packetSentToLowerSignal, this);
     mLinkLayerNarrowBand->subscribe(packetReceivedFromLowerSignal, this);
-    mRadioNarrowBand->subscribe(packetErrorRateSignal, this);
-
+    }
 
     // Lte
+    bool mode4=getAncestorPar("withMode4");
+    if(mode4)
+    {
     mRadioLte= inet::findModuleFromPar<LtePhyVUeMode4>(par("radioModuleLte"), host);
-
-    //mRadioLte->subscribe(interPacketDelay,this);
-    //mRadioLte->subscribe(tbReceived,this);
-    //mRadioLte->subscribe(tbSent,this);
-    //mRadioLte->subscribe(tbDecoded,this);
-
-    // TODO : add LtesentMsg signal subscription
-    mRadioLte->subscribe(cbrMsg,this);
+    mRadioLte->subscribe(lteSentMsg,this);
+    mRadioLte->subscribe(lteRcvdMsg, this);
+    }
 
     // For throughput Measurement
     batchSize=10;
@@ -76,8 +65,25 @@ void CollectStats::initialize()
     intvlStartTime = intvlLastPkTime = 0;
     intvlNumPackets = intvlNumBits = 0;
 
+    // list of criteria initialization
+    inializeCriteriaList(listOfCriteria80211);
+    inializeCriteriaList(listOfCriteria80215);
+    inializeCriteriaList(listOfCriteriaLte);
+
 }
 
+
+void CollectStats::inializeCriteriaList(listOfCriteria& l)
+{
+
+    l.receivedPackets=0;
+    l.sentPackets=0;
+
+    l.latency=0;
+    l.reliability=0;
+    l.throughput=0;
+
+}
 
 void CollectStats::computeThroughput(simtime_t now, unsigned long bits, double& throughput)
 {
@@ -106,44 +112,15 @@ void CollectStats::beginNewInterval(simtime_t now, double& throughput)
 }
 
 
-void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, double value,cObject *details)
+
+void CollectStats::recordStats(simsignal_t comingSignal, simsignal_t signalSent, simsignal_t signalRcv,cObject* msg, listOfCriteria& l)
 {
-
-    std::string ModuleName=source->getParentModule()->getFullName();
-    int interfaceId=Builder::extractNumber(ModuleName);
-
-    if(interfaceId==0)
-    {
-    if(signal==packetErrorRateSignal)
-    {
-        listOfCriteria80211.per=value;
-    }
-    }else if(interfaceId==1)
-    {
-       if(signal==packetErrorRateSignal)
-            {
-                listOfCriteria80215.per=value;
-            }
-    }
-    else
-    {
-     EV_INFO<< " wrong interface Id "<<endl;
-    }
-
-
-
-}
-
-
-
-void CollectStats::recordStatsWlan(simsignal_t signal,cObject* msg, listOfCriteria& l)
-{
-    if(signal==packetSentToLowerSignal)
+    if(comingSignal==signalSent)
        {
            l.sentPackets++;
        }
 
-    if (signal == packetReceivedFromLowerSignal)
+    if (comingSignal == signalRcv)
     {
        auto hetMsg=dynamic_cast<cMessage*>(msg);
        l.latency=(simTime()-hetMsg->getTimestamp()).dbl();
@@ -158,14 +135,17 @@ void CollectStats::recordStatsWlan(simsignal_t signal,cObject* msg, listOfCriter
 }
 
 
-std::vector<double> CollectStats::convertStatsToVector(double cri_alter0, double cri_alter1 )
+std::vector<double> CollectStats::convertStatsToVector(double cri_alter0, double cri_alter1, double cri_alter2)
 {
 
     std::vector<double> criteriaList;
     criteriaList.push_back(cri_alter0);
     criteriaList.push_back(cri_alter1);
+    criteriaList.push_back(cri_alter2);
     return criteriaList;
 }
+
+// TODO: implement stats adaptation
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
@@ -175,31 +155,30 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 
       if(interfaceId==0)
       {
-          recordStatsWlan(signal,msg,listOfCriteria80211);
+          recordStats(signal,packetSentToLowerSignal,packetReceivedFromLowerSignal,msg,listOfCriteria80211);
       }
       else if(interfaceId==1)
       {
-          recordStatsWlan(signal,msg,listOfCriteria80215);
+          recordStats(signal,packetSentToLowerSignal,packetReceivedFromLowerSignal,msg,listOfCriteria80215);
       }
       else
       {
-          EV_INFO<< " wrong interface Id "<<endl;
+          EV_INFO<< "no valid interface" << endl;
       }
 
-      if(signal==cbrMsg)
-      {
-          auto cbrMsg= dynamic_cast<Cbr*>(msg) ;
-          listOfCriteriaLte.latency=(simTime()-cbrMsg->getTimestamp()).dbl();
-          //listOfCriteriaLte.receivedPackets++;
-      }
+      // lte
+      recordStats(signal,lteSentMsg,lteRcvdMsg,msg,listOfCriteriaLte);
 
+      std::vector<double> thList=convertStatsToVector(listOfCriteria80211.throughput,
+              listOfCriteria80215.throughput, listOfCriteriaLte.throughput);
 
-      std::vector<double> thList=convertStatsToVector(listOfCriteria80211.throughput, listOfCriteria80215.throughput);
-      std::vector<double> delayList=convertStatsToVector(listOfCriteria80211.latency, listOfCriteria80215.latency);
-      std::vector<double> relList=convertStatsToVector(listOfCriteria80211.reliability, listOfCriteria80215.reliability);
+      std::vector<double> delayList=convertStatsToVector(listOfCriteria80211.latency,
+              listOfCriteria80215.latency, listOfCriteriaLte.latency);
 
-      allPathsCriteriaValues=McdaAlg::buildAllPathThreeCriteria(thList, delayList, relList);
+      std::vector<double> relList=convertStatsToVector(listOfCriteria80211.reliability,
+              listOfCriteria80215.reliability, listOfCriteriaLte.reliability);
 
+      //allPathsCriteriaValues=McdaAlg::buildAllPathThreeCriteria(thList, delayList, relList);
 }
 
 

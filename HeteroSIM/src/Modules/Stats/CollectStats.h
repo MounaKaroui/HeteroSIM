@@ -37,7 +37,7 @@ using namespace inet::physicallayer;
  */
 class CollectStats : public cListener, public cSimpleModule
 {
-  public:
+public:
 
 
     struct listOfCriteria{
@@ -46,37 +46,34 @@ class CollectStats : public cListener, public cSimpleModule
         long    sentPackets;
         double  throughput;
         double  reliability;
-        double  per;
     };
 
     listOfCriteria listOfCriteria80211;
     listOfCriteria listOfCriteria80215;
     listOfCriteria listOfCriteriaLte;
 
+    void  inializeCriteriaList(listOfCriteria& l);
 
+    // throughput
+    simtime_t startTime;    // start time
+    unsigned int batchSize;    // number of packets in a batch
+    simtime_t maxInterval;    // max length of measurement interval (measurement ends
+    // if either batchSize or maxInterval is reached, whichever
+    // is reached first)
+    // global statistics
+    unsigned long numPackets;
+    unsigned long numBits;
 
+    // current measurement interval
+    simtime_t intvlStartTime;
+    simtime_t intvlLastPkTime;
+    unsigned long intvlNumPackets;
+    unsigned long intvlNumBits;
+    std::string allPathsCriteriaValues;
 
-  // throughput
-  simtime_t startTime;    // start time
-  unsigned int batchSize;    // number of packets in a batch
-  simtime_t maxInterval;    // max length of measurement interval (measurement ends
-  // if either batchSize or maxInterval is reached, whichever
-  // is reached first)
-  // global statistics
-  unsigned long numPackets;
-  unsigned long numBits;
-
-  // current measurement interval
-  simtime_t intvlStartTime;
-  simtime_t intvlLastPkTime;
-  unsigned long intvlNumPackets;
-  unsigned long intvlNumBits;
-  std::string allPathsCriteriaValues;
-
-  protected:
+protected:
 
     virtual void initialize();
-    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
 
 
@@ -89,13 +86,12 @@ class CollectStats : public cListener, public cSimpleModule
     FlatRadioBase* mRadioNarrowBand=nullptr;
 
     // Lte
-
     LtePhyVUeMode4* mRadioLte=nullptr;
 
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
     void beginNewInterval(simtime_t now, double& throughput);
-    void recordStatsWlan(simsignal_t signal,cObject* msg, listOfCriteria& l);
-    std::vector<double> convertStatsToVector(double cri_alter0, double cri_alter1);
+    void recordStats(simsignal_t comingSignal,simsignal_t signalSent, simsignal_t signalRcv,cObject* msg, listOfCriteria& l);
+    std::vector<double> convertStatsToVector(double cri_alter0, double cri_alter1, double cri_alter2);
 
 };
 

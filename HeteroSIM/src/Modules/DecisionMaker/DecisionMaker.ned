@@ -29,6 +29,7 @@ simple DecisionMaker
         
         bool mode4IsActive = default(false);
         int criteriaNum=default(3);
+        string pathToConfigFiles=default("/home/mouna1/myNewWorkSpace/HeteroSIM/src/Base/mcda/");
     gates:
 
         input fromApplication[];
