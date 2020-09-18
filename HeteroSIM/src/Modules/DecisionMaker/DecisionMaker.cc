@@ -52,7 +52,7 @@ void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
 
     if(networkType==MODE4)
     {
-        msg->setControlInfo(Builder::LteCtrlInfo(nodeId_));
+        msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
 
     }else
     {
@@ -61,7 +61,7 @@ void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
         std::string name=host->getFullName();
         // Control info is mandatory to pass message
         //to Mgmt layer and then to MAC
-        msg->setControlInfo(Builder::Ieee802CtrlInfo(name));
+        msg->setControlInfo(Utilities::Ieee802CtrlInfo(name));
     }
 
 }
@@ -116,7 +116,7 @@ void DecisionMaker::removePacketsFromQueue(int id)
 
 int DecisionMaker::takeDecision(cMessage* msg)
 {
-    int networkIndex=2;
+    int networkIndex=0; // Just for test IEEE 802.11
     // MCDM_procedure
     HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
     std::string trafficType=hetMsg->getTrafficType();

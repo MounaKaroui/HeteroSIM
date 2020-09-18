@@ -90,9 +90,6 @@ std::string buildAllPathFiveCriteria(std::vector<double> rssi,std::vector<double
 //
 std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double> delay,std::vector<double> rel);
 
-
-std::vector<double> calculateEWA(std::vector<double> crit, double beta, double newSample);
-
 }
 
 #endif // MCDM_ALGORITHMS_H_INCLUDED

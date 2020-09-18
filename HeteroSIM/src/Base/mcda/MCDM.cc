@@ -459,16 +459,7 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes)
     return Acut;
 }
 
-std::vector<double> calculateEWA(std::vector<double> crit, double beta, double newSample)
-{
 
-    for (int i=1; i<crit.size(); i++)
-    {
-        crit.at(i)=crit.at(i-1)*beta +(1-beta)*newSample;
-    }
-
-    return crit;
-}
 
 
 int decisionProcess(std::string allPathsCriteriaValues,std::string path,int critNumb,std::string trafficType,std::string algName)

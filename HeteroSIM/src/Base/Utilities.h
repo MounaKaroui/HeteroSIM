@@ -5,8 +5,8 @@
  *      Author: mouna1
  */
 
-#ifndef BASE_BUILDER_H_
-#define BASE_BUILDER_H_
+#ifndef BASE_UTILITIES_H_
+#define BASE_UTILITIES_H_
 
 #include "inet/linklayer/common/Ieee802Ctrl.h"
 #include "common/LteControlInfo.h"
@@ -15,13 +15,13 @@ using namespace inet;
 
 
 
-namespace Builder {
+namespace Utilities {
 
 Ieee802Ctrl* Ieee802CtrlInfo(std::string moduleName);
 FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_);
 int extractNumber(std::string input);
-
+double calculateEWA_BiasCorrection(std::vector<double> crit, double beta);
 
 } /* namespace Builder */
 
-#endif /* BASE_BUILDER_H_ */
+#endif /* BASE_UTILITIES_H_ */

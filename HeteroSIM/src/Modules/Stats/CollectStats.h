@@ -25,7 +25,8 @@
 #include "inet/linklayer/csma/CSMA.h"
 
 #include <omnetpp.h>
-#include "Base/Builder.h"
+
+#include "../../Base/Utilities.h"
 #include "stack/phy/layer/LtePhyVUeMode4.h"
 
 
@@ -39,60 +40,43 @@ class CollectStats : public cListener, public cSimpleModule
 {
 public:
 
-
     struct listOfCriteria{
-        double  latency;
-        long    receivedPackets;
-        long    sentPackets;
-        double  throughput;
-        double  reliability;
+        std::vector<double>  latency;
+        std::vector<long>     receivedPackets;
+        std::vector<long>    sentPackets;
+        std::vector<double>   throughput;
+        std::vector<double>  reliability;
     };
 
     listOfCriteria listOfCriteria80211;
     listOfCriteria listOfCriteria80215;
     listOfCriteria listOfCriteriaLte;
-
-    void  inializeCriteriaList(listOfCriteria& l);
-
-    // throughput
-    simtime_t startTime;    // start time
-    unsigned int batchSize;    // number of packets in a batch
-    simtime_t maxInterval;    // max length of measurement interval (measurement ends
-    // if either batchSize or maxInterval is reached, whichever
-    // is reached first)
-    // global statistics
-    unsigned long numPackets;
-    unsigned long numBits;
-
-    // current measurement interval
-    simtime_t intvlStartTime;
-    simtime_t intvlLastPkTime;
-    unsigned long intvlNumPackets;
-    unsigned long intvlNumBits;
     std::string allPathsCriteriaValues;
+    double dtlMin;
+
+    // throughput calculation related variables
+
+    simtime_t startTime=0;    // start time
+    unsigned int batchSize=10;    // number of packets in a batch
+    simtime_t maxInterval=1;    // max length of measurement interval
+    //(measurement ends if either batchSize or maxInterval is reached, whichever is reached first)
+    unsigned long numPackets=0;
+    unsigned long numBits=0;
+    // current measurement interval
+    simtime_t intvlStartTime=0;
+    simtime_t intvlLastPkTime=0;
+    unsigned long intvlNumPackets=0;
+    unsigned long intvlNumBits=0;
+
+
 
 protected:
 
     virtual void initialize();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
-
-
-    // 802.11
-    Ieee80211Radio* mRadio80211 = nullptr;
-    inet::ieee80211::Ieee80211Mac* mLinkLayer80211=nullptr;
-
-    // 802.15
-    CSMA* mLinkLayerNarrowBand=nullptr;
-    FlatRadioBase* mRadioNarrowBand=nullptr;
-
-    // Lte
-    LtePhyVUeMode4* mRadioLte=nullptr;
-
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
-    void beginNewInterval(simtime_t now, double& throughput);
     void recordStats(simsignal_t comingSignal,simsignal_t signalSent, simsignal_t signalRcv,cObject* msg, listOfCriteria& l);
-    std::vector<double> convertStatsToVector(double cri_alter0, double cri_alter1, double cri_alter2);
-
+    void prepareNetAttributes(double cv, double dtl);
 };
 
 #endif

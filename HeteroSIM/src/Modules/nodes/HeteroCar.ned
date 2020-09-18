@@ -61,13 +61,12 @@ module car
         int macNodeId = default(0); // TODO: this is not a real parameter
         //int macCellId = default(0); // TODO: this is not a real parameter
 
-        *.macModule80215 = absPath(".wlan[1].mac");
-        *.radioModule80215 = absPath(".wlan[1].radio");
         
+      
 		*.macModule80211 = absPath(".wlan[0].mac");
-        *.radioModule80211 = absPath(".wlan[0].radio");
-        
+		*.macModule80215 = absPath(".wlan[1].mac") ;		
         *.radioModuleLte=absPath(".lteNic.phy");
+        
 
     gates:
         input radioIn[numRadios] @directIn;
@@ -107,6 +106,9 @@ module car
         statistics: <default("CollectStats")> like IStatistics {
             parameters:
                 @display("p=1050.45,223.49998;is=s");
+                
+              
+        		
 
         }
     connections allowunconnected:
@@ -126,6 +128,7 @@ module car
 
 
         if (withMode4) {
+            
             lteNic.radioIn <-- lteRadioIn;
             decisionMaker.toRadio++ --> lteNic.upperLayerIn;
             lteNic.upperLayerOut --> decisionMaker.fromRadio++;

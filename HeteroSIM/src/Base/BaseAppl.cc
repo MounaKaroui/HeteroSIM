@@ -21,8 +21,10 @@ void BaseAppl::initialize()
 {
     toDecisionMaker =findGate("toDecisionMaker");
     fromDecisionMaker=findGate("toDecisionMaker");
+
     updateInterval=par("updateInterval").doubleValue();
     msgLength=par("msgLength").intValue();
+
     appIndex=par("appIndex").intValue();
     appName=par("appName").stringValue();
     setNodeId();
@@ -32,7 +34,7 @@ void BaseAppl::setNodeId()
 {
     cModule* host = inet::getContainingNode(this);
     std::string name=host->getFullName();
-    nodeId=Builder::extractNumber(name.c_str());
+    nodeId=Utilities::extractNumber(name.c_str());
 }
 
 
@@ -42,11 +44,14 @@ HeterogeneousMessage* BaseAppl::BuildMsg(std::string name)
 
             HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
             heteroMsg->setName(name.c_str());
+
             heteroMsg->setByteLength(msgLength);
             heteroMsg->setTimestamp(simTime());
-            heteroMsg->setAppName(appName.c_str());
-            heteroMsg->setNodeId(nodeId);
+
+            heteroMsg->setTrafficType(appName.c_str());
             heteroMsg->setApplId(appIndex);
+
+            heteroMsg->setNodeId(nodeId);
 
             return  heteroMsg;
         }

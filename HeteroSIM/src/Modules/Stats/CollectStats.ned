@@ -23,17 +23,15 @@ import inet.linklayer.ieee80211.mac.contract.IStatistics;
 
 simple CollectStats like IStatistics
 {
-    
-    
+   
     parameters:
-          
           // 802.11
-          string radioModule80211=default("");
-          string macModule80211=default("");
-          
+          string macModule80211=default(""); 
           // 802.15
-          string radioModule80215=default("");
           string macModule80215=default("");
           // Lte
           string radioModuleLte=default("");
+          
+          double dtlMin=default(0.1);
+          
 }

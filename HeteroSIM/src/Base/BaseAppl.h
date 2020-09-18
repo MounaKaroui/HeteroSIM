@@ -18,9 +18,8 @@
 
 #include<omnetpp.h>
 #include "Modules/messages/HeterogeneousMessage_m.h"
-#include "Builder.h"
+#include "Utilities.h"
 
-using namespace Builder;
 using namespace omnetpp;
 
 class BaseAppl: public cSimpleModule{

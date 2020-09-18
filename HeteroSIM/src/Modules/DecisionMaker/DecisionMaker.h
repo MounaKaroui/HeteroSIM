@@ -17,9 +17,10 @@
 #define __HETEROSIM_DECISIONMAKER_H_
 
 #include <omnetpp.h>
+
+#include "../../Base/Utilities.h"
 #include "../../Modules/messages/HeterogeneousMessage_m.h"
 #include "corenetwork/binder/LteBinder.h"
-#include "Base/Builder.h"
 #include "Base/mcda/MCDM.h"
 using namespace omnetpp;
 using namespace inet;
