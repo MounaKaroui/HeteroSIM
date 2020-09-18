@@ -25,7 +25,7 @@ packet HeterogeneousMessage
 
 	string sourceAddress;
 	string destinationAddress;
-	string appName;
+	string trafficType;
 	int applId; // the index of the gate
 	int nodeId;
 	int networkId; // for the stats
