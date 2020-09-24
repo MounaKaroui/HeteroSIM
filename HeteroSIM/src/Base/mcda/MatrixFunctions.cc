@@ -36,9 +36,9 @@ int rankOfMatrix(Matrix mtx)
 {
     int C=mtx.size(2);
     int R=mtx.size(1);
-    int rank = C;
+    int rank_ = C;
 
-    for (int row=0; row<rank; row++)
+    for (int row=0; row<rank_; row++)
     {
         // Before we visit current row 'row', we make
         // sure that mat[row][0],....mat[row][row-1]
@@ -54,7 +54,7 @@ int rankOfMatrix(Matrix mtx)
                     // This makes all entries of current
                     // column as 0 except entry 'mat[row][row]'
                     double mult = mtx.at(col,row) / mtx.at(row,row);
-                    for (int i = 0; i < rank; i++)
+                    for (int i = 0; i < rank_; i++)
                         mtx.at(col,i) -= mult * mtx.at(row,i);
                 }
             }
@@ -80,7 +80,7 @@ int rankOfMatrix(Matrix mtx)
                 // with this row.
                 if (mtx.at(i,row))
                 {
-                    swapRows(mtx, row, i,rank);
+                    swapRows(mtx, row, i,rank_);
                     reduce = false;
                     break ;
                 }
@@ -91,29 +91,29 @@ int rankOfMatrix(Matrix mtx)
             if (reduce)
             {
                 // Reduce number of columns
-                rank--;
+                rank_--;
 
                 // Copy the last column here
                 for (int i = 0; i < R; i ++)
-                    mtx.at(i,row) = mtx.at(i,rank);
+                    mtx.at(i,row) = mtx.at(i,rank_);
             }
 
             // Process this row again
             row--;
         }
     }
-    return rank;
+    return rank_;
 }
 
 //calculate determinant of a square matrix
 double determinant(Matrix a, int n)
 {
     int i,j,j1,j2;
-    int rank=rankOfMatrix(a);
+    int rank_=rankOfMatrix(a);
     double det = 0;
     Matrix m(a.size(1),a.size(2));
 
-    if (rank < n)   /* Error */
+    if (rank_ < n)   /* Error */
     {
         det =0;
     }
@@ -209,7 +209,7 @@ Matrix inv(Matrix a)
     //std::cout<<n<<"\n";
     det=determinant(a,n);
     //std::cout<<"Determinant is: "<<det<<"\n";
-    assert(abs(det) >= 0.000001);
+    //assert(abs(det) >= 0.000001);
     Matrix b(a.size(1),a.size(2));  //complementary one
     coFactor(a,n, b);
     //b.print();           //calc matrix of cofactors
@@ -328,21 +328,17 @@ int minIndex(Matrix a, int place, std::string dim)
     return mini;
 }
 
-// sum for entropy calculation
+
 double entropicSum(Matrix a, int place)
 {
         int n=a.size(1);
         double sum{0};
         for (int i=0; i<n;i++)
         {
-            if(a.at(i, place)!=0)
-            {
             sum+=a.at(i,place)*std::log(a.at(i,place));
-            }
         }
     return sum;
 }
-
 //find the sum of elements of a matrix in a given row  or column (1)
 double sum(Matrix a, int place, std::string dim)
 {

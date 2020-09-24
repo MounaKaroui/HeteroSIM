@@ -1,6 +1,6 @@
-#include "MCDM.h"
+#include "../mcda/MCDM.h"
 #include<boost/lexical_cast.hpp>
-
+#include <string>
 namespace McdaAlg {};
 namespace McdaAlg
 {
@@ -31,7 +31,10 @@ Matrix parseInputString(const std::string &input, char delim, int critNumb)
             std::istringstream istr(out[i+j*critNumb]);
             std::string temp;
             istr>>temp;
-            outNumb.at(j,i) = std::stod(temp);
+            if (temp=="-inf")   //handle case when there is AP with -inf RSS value
+                outNumb.at(j,i) = -100;
+            else
+                outNumb.at(j,i) = std::stod(temp);
         }
     }
     return outNumb;
@@ -51,7 +54,7 @@ void showSetNorma(std::vector<Norma> &norm)
 }
 
 //read parameters fro enhMaxMin from file enhNorm.dat
-std::vector<Norma> setNorma(std::string path,int critNumb)
+std::vector<Norma> setNorma(int critNumb, std::string path)
 {
     std::vector<Norma> norm;
     std::ifstream inf(path+"enhNorm"+std::to_string(critNumb)+".dat");
@@ -100,7 +103,7 @@ std::vector<Norma> selectNormCriteria(std::vector<Norma> norm, Matrix decisionCr
 }
 
 
-Matrix enhMaxMin(Matrix a, std::vector<Norma> norm)
+Matrix norm1(Matrix a, std::vector<Norma> norm)
 {
     int m = a.size(1);
     int n = a.size(2);
@@ -127,7 +130,74 @@ Matrix enhMaxMin(Matrix a, std::vector<Norma> norm)
     return d;
 }
 
-Matrix readPreferences(std::string path,std::string trafficType, int critNumb)
+
+//read parameters fro enhMaxMin from file enhNorm.dat
+std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a)
+{
+    std::vector<Norma> norm;
+    std::ifstream inf(path+"enhNorm"+std::to_string(critNumb)+".dat");
+    // If we couldn't open the output file stream for reading
+    if (!inf)
+    {
+        // Print an error and exit
+        std::cerr << "Uh oh, file with normalization values could not be opened for reading!" <<"\n";
+        exit(1);
+    }
+    // While there's still stuff left to read
+    while (inf)
+    {
+        // read stuff from the file into matrix A elements
+        for (int i=0; i<critNumb; i++)
+        {
+            //Push back new subject created with default constructor.
+            norm.push_back(Norma());
+            //Vector now has 1 element @ index 0, so modify it.
+            inf>>norm[i].nameCrit;
+            inf>>norm[i].upwardType;
+            if(norm[i].upwardType==1)
+            {
+                norm[i].upwardType=true;
+            }else
+            {
+                norm[i].upwardType=false;
+            }
+            norm[i].u=maxElement(a,i,"column");
+            norm[i].l=minElement(a,i,"column");
+        }
+    }
+    norm.resize(critNumb); //assure proper size
+    return norm;
+}
+
+Matrix norm3(Matrix a, std::vector<Norma> norm)
+{
+    int m = a.size(1);
+    int n = a.size(2);
+    Matrix d(m,n);
+    for (int j=0; j<n; j++)
+    {
+        if (norm[j].upwardType == 1)
+        {
+            for (int i=0; i<m; i++)
+            {
+                d.at(i,j) = a.at(i,j) / (norm[j].u);
+                //std::cout<<d.at(i,j)<<"\n";
+            }
+        }
+        else
+        {
+            for (int i=0; i<m; i++)
+            {
+                d.at(i,j) = (norm[j].l) / (a.at(i,j));
+                //std::cout<<d.at(i,j)<<"\n";
+            }
+        }
+    }
+    return d;
+}
+
+
+Matrix readPreferences(std::string trafficType,std::string path, int critNumb)
 {
 
     Matrix A(critNumb,critNumb);
@@ -156,6 +226,15 @@ Matrix readPreferences(std::string path,std::string trafficType, int critNumb)
 }
 
 
+
+void displayExpression(Matrix D, int i, int j)
+{
+std::cout<< "D("+ std::to_string(i) +","+ std::to_string(j)+")*log(D("+std::to_string(i) +","+ std::to_string(j)+"))= "
+<< (D.at(i,j)*std::log(D.at(i,j))) <<"\n";
+}
+//
+// TODO (mouna1#1#): Correct entropy ...
+//
 Matrix entropy_weighting(Matrix D)
 {
 
@@ -163,25 +242,64 @@ Matrix entropy_weighting(Matrix D)
     int n=int(alterNum);
     Matrix W(n,1);
     Matrix H(n,1);
+    Matrix r(n,D.size(2));
 
+    for (int i=0; i<n; i++)
+    {
+    for(int j=0; j<D.size(2); j++)
+    {
+    r.at(j,i)=D.at(j,i)/sum(D,i,"column");
+    }
+    }
+
+    std::cout<<"r= \n" ;
+    r.print();
+
+    double h=-1/std::log(alterNum);
     for (int i=0; i<n; i++)
     {
     for(int j=0; j<H.size(2); j++)
     {
-    H.at(i,j)=(-1/std::log(alterNum))*entropicSum(D,i);  // --> entropy calculation of each criteria
+
+    H.at(i,j)=(h*entropicSum(r,i));
+
     }
     }
-   // std::cout << "entropy " <<"\n"; //--> entropy validation
-   // H.print();
+    std::cout << "entropy " <<"\n";
+    H.print();
+    double sh=0;
+
 
     for(int i=0; i<n; i++)
     {
     for(int j=0; j<W.size(2); j++)
     {
-    W.at(i,j)=(1-H.at(i,j))/(alterNum-sum(H,j,"column"));
+         W.at(i,j)=(1-H.at(i,j))/(alterNum-sum(H,0,"column"));
+
     }
     }
     return W;
+}
+
+
+
+
+
+Matrix hybrid_weighting(Matrix w_s, Matrix w_obj, double k)
+{
+
+    Matrix W(w_s.size(1),1);
+
+    for (int i=0; i<W.size(1);i++)
+    {
+    for(int j=0; j<W.size(2);j++)
+    {
+     W.at(i,j)=k*w_s.at(i,j)+(1-k)*w_obj.at(i,j);
+    }
+    }
+    return W;
+
+
 }
 
 
@@ -202,22 +320,6 @@ Matrix wls_weighting(Matrix A)
     return w;
 }
 
-Matrix hybrid_weighting(Matrix w_s, Matrix w_obj, double k)
-{
-
-    Matrix W(w_s.size(1),1);
-
-    for (int i=0; i<W.size(1);i++)
-    {
-    for(int j=0; j<W.size(2);j++)
-    {
-     W.at(i,j)=k*w_s.at(i,j)+(1-k)*w_obj.at(i,j);
-    }
-    }
-    return W;
-
-
-}
 
 
 
@@ -335,6 +437,8 @@ double random(int min, int max)
     return static_cast<int>(rand() * fraction * (max - min + 1) + min);
 }
 
+
+
 //VIKOR version w/o stability checking
 Matrix VIKOR(Matrix D, Matrix W,  double v)
 {
@@ -343,8 +447,13 @@ Matrix VIKOR(Matrix D, Matrix W,  double v)
     checkAndModifyInputForVikor(D);         //in case of identical values
     Matrix ideal = idealSolution(D);        //find ideal solution
     Matrix antiIdeal = antiIdealSolution(D);    // anti-ideal
-    //ideal.print();
-    //antiIdeal.print();
+
+
+    std::cout<<"\n Ideal solution:";
+    ideal.print();
+    std::cout<<"\n Anti-ideal solution:";
+    antiIdeal.print();
+
     Matrix S(altNumb,1);
     Matrix R(altNumb,1);
     for (int i=0; i<altNumb; i++)
@@ -360,8 +469,10 @@ Matrix VIKOR(Matrix D, Matrix W,  double v)
 
 
     }
-    //R.print();
-    //S.print();
+    std::cout<< "R= ";
+    R.print();
+    std::cout<< "S= " ;
+    S.print();
 
     double Rplus =  maxElement(R,0,"column");
     //std::cout<<"R+ "<<Rplus<<"\n";
@@ -384,8 +495,6 @@ Matrix VIKOR(Matrix D, Matrix W,  double v)
     //Q.print();
     return Q;
 }
-
-
 //overloaded VIKOR w stability checking
 Matrix VIKOR( Matrix D, Matrix W, bool &checkStability)
 {
@@ -440,7 +549,6 @@ Matrix VIKOR( Matrix D, Matrix W, bool &checkStability)
 
 
 
-
 Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes)
 {
     int cutCritNumb=decisionCriteriaIndexes.size(1);
@@ -456,36 +564,33 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes)
     return Acut;
 }
 
-
-
-
 int decisionProcess(std::string allPathsCriteriaValues,std::string path,int critNumb,std::string trafficType,std::string algName)
 {
 
-    std::vector<Norma> norm = setNorma(path,critNumb); //set norm parameters
     Matrix C = parseInputString(allPathsCriteriaValues,',',critNumb);
     std::cout<<"Criteria matrix : " <<"\n";
     C.print();
+    std::vector<Norma> norm = setNorma3(critNumb,path,C); //set norm parameters
 
     std::cout<<"Normalized matrix : " <<"\n";
 
     // Normalization stage ...
-    Matrix D = enhMaxMin(C,norm);
+    Matrix D = norm3(C,norm);
     D.print();
     // weighting stage ...
-    Matrix A = readPreferences(path,trafficType,critNumb);
+    Matrix A = readPreferences(trafficType,path,critNumb);
     Matrix W_s = wls_weighting(A);
     std::cout<<"Subjective Weighted matrix : " <<"\n";
     W_s.print();
 
     Matrix W_obj= entropy_weighting(D);
+
     std::cout<<"Objective Weighted matrix : " <<"\n";
     W_obj.print();
 
     Matrix W=hybrid_weighting(W_s,W_obj,0.9);
     std::cout<<"Hybrid Weighted matrix : " <<"\n";
     W.print();
-
     // decision stage ...
 
     Matrix score(D.size(1),1);
@@ -503,7 +608,7 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
     else
         std::cerr<<"Wrong entered name!!\n";
 
-    std::cout<<"Score : " <<"\n";
+    std::cout<<"Score with " << algName << ": "<<"\n";
     score.print();
 
     int bestIndexFromGood=0;
@@ -516,7 +621,7 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
 
 
 
-std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double> delay,std::vector<double> rel)
+std::string buildAllPathThreeCriteria(std::vector<double> datarate,std::vector<double> delay,std::vector<double> Th)
 {
 
 	std::string allPathsCriteriaValues = "";
@@ -530,17 +635,17 @@ std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double>
 
     criteriaStr.push_back(
 	                boost::lexical_cast<std::string>(
-	                        th.at(i)));
+	                        datarate.at(i)));
 
 	criteriaStr.push_back(
 	                boost::lexical_cast<std::string>(
 	                        delay.at(i)));
     criteriaStr.push_back(
 	                boost::lexical_cast<std::string>(
-	                        rel.at(i)));
+	                        Th.at(i)));
     }
 
-	for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
+	for (int a = 0; a < criteriaStr.size(); ++a) {
 		if (a == 0) {
 			pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
 		} else {
@@ -559,6 +664,56 @@ std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double>
 
 
 
+
+std::string buildAllPathFiveCriteria(std::vector<double> rssi,std::vector<double> delay,std::vector<double> jitter
+,std::vector<double> th, std::vector<double> cost)
+{
+
+	std::string allPathsCriteriaValues = "";
+	std::string pathsCriteriaValues = "";
+	std::vector<std::string> criteriaStr;
+    std::string critValuesPerPathStr = "";
+    // rssi,  delay, jitter , throughput, cost should have the same length
+    int s=delay.size();
+    for(int i=0; i<s; i++)
+    {
+
+    criteriaStr.push_back(
+	                boost::lexical_cast<std::string>(
+	                        rssi.at(i)));
+
+	criteriaStr.push_back(
+	                boost::lexical_cast<std::string>(
+	                        delay.at(i)));
+    criteriaStr.push_back(
+	                boost::lexical_cast<std::string>(
+	                        jitter.at(i)));
+
+    criteriaStr.push_back(
+	                boost::lexical_cast<std::string>(
+	                        th.at(i)));
+
+    criteriaStr.push_back(
+	                boost::lexical_cast<std::string>(
+	                        cost.at(i)));
+    }
+
+	for (int a = 0; a < criteriaStr.size(); ++a) {
+		if (a == 0) {
+			pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
+		} else {
+			pathsCriteriaValues = pathsCriteriaValues + ","
+					+ criteriaStr[a];
+		}}
+
+	allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
+			+ ",";
+	criteriaStr.clear();
+
+    //std::cout<<"All paths criteria values:  "<<allPathsCriteriaValues<<"\n";
+
+	return allPathsCriteriaValues;
+}
 
 
 

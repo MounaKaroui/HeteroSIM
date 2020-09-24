@@ -42,9 +42,7 @@ int maxIndex(Matrix a, int place, std::string dim);
 //find the min element of a matrix in a given row (2) or column (1)
 int minIndex(Matrix a, int place, std::string dim);
 
-// find sum for entropy
 double entropicSum(Matrix a, int place);
-
 //find the sum of elements of a matrix in a given row  or column (1)
 double sum(Matrix a, int place, std::string dim);
 
