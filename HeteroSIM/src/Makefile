@@ -1,12 +1,12 @@
 #
-# OMNeT++/OMNEST Makefile for $(LIB_PREFIX)heteroSim
+# OMNeT++/OMNEST Makefile for $(LIB_PREFIX)HeteroSIM
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -o heteroSim -O out -pHeteroSIM -S -KINET_PROJ=../../inet -KLTE_PROJ=/home/mouna1/SimuLTE_comparison/simuLTE_mode4/simulte -DINET_IMPORT -I. -I$$\(INET_PROJ\)/src -I$$\(LTE_PROJ\)/src -L$$\(INET_PROJ\)/src -L$$\(LTE_PROJ\)/src -lINET$$\(D\) -llte$$\(D\)
+#  opp_makemake --make-so -f --deep -O out -KINET_PROJ=../../inet -KLTE_PROJ=/home/mouna1/SimuLTE_comparison/simuLTE_mode4/simulte -DINET_IMPORT -I. -I$$\(INET_PROJ\)/src -I$$\(LTE_PROJ\)/src -L$$\(INET_PROJ\)/src -L$$\(LTE_PROJ\)/src -lINET$$\(D\) -llte$$\(D\)
 #
 
 # Name of target to be created (-o option)
-TARGET = $(LIB_PREFIX)heteroSim$(D)$(SHARED_LIB_SUFFIX)
+TARGET = $(LIB_PREFIX)HeteroSIM$(D)$(SHARED_LIB_SUFFIX)
 TARGET_DIR = .
 
 # C++ include paths (with -I)
@@ -26,12 +26,11 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 # Object files for local .cc, .msg and .sm files
 OBJS = \
     $O/Base/BaseAppl.o \
-    $O/Base/Builder.o \
+    $O/Base/Utilities.o \
     $O/Base/mcda/Matrix.o \
     $O/Base/mcda/MatrixFunctions.o \
     $O/Base/mcda/MCDM.o \
     $O/Modules/DecisionMaker/DecisionMaker.o \
-    $O/Modules/Mode4Driver/Mode4Driver.o \
     $O/Modules/Stats/CollectStats.o \
     $O/Modules/application/VanetApp.o \
     $O/VanetNic/VanetRadio.o \
@@ -74,8 +73,8 @@ ifneq ($(TOOLCHAIN_NAME),clangc2)
 LIBS += -Wl,-rpath,$(abspath $(INET_PROJ)/src) -Wl,-rpath,$(abspath $(LTE_PROJ)/src)
 endif
 
-COPTS = $(CFLAGS) $(IMPORT_DEFINES) -DINET_IMPORT -DHeteroSIM_EXPORT $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)
-MSGCOPTS = $(INCLUDE_PATH) -PHeteroSIM_API
+COPTS = $(CFLAGS) $(IMPORT_DEFINES) -DINET_IMPORT $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)
+MSGCOPTS = $(INCLUDE_PATH)
 SMCOPTS =
 
 # we want to recompile everything if COPTS changes,
@@ -89,9 +88,6 @@ endif
 #------------------------------------------------------------------------------
 # User-supplied makefile fragment(s)
 # >>>
-# inserted from file 'makefrag':
-MSGC:=$(MSGC) --msg4
-
 # <<<
 #------------------------------------------------------------------------------
 
