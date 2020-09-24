@@ -42,11 +42,14 @@ public:
 
     struct listOfCriteria{
         std::vector<double>  latency;
-        std::vector<long>     receivedPackets;
-        std::vector<long>    sentPackets;
+        std::vector<double>     receivedPackets;
+        std::vector<double>    sentPackets;
         std::vector<double>   throughput;
         std::vector<double>  reliability;
     };
+
+    double sent=0;
+    double rcvd=0;
 
     listOfCriteria listOfCriteria80211;
     listOfCriteria listOfCriteria80215;
@@ -57,7 +60,7 @@ public:
     // throughput calculation related variables
 
     simtime_t startTime=0;    // start time
-    unsigned int batchSize=10;    // number of packets in a batch
+    unsigned int batchSize=1;    // number of packets in a batch
     simtime_t maxInterval=1;    // max length of measurement interval
     //(measurement ends if either batchSize or maxInterval is reached, whichever is reached first)
     unsigned long numPackets=0;
@@ -68,15 +71,27 @@ public:
     unsigned long intvlNumPackets=0;
     unsigned long intvlNumBits=0;
 
-
+    simsignal_t delay80211;
+    simsignal_t delay80215;
+    simsignal_t delayLte;
+    simsignal_t criteriaListSignal;
 
 protected:
+
+    //virtual void handleMessage(cMessage *msg);
 
     virtual void initialize();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
     void recordStats(simsignal_t comingSignal,simsignal_t signalSent, simsignal_t signalRcv,cObject* msg, listOfCriteria& l);
-    void prepareNetAttributes(double cv, double dtl);
+    double prepareNetAttributes();
+    std::vector<double> prepareData(std::vector<double> v1, std::vector<double> v2, std::vector<double> v3);
+    double calculateCofficientOfVariation(std::vector<double> v);
+    double getBeta(double n);
+    double updateDTL(double x);
+    void virtual finish();
+
+
 };
 
 #endif

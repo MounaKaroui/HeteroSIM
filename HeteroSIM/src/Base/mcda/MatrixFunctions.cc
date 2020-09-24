@@ -335,7 +335,10 @@ double entropicSum(Matrix a, int place)
         double sum{0};
         for (int i=0; i<n;i++)
         {
+            if(a.at(i, place)!=0)
+            {
             sum+=a.at(i,place)*std::log(a.at(i,place));
+            }
         }
     return sum;
 }

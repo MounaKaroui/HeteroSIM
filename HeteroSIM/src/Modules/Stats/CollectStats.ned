@@ -34,4 +34,14 @@ simple CollectStats like IStatistics
           
           double dtlMin=default(0.1);
           
+        @signal[latency80211];
+        @statistic[latency80211](source="latency80211"; record=vector);
+        
+        @signal[latency80215];
+        @statistic[latency80215](source="latency80215"; record=vector);
+        
+        @signal[latencyLte];
+        @statistic[latencyLte](source="latencyLte"; record=vector);
+          
+        @signal[criteriaListSignal];  
 }

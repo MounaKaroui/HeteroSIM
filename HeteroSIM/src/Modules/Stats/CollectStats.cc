@@ -16,12 +16,11 @@
 #include "CollectStats.h"
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
-
+#include <numeric>
 
 
 static const simsignal_t packetSentToLowerSignal = cComponent::registerSignal("packetSentToLower");
 static const simsignal_t packetReceivedFromLowerSignal = cComponent::registerSignal("packetReceivedFromLower");
-
 static const  simsignal_t lteSentMsg = cComponent::registerSignal("sentMsg"); // LTE sent Msg
 static const  simsignal_t lteRcvdMsg = cComponent::registerSignal("receivedMsg"); // LTE received Msg
 
@@ -55,6 +54,12 @@ void CollectStats::initialize()
     }
 
     dtlMin=par("dtlMin").doubleValue();
+    delay80211= registerSignal("latency80211");
+    delay80215= registerSignal("latency80215");
+    delayLte= registerSignal("latencyLte");
+    criteriaListSignal=registerSignal("criteriaListSignal");
+
+
 }
 
 
@@ -83,12 +88,10 @@ void CollectStats::computeThroughput(simtime_t now, unsigned long bits, double& 
 }
 
 
-
 void CollectStats::recordStats(simsignal_t comingSignal, simsignal_t signalSent, simsignal_t signalRcv,cObject* msg, listOfCriteria& l)
 {
     // local variables
-    long sent=0;
-    long rcv=0;
+
     double latency=0;
     double th=0;
     double rel=0;
@@ -109,29 +112,96 @@ void CollectStats::recordStats(simsignal_t comingSignal, simsignal_t signalSent,
         computeThroughput(simTime(), PK(hetMsg)->getBitLength(),th);
         l.throughput.push_back(th);
         // rcved packets
-        rcv++;
-        l.receivedPackets.push_back(rcv);
+        rcvd++;
+        l.receivedPackets.push_back(rcvd);
     }
 
     if(sent!=0)
     {
-        rel=(rcv/sent)*100;
+        rel=(rcvd/(sent+rcvd))*100;
         l.reliability.push_back(rel);
     }
 }
 
 
-
-void CollectStats::prepareNetAttributes(double cv, double dtl)
+double CollectStats::calculateCofficientOfVariation(std::vector<double> v)
 {
 
-    // TODO: implement DTL adaptation
-    // dtl=f(cv)
+    double n=v.size();
+    double sum=0;
+    double mean=0;
+    double sq_sum=0;
+    double stdev=0;
 
-    // TODO: call EMA
-    // return allPathsCriteriaValues for criteria matrix
+    if(n!=0)
+    {
+        sum = std::accumulate(v.begin(), v.end(), 0.0);
+        mean = sum / v.size();
 
+        sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0);
+        stdev = std::sqrt(sq_sum / v.size() - mean * mean);
+    }
+
+
+    return stdev/mean;
 }
+
+
+double CollectStats::getBeta(double n)
+{
+    return 2/(n+1);
+}
+std::vector<double> CollectStats::prepareData(std::vector<double> v1, std::vector<double> v2, std::vector<double> v3)
+{
+    std::vector<double>  v;
+    if((v1.size()>2)&&(v2.size()>2) &&(v3.size()>2))
+    {
+        // v1.back(); --> give the last value
+        //  TODO: search beta for EWA
+
+        double l1=Utilities::calculateEWA_BiasCorrection(v1,getBeta(v1.size())); // TODO: verify beta
+        double l2=Utilities::calculateEWA_BiasCorrection(v2,getBeta(v2.size()));;
+        double l3=Utilities::calculateEWA_BiasCorrection(v3,getBeta(v3.size()));;
+        double myarray [] = {l1,l2,l3};
+        v.insert(v.begin(), myarray, myarray+3);
+    }
+    return v;
+}
+
+double CollectStats::updateDTL(double x)
+{
+    return exp(-1*x) + dtlMin;
+}
+
+double CollectStats::prepareNetAttributes()
+{
+
+   std::vector<double> vTh=prepareData(listOfCriteria80211.throughput,listOfCriteria80215.throughput,listOfCriteriaLte.throughput);
+   std::vector<double> vLatency=prepareData(listOfCriteria80211.latency,listOfCriteria80215.latency,listOfCriteriaLte.latency);
+   std::vector<double> vRel=prepareData(listOfCriteria80211.reliability,listOfCriteria80215.reliability,listOfCriteriaLte.reliability);
+
+   double cv_th=0;
+   double cv_l=0;
+   double cv_rel=0;
+   double cv=0;
+   double dtl=0;
+
+   if(!vTh.empty() && !vLatency.empty() && !vRel.empty())
+   {
+        allPathsCriteriaValues=McdaAlg::buildAllPathThreeCriteria(vTh, vLatency, vRel);
+        // TODO: verify cv and dtl
+        cv_th=calculateCofficientOfVariation(vTh);
+        cv_l=calculateCofficientOfVariation(vLatency);
+        cv_rel=calculateCofficientOfVariation(vRel);
+        cv=(cv_th+cv_l+cv_rel)/3;
+        dtl=updateDTL(cv);
+   }
+
+   // TODO: implement DTL adaptation
+
+   return dtl;
+}
+
 
 
 
@@ -158,15 +228,38 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 
     // lte
     recordStats(signal,lteSentMsg,lteRcvdMsg,msg,listOfCriteriaLte);
+    prepareNetAttributes();
+   // emit(criteriaListSignal,allPathsCriteriaValues.c_str());
+
+//    cv_l=calculateCofficientOfVariation(listOfCriteria80211.latency);
+//    cv_th=calculateCofficientOfVariation(listOfCriteria80211.throughput);
+//    cv_rel=calculateCofficientOfVariation(listOfCriteria80211.reliability);
+
+//    cv_latency.record(cv_l);
+//    cv_throughput.record(cv_th);
+//    cv_reliability.record(cv_rel);
+//
+//    if(!listOfCriteria80211.latency.empty())
+//        emit(delay80211, listOfCriteria80211.latency.back());
+//
+//    if(!listOfCriteria80215.latency.empty())
+//            emit(delay80215, listOfCriteria80215.latency.back());
+//
+//    if(!listOfCriteriaLte.latency.empty())
+//            emit(delayLte, listOfCriteriaLte.latency.back());
+
     //double test=Utilities::calculateEWA_BiasCorrection(listOfCriteria80211.latency,0.3);
     //std::cout<< "test ema = " << test;
-    // verif
+    // verif EMA
     //std::cout << "latency= "  << listOfCriteria80211.latency;
-
     // TODO call prepareNetAttributes
-
 
 }
 
 
+void CollectStats::finish()
+{
+
+
+}
 

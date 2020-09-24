@@ -18,7 +18,11 @@
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
 #include "Modules/Stats/CollectStats.h"
+#include <stdlib.h>     /* srand, rand */
 Define_Module(DecisionMaker);
+
+
+//static const simsignal_t criteriaListSignal = cComponent::registerSignal("criteriaListSignal");
 
 
 void DecisionMaker::initialize()
@@ -31,7 +35,9 @@ void DecisionMaker::initialize()
     {
         registerNodeToBinder();
     }
-
+//    cModule* mStats=getParentModule()->getSubmodule("statistics");
+//    CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+//    stats->subscribe(criteriaListSignal, this);
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -111,27 +117,51 @@ void DecisionMaker::removePacketsFromQueue(int id)
 }
 
 
-
+//void DecisionMaker::receiveSignal (cComponent *source, simsignal_t signal, const char *s, cObject *details)
+//{
+//    if(signal==criteriaListSignal)
+//    {
+//        allPathsCriteriaValues=s;
+//    }
+//
+//}
 
 
 int DecisionMaker::takeDecision(cMessage* msg)
 {
-    int networkIndex=0; // Just for test IEEE 802.11
+
+    int networkIndex; // generate values between 0 and 2, Just for test
     // MCDM_procedure
     HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
     std::string trafficType=hetMsg->getTrafficType();
+
     cModule* mStats=getParentModule()->getSubmodule("statistics");
     CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-    std::cout<< stats->allPathsCriteriaValues<< endl;
 
-//    if(stats->allPathsCriteriaValues!="")
-//    {
-//    networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, pathToConfigFiles,critNumb, trafficType, "VIKOR");
-//    }
-//    else
-//    {
-//    networkIndex=0; // random
-//    }
+    if(simTime()<10)
+    {
+        networkIndex=0;
+
+    }else if(simTime()>10 and simTime()<20)
+    {
+        networkIndex=1;
+    }else if(simTime()>20 and simTime()<50)
+    {
+        networkIndex=2;
+    }
+    else
+    {
+       networkIndex=rand()%3;
+    }
+
+
+
+    if(stats->allPathsCriteriaValues!="")
+    {
+        //std::cout<< "\n "<< stats->allPathsCriteriaValues <<"\n"<< endl;
+        networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, pathToConfigFiles,critNumb, trafficType, "VIKOR");
+    }
+
     return networkIndex;
 }
 
@@ -164,7 +194,7 @@ void DecisionMaker::handleMessage(cMessage *msg)
     }
     }
 
-    handleLteLowerMsg(msg);
+   // handleLteLowerMsg(msg);
 
 }
 
@@ -192,4 +222,10 @@ void DecisionMaker::handleLteLowerMsg(cMessage* msg)
 
 }
 
+
+void DecisionMaker::finish()
+{
+
+
+}
 

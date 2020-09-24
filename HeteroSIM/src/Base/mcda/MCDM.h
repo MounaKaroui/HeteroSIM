@@ -83,11 +83,8 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes);
 
 int decisionProcess(std::string allPathsCriteriaValues, std::string path,int critNumb,std::string trafficType,std::string algName);
 
-//  RSSI, MacDelay, Jitter, availBitrate, Cost
-std::string buildAllPathFiveCriteria(std::vector<double> rssi,std::vector<double> delay,std::vector<double> jitter
-,std::vector<double> th, std::vector<double> cost);
 
-//
+// Three criteria list Th, Delay, Rel
 std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double> delay,std::vector<double> rel);
 
 }

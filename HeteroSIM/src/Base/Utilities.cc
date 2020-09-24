@@ -16,11 +16,11 @@ double calculateEWA_BiasCorrection(std::vector<double> crit, double beta)
 
     if(crit.size()>2)
     {
-    for (int i=2;i<crit.size();i++)
+    for (unsigned int i=2;i<crit.size();i++)
     {
 
-        emaSample =beta*crit.at(i-1) +(1-beta)*crit.at(i);
-        emaSample/=(1-pow(beta,i));
+        emaSample =beta*crit.at(i)+(1-beta)*crit.at(i-1);
+        //emaSample/=(1-pow(beta,i));
 
     }
     }

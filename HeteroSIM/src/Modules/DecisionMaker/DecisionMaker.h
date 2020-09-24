@@ -63,6 +63,8 @@ public:
 
     void pushPacketstoQueue(int id, HeterogeneousMessage* msg);
     void removePacketsFromQueue(int id);
+    virtual void finish();
+   // void receiveSignal (cComponent *source, simsignal_t signal, const char *s, cObject *details) override;
 
     bool mode4;
     LteBinder* binder_;

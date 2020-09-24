@@ -1,4 +1,1 @@
-#!/bin/sh
-cd `dirname $0`
-../src/heterosim -n .:../src $*
-# for shared lib, use: opp_run -l ../src/heterosim -n .:../src $*
+opp_run -c final -n .:../src:../../inet/src:../../inet/examples:../../inet/tutorials:../../inet/showcases:../../../SimuLTE_comparison/simuLTE_mode4/simulte/simulations:../../../SimuLTE_comparison/simuLTE_mode4/simulte/src --image-path=../../inet/images:../../../SimuLTE_comparison/simuLTE_mode4/simulte/images -l ../src/HeteroSIM -l ../../inet/src/INET -l ../../../SimuLTE_comparison/simuLTE_mode4/simulte/src/lte -u Cmdenv omnetpp.ini

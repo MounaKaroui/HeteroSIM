@@ -31,10 +31,7 @@ Matrix parseInputString(const std::string &input, char delim, int critNumb)
             std::istringstream istr(out[i+j*critNumb]);
             std::string temp;
             istr>>temp;
-            if (temp=="-inf")   //handle case when there is AP with -inf RSS value
-                outNumb.at(j,i) = -100;
-            else
-                outNumb.at(j,i) = std::stod(temp);
+            outNumb.at(j,i) = std::stod(temp);
         }
     }
     return outNumb;
@@ -174,8 +171,8 @@ Matrix entropy_weighting(Matrix D)
     H.at(i,j)=(-1/std::log(alterNum))*entropicSum(D,i);  // --> entropy calculation of each criteria
     }
     }
-    //std::cout << "entropy " <<"\n"; --> entropy validation
-    //H.print();
+   // std::cout << "entropy " <<"\n"; //--> entropy validation
+   // H.print();
 
     for(int i=0; i<n; i++)
     {
@@ -482,13 +479,13 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
     W_s.print();
 
     Matrix W_obj= entropy_weighting(D);
-
     std::cout<<"Objective Weighted matrix : " <<"\n";
     W_obj.print();
 
     Matrix W=hybrid_weighting(W_s,W_obj,0.9);
     std::cout<<"Hybrid Weighted matrix : " <<"\n";
     W.print();
+
     // decision stage ...
 
     Matrix score(D.size(1),1);
@@ -517,24 +514,7 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
     return bestIndexFromGood;
 }
 
-Matrix selectGoodAlt(Matrix C, double threshold, int numbOfGoodAlt)
-{
-    int i,j=0;
-    Matrix goodAlt(numbOfGoodAlt,C.size(2));
-    for(i=0; i<C.size(1); i++)
-    {
-        //std::cout<<C.at(i,0);
-        if(C.at(i,0)>threshold)
-        {
-            for(int m=0; m<C.size(2); ++m)
-            {
-                goodAlt.at(j,m)=C.at(i,m);
-            }
-            ++j;
-        }
-    }
-    return goodAlt;
-}
+
 
 std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double> delay,std::vector<double> rel)
 {
@@ -560,7 +540,7 @@ std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double>
 	                        rel.at(i)));
     }
 
-	for (int a = 0; a < criteriaStr.size(); ++a) {
+	for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
 		if (a == 0) {
 			pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
 		} else {
@@ -579,56 +559,6 @@ std::string buildAllPathThreeCriteria(std::vector<double> th,std::vector<double>
 
 
 
-
-std::string buildAllPathFiveCriteria(std::vector<double> rssi,std::vector<double> delay,std::vector<double> jitter
-,std::vector<double> th, std::vector<double> cost)
-{
-
-	std::string allPathsCriteriaValues = "";
-	std::string pathsCriteriaValues = "";
-	std::vector<std::string> criteriaStr;
-    std::string critValuesPerPathStr = "";
-    // rssi,  delay, jitter , throughput, cost should have the same length
-    int s=delay.size();
-    for(int i=0; i<s; i++)
-    {
-
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        rssi.at(i)));
-
-	criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        delay.at(i)));
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        jitter.at(i)));
-
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        th.at(i)));
-
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        cost.at(i)));
-    }
-
-	for (int a = 0; a < criteriaStr.size(); ++a) {
-		if (a == 0) {
-			pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
-		} else {
-			pathsCriteriaValues = pathsCriteriaValues + ","
-					+ criteriaStr[a];
-		}}
-
-	allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
-			+ ",";
-	criteriaStr.clear();
-
-    //std::cout<<"All paths criteria values:  "<<allPathsCriteriaValues<<"\n";
-
-	return allPathsCriteriaValues;
-}
 
 
 
