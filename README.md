@@ -9,7 +9,7 @@ Installation command:
 git clone --recurse-submodule https://github.com/MounaKaroui/HeteroSIM.git
 
 
-git submodule update --init --recursive
+git submodule update --remote --merge 
 
 
 Required packages:
