@@ -29,14 +29,22 @@ simple DecisionMaker
         
         bool mode4IsActive = default(false);
         int criteriaNum=default(3);
-        string pathToConfigFiles=default("/home/mouna1/myNewWorkSpace/HeteroSIM/src/Base/mcda/");
-    gates:
+        // TODO: transform absolute path to relative
+        string pathToConfigFiles=default("/home/mouna1/HeteroSimWorkSpace/HeteroSIM/src/Base/mcda/");
+   
+ 		bool isDeciderActive=default(true); 
+ 		int dummyNetworkChoice=default(0);     
+ 		
+ 		
+        gates:
 
         input fromApplication[];
         output toApplication[];
 
         input fromRadio[] @labels(Ieee802Ctrl/up);
         output toRadio[] @labels(Ieee802Ctrl/down);
+        
+
         
 //    submodules:
 //
@@ -46,3 +54,4 @@ simple DecisionMaker
 //        }
 //        connections allowunconnected:
 }
+

@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for $(LIB_PREFIX)HeteroSIM
 #
 # This file was generated with the command:
-#  opp_makemake --make-so -f --deep -O out -KINET_PROJ=../../inet -KLTE_PROJ=/home/mouna1/SimuLTE_comparison/simuLTE_mode4/simulte -DINET_IMPORT -I. -I$$\(INET_PROJ\)/src -I$$\(LTE_PROJ\)/src -L$$\(INET_PROJ\)/src -L$$\(LTE_PROJ\)/src -lINET$$\(D\) -llte$$\(D\)
+#  opp_makemake --make-so -f --deep -O out -KINET_PROJ=/home/mouna1/myGitDepot/HeteroSIM/dependency/inet -KLTE_PROJ=/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte -DINET_IMPORT -I. -I$$\(INET_PROJ\)/src -I$$\(LTE_PROJ\)/src -L$$\(INET_PROJ\)/src -L$$\(LTE_PROJ\)/src -lINET$$\(D\) -llte$$\(D\)
 #
 
 # Name of target to be created (-o option)
@@ -44,8 +44,8 @@ MSGFILES = \
 SMFILES =
 
 # Other makefile variables (-K)
-INET_PROJ=../../inet
-LTE_PROJ=/home/mouna1/SimuLTE_comparison/simuLTE_mode4/simulte
+INET_PROJ=/home/mouna1/myGitDepot/HeteroSIM/dependency/inet
+LTE_PROJ=/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte
 
 #------------------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ $O/%.o: %.cc $(COPTS_FILE) | msgheaders smheaders
 
 %_m.cc %_m.h: %.msg
 	$(qecho) MSGC: $<
-	$(Q)$(MSGC) -s _m.cc -MD -MP -MF $O/$(basename $@).d $(MSGCOPTS) $?
+	$(Q)$(MSGC) -s _m.cc -MD -MP -MF $O/$(basename $<)_m.h.d $(MSGCOPTS) $?
 
 %_sm.cc %_sm.h: %.sm
 	$(qecho) SMC: $<
@@ -141,4 +141,4 @@ cleanall:
 	$(Q)-rm -rf $(PROJECT_OUTPUT_DIR)
 
 # include all dependencies
--include $(OBJS:%.o=%.d)
+-include $(OBJS:%=%.d) $(MSGFILES:%.msg=$O/%_m.h.d)

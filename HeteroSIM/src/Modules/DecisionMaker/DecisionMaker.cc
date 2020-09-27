@@ -17,12 +17,12 @@
 #include "../../Modules/DecisionMaker/DecisionMaker.h"
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
-#include "Modules/Stats/CollectStats.h"
 #include <stdlib.h>     /* srand, rand */
+
+#include "../Stats/CollectStats.h"
 Define_Module(DecisionMaker);
 
 
-//static const simsignal_t criteriaListSignal = cComponent::registerSignal("criteriaListSignal");
 
 
 void DecisionMaker::initialize()
@@ -35,9 +35,11 @@ void DecisionMaker::initialize()
     {
         registerNodeToBinder();
     }
-//    cModule* mStats=getParentModule()->getSubmodule("statistics");
-//    CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-//    stats->subscribe(criteriaListSignal, this);
+    isDeciderActive=par("isDeciderActive").boolValue();
+    if(!isDeciderActive)
+    {
+       dummyNetworkChoice=par("dummyNetworkChoice").intValue();
+    }
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -94,38 +96,31 @@ void DecisionMaker::sendToUpper(cMessage*  msg)
     HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
     int id=hetNetsMsg->getApplId();
     int gateId=gate("toApplication",id)->getId(); // To get Id
-    removePacketsFromQueue(id);
     send(msg, gateId);
 }
 
-void DecisionMaker::pushPacketstoQueue(int id, HeterogeneousMessage* msg)
+
+
+void DecisionMaker::networkInit(int& networkIndex)
 {
-    // enqueue packet from applications
-    packetQueue.insert(std::pair<int, HeterogeneousMessage*>(id, msg));
 
-    // test
-    //int n=packetQueue.size();
-    //HeterogeneousMessage* test=packetQueue.find(msg->getApplId())->second;
-    //std::string trafficType=test->getTrafficType();
-    //std::cout << "test => " <<trafficType<<'\n';
-}
-
-void DecisionMaker::removePacketsFromQueue(int id)
-{
-    // Delete msg given a key
-    packetQueue.erase(id);
-}
-
-
-//void DecisionMaker::receiveSignal (cComponent *source, simsignal_t signal, const char *s, cObject *details)
-//{
-//    if(signal==criteriaListSignal)
-//    {
-//        allPathsCriteriaValues=s;
-//    }
+//        if(simTime()<10)
+//        {
+//            networkIndex=0;
 //
-//}
+//        }else if(simTime()>10 and simTime()<20)
+//        {
+//            networkIndex=1;
+//        }else if(simTime()>20 and simTime()<50)
+//        {
+//            networkIndex=2;
+//        }
+//        else
+//        {
+           networkIndex=rand()%3;
+      //  }
 
+}
 
 int DecisionMaker::takeDecision(cMessage* msg)
 {
@@ -138,29 +133,23 @@ int DecisionMaker::takeDecision(cMessage* msg)
     cModule* mStats=getParentModule()->getSubmodule("statistics");
     CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
 
-    if(simTime()<10)
+    //networkInit(networkIndex);
+    if(isDeciderActive)
     {
-        networkIndex=0;
+        if(stats->allPathsCriteriaValues!="")
+        {
 
-    }else if(simTime()>10 and simTime()<20)
-    {
-        networkIndex=1;
-    }else if(simTime()>20 and simTime()<50)
-    {
-        networkIndex=2;
+            //networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, pathToConfigFiles,critNumb, trafficType, "VIKOR");
+            //std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
+        }
     }
     else
     {
-       networkIndex=rand()%3;
+
+        networkIndex=dummyNetworkChoice;
+
     }
 
-
-
-    if(stats->allPathsCriteriaValues!="")
-    {
-        //std::cout<< "\n "<< stats->allPathsCriteriaValues <<"\n"<< endl;
-        networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, pathToConfigFiles,critNumb, trafficType, "VIKOR");
-    }
 
     return networkIndex;
 }
@@ -176,7 +165,7 @@ void DecisionMaker::handleMessage(cMessage *msg)
     if(hetMsg!=nullptr)
     {
     id=hetMsg->getApplId();
-    pushPacketstoQueue(id, hetMsg);  // store Upper packets
+
 
     int arrivalGate = msg->getArrivalGateId();
     int gateId=gate("fromApplication",id)->getId();
@@ -223,9 +212,5 @@ void DecisionMaker::handleLteLowerMsg(cMessage* msg)
 }
 
 
-void DecisionMaker::finish()
-{
 
-
-}
 

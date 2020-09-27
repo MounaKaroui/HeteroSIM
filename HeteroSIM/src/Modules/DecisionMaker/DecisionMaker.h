@@ -41,17 +41,13 @@ class DecisionMaker : public cSimpleModule, public cListener
 
 
 public:
-
     ~DecisionMaker();
 
     int takeDecision(cMessage*  msg);
     void ctrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
 
-
-    std::map<int,HeterogeneousMessage*> packetQueue;
-
   protected:
-    //int numInitStages() const override;
+
     void initialize() override;
 
     virtual void handleMessage(cMessage *msg)  override;
@@ -61,16 +57,20 @@ public:
     void registerNodeToBinder();
     void handleLteLowerMsg(cMessage* msg);
 
-    void pushPacketstoQueue(int id, HeterogeneousMessage* msg);
-    void removePacketsFromQueue(int id);
-    virtual void finish();
-   // void receiveSignal (cComponent *source, simsignal_t signal, const char *s, cObject *details) override;
+
+    void networkInit(int& networkIndex);
+
+
 
     bool mode4;
+    bool isDeciderActive;
+    int dummyNetworkChoice;
+
     LteBinder* binder_;
     MacNodeId nodeId_;
     int critNumb;
     std::string pathToConfigFiles;
+
 
   private:
     cMessage* selfMsg;
@@ -79,3 +79,4 @@ public:
 };
 
 #endif
+

@@ -25,23 +25,11 @@ simple CollectStats like IStatistics
 {
    
     parameters:
-          // 802.11
-          string macModule80211=default(""); 
-          // 802.15
-          string macModule80215=default("");
-          // Lte
-          string radioModuleLte=default("");
           
-          double dtlMin=default(0.1);
+          double dltMin=default(0.1);
           
-        @signal[latency80211];
-        @statistic[latency80211](source="latency80211"; record=vector);
-        
-        @signal[latency80215];
-        @statistic[latency80215](source="latency80215"; record=vector);
-        
-        @signal[latencyLte];
-        @statistic[latencyLte](source="latencyLte"; record=vector);
+          //string interfaceToProtocolMapping=default("0:80211;1:80215;2:mode4");
+          string interfaceToProtocolMapping=default("1:80215");
           
-        @signal[criteriaListSignal];  
 }
+

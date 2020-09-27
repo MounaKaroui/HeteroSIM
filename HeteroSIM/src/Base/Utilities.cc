@@ -10,22 +10,36 @@ using namespace inet;
 namespace Utilities{
 
 
-double calculateEWA_BiasCorrection(std::vector<double> crit, double beta)
+double calculateEMA(vector<double> v)
 {
     double emaSample;
-
-    if(crit.size()>2)
+    double meanSample=calculateMeanVec(v);
+    double beta=calculateBeta(v.size());
+    if(v.size()>=1)
     {
-    for (unsigned int i=2;i<crit.size();i++)
-    {
-
-        emaSample =beta*crit.at(i)+(1-beta)*crit.at(i-1);
-        //emaSample/=(1-pow(beta,i));
-
-    }
+        emaSample =(1-beta)*meanSample+beta*v.back();
     }
 
     return emaSample;
+}
+
+double calculateBeta(double n)
+{
+    return 2/(n+1);
+}
+
+double calculateCofficientOfVariation(vector<double> v)
+{
+
+    double n=v.size();
+    double mean=0;
+    double stdev=0;
+    if(n!=0)
+    {
+        mean = calculateMeanVec(v);
+        stdev =  calculateStdVec(v);
+    }
+    return stdev/mean;
 }
 
 
@@ -68,5 +82,23 @@ FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_)
     return lteControlInfo;
 }
 
+double calculateStdVec(std::vector<double> v)
+{
+    accumulator_set<double, stats<tag::variance> > acc;
+    for_each(v.begin(), v.end(), boost::bind<void>(boost::ref(acc), _1));
+    return std::sqrt(variance(acc));
+}
 
+double calculateMeanVec(std::vector<double> v)
+{
+    accumulator_set<double, stats<tag::mean> > acc;
+    for_each(v.begin(), v.end(), boost::bind<void>(boost::ref(acc), _1));
+    return mean(acc);
+}
+
+double calculateRollingMean(std::vector<double> v, int windowSize)
+{
+    accumulator_set<int, stats<tag::rolling_mean> > acc(tag::rolling_window::window_size = windowSize);
+    return rolling_mean(acc);
+}
 } /* namespace Builder */

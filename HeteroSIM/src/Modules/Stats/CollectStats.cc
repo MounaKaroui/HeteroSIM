@@ -17,52 +17,69 @@
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
 #include <numeric>
+#include "../../Modules/DecisionMaker/DecisionMaker.h"
+#include<boost/lexical_cast.hpp>
 
 
-static const simsignal_t packetSentToLowerSignal = cComponent::registerSignal("packetSentToLower");
-static const simsignal_t packetReceivedFromLowerSignal = cComponent::registerSignal("packetReceivedFromLower");
-static const  simsignal_t lteSentMsg = cComponent::registerSignal("sentMsg"); // LTE sent Msg
-static const  simsignal_t lteRcvdMsg = cComponent::registerSignal("receivedMsg"); // LTE received Msg
 
+#include <bits/stdc++.h>
+#include <boost/algorithm/string.hpp>
 
 Define_Module(CollectStats);
 
 void CollectStats::initialize()
 {
 
-    cModule* host = inet::getContainingNode(this);
-    // 802.11
-    inet::ieee80211::Ieee80211Mac*  mLinkLayer80211 = inet::findModuleFromPar<inet::ieee80211::Ieee80211Mac>(par("macModule80211"), host);
-    mLinkLayer80211->subscribe(packetSentToLowerSignal, this);
-    mLinkLayer80211->subscribe(packetReceivedFromLowerSignal, this);
-    // 802.15
-    int numRadios=getAncestorPar("numRadios");
-    if(numRadios>1)
-    {
-        CSMA* mLinkLayerNarrowBand=inet::findModuleFromPar<inet::CSMA>(par("macModule80215"), host);
-        mLinkLayerNarrowBand->subscribe(packetSentToLowerSignal, this);
-        mLinkLayerNarrowBand->subscribe(packetReceivedFromLowerSignal, this);
-    }
-
-    // Lte
-    bool mode4=getAncestorPar("withMode4");
-    if(mode4)
-    {
-        LtePhyVUeMode4* mRadioLte= inet::findModuleFromPar<LtePhyVUeMode4>(par("radioModuleLte"), host);
-        mRadioLte->subscribe(lteSentMsg,this);
-        mRadioLte->subscribe(lteRcvdMsg, this);
-    }
-
-    dtlMin=par("dtlMin").doubleValue();
-    delay80211= registerSignal("latency80211");
-    delay80215= registerSignal("latency80215");
-    delayLte= registerSignal("latencyLte");
-    criteriaListSignal=registerSignal("criteriaListSignal");
-
-
+    interfaceToProtocolMapping =par("interfaceToProtocolMapping").stringValue();
+    dltMin=par("dltMin").doubleValue();
+    registerSignals();
 }
 
 
+template<typename T>
+void CollectStats::subscribeToSignal(std::string moduleName, simsignal_t sigName)
+{
+    cModule* module = getModuleByPath(moduleName.c_str());
+    T * mLinkLayer=dynamic_cast<T*>(module);
+    mLinkLayer->subscribe(sigName, this);
+}
+
+
+
+void CollectStats::registerSignals()
+{
+
+    cStringTokenizer tokenizer(interfaceToProtocolMapping.c_str(),string(";").c_str());
+    while (tokenizer.hasMoreTokens()){
+
+        std::string mappingEntry= tokenizer.nextToken();
+        vector<string> result;
+        boost::split(result, mappingEntry, boost::is_any_of(":"));
+        interfaceToProtocolMap.insert({stoi(result[0]),result[1]});
+
+        std::string radioModuleName= "^.wlan["+ result[0]+"].radio";
+        std::string macModuleName= "^.wlan["+ result[0]+"].mac";
+
+
+        if (result[1] == "80211" || result[1] == "80215") {
+            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromLowerSignal);
+            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
+            subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
+        }
+        else if(result[1]=="mode4")
+        {
+            std::string moduleName = "^.lteNic.phy"; // mac packet received from lower
+            bool mode4 = getAncestorPar("withMode4");
+            if (mode4) {
+//                subscribeToSignal<LtePhyVUeMode4>(moduleName,LtePhyVUeMode4::sentMsgSignal);
+//                subscribeToSignal<LtePhyVUeMode4>(moduleName, LtePhyVUeMode4::rcvdMsgSignal);
+//                subscribeToSignal<LtePhyVUeMode4>(moduleName, LtePhyVUeMode4::interPacketDelay);
+
+            }
+        }
+
+    }
+}
 
 
 void CollectStats::computeThroughput(simtime_t now, unsigned long bits, double& throughput)
@@ -87,179 +104,183 @@ void CollectStats::computeThroughput(simtime_t now, unsigned long bits, double& 
 
 }
 
+void CollectStats::recordThroughputStats(simsignal_t comingSignal,simsignal_t sigName, cMessage* msg,  listOfCriteria* l)
+{
+       double th=0;
+       double rcvd=0;
+       if (comingSignal == sigName)
+       {
+           // Throughput
+           computeThroughput(simTime(), PK(msg)->getBitLength(),th);
+           l->throughput.push_back(th);
+           // rcvd packets
+           rcvd++;
+           l->receivedPackets.push_back(rcvd);
+       }
 
-void CollectStats::recordStats(simsignal_t comingSignal, simsignal_t signalSent, simsignal_t signalRcv,cObject* msg, listOfCriteria& l)
+}
+
+
+void CollectStats::recordStatsForWlan(simsignal_t comingSignal,std::string sourceName, cMessage* msg,  listOfCriteria* l)
 {
     // local variables
+    double macDelay=0;
+    double sent=0;
+    if (LayeredProtocolBase::packetReceivedFromLowerSignal) {
+        std::map<int, simtime_t>::iterator jt =
+                wlanPreviousTransmissionTimes.find(msg->getSenderGateId());
+        if (jt != wlanPreviousTransmissionTimes.end()) {
+            simtime_t elapsed_time = NOW - jt->second;
+            l->interPacketGap.push_back(elapsed_time.dbl());
+        }
+        wlanPreviousTransmissionTimes[msg->getSenderGateId()] = NOW;
+    }
 
-    double latency=0;
-    double th=0;
-    double rel=0;
+    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName=="mac"){
+//        ASSERT(dynamic_cast<HeterogeneousMessage*>(msg));
 
-    if(comingSignal==signalSent)
-    {
+        std::cout<< simTime()<< ", "<< "Inserting " << "id=" << msg->getTreeId()  << " ,tree id= " << msg->getTreeId() <<", " <<"Msg name=" << msg->getName()
+                << ", Class Name=" << msg->getClassName()
+                << ", Owner=" << msg->getOwner()->getName()<< endl;
+
+        packetFromUpperTimeStamps[msg->getTreeId()]=NOW;
+
+    } else if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal && sourceName=="radio" ) {
+
+      //ASSERT(packetFromUpperTimeStamps.find(msg->getTreeId()) != packetFromUpperTimeStamps.end());
+        macDelay = (NOW - packetFromUpperTimeStamps[msg->getTreeId()]).dbl();
+
+        std::cout<< simTime()<< ", "<< "Reading " << "id=" << msg->getId() << " ,tree id= " << msg->getTreeId() <<", " <<"Msg name=" << msg->getName()
+                << ", Class Name=" << msg->getClassName()
+                << ", Owner=" << msg->getOwner()->getName()<< endl;
+
+        packetFromUpperTimeStamps.erase(msg->getTreeId());
+        l->delay.push_back(macDelay);
         sent++;
-        l.sentPackets.push_back(sent);
+        l->sentPackets.push_back(sent);
     }
+    recordThroughputStats(comingSignal,
+            LayeredProtocolBase::packetReceivedFromLowerSignal, msg, l);
 
-    if (comingSignal == signalRcv)
+}
+
+
+
+void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l)
+{
+
+//    double sent=0;
+//    // TODO add delay
+//    if (comingSignal == LtePhyVUeMode4::sentMsgSignal) {
+//        sent++;
+//        l->sentPackets.push_back(sent);
+//
+//    }
+//    recordThroughputStats(comingSignal,LtePhyVUeMode4::rcvdMsgSignal,msg,l);
+}
+
+
+
+double CollectStats::updateDLT(double x)
+{
+    return exp(-1*x) + dltMin;
+}
+
+void CollectStats::prepareNetAttributes()
+{
+    std::string pathsCriteriaValues = "";
+    std::vector<std::string> criteriaStr;
+    std::string critValuesPerPathStr = "";
+    for(int i=0; i<3;i++) // Fixme
     {
-        // Latency
-        auto hetMsg=dynamic_cast<cMessage*>(msg);
-        latency=(simTime()-hetMsg->getTimestamp()).dbl();
-        l.latency.push_back(latency);
-        // Throughput
-        computeThroughput(simTime(), PK(hetMsg)->getBitLength(),th);
-        l.throughput.push_back(th);
-        // rcved packets
-        rcvd++;
-        l.receivedPackets.push_back(rcvd);
-    }
+        criteriaStr.push_back( boost::lexical_cast<std::string>(
+        Utilities::calculateMeanVec(listOfCriteriabyInterfaceId[i]->throughput)));
 
-    if(sent!=0)
+        criteriaStr.push_back( boost::lexical_cast<std::string>(
+        Utilities::calculateMeanVec(listOfCriteriabyInterfaceId[i]->interPacketGap)));
+
+        criteriaStr.push_back( boost::lexical_cast<std::string>(
+                Utilities::calculateMeanVec(listOfCriteriabyInterfaceId[i]->reliability)));
+    }
+    for (int a = 0; a < criteriaStr.size(); ++a) {
+        if (a == 0) {
+            pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
+        } else {
+            pathsCriteriaValues = pathsCriteriaValues + ","
+                    + criteriaStr[a];
+        }}
+    allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
+            + ",";
+    criteriaStr.clear();
+     // prepare data
+    /// return string that contains alternatives and call EMA
+    // calculate dtl;
+    // organize the data per alternative
+}
+
+
+void CollectStats::printMapElements()
+{
+
+       for (auto itr = listOfCriteriabyInterfaceId.begin(); itr != listOfCriteriabyInterfaceId.end(); ++itr) {
+           cout << "\n KEY\tELEMENT\n";
+           cout << itr->first <<" ";
+           if(itr->second->delay.size()>0)
+           {
+               cout << "\n Elements in my map are\n";
+               std::cout << '\t' <<  itr->second->delay.at(0)<< '\n';
+           }
+
+       }
+}
+
+void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, double value,cObject *details)
+{
+    std::string moduleName = source->getParentModule()->getName();
+    if(moduleName=="lteNic")
     {
-        rel=(rcvd/(sent+rcvd))*100;
-        l.reliability.push_back(rel);
-    }
-}
-
-
-double CollectStats::calculateCofficientOfVariation(std::vector<double> v)
-{
-
-    double n=v.size();
-    double sum=0;
-    double mean=0;
-    double sq_sum=0;
-    double stdev=0;
-
-    if(n!=0)
-    {
-        sum = std::accumulate(v.begin(), v.end(), 0.0);
-        mean = sum / v.size();
-
-        sq_sum = std::inner_product(v.begin(), v.end(), v.begin(), 0.0);
-        stdev = std::sqrt(sq_sum / v.size() - mean * mean);
+//    if(signal== LtePhyVUeMode4::interPacketDelay)
+//    {
+//        listOfCriteriabyInterfaceId.insert({ MODE4, new listOfCriteria() });
+//        listOfCriteriabyInterfaceId[MODE4]->interPacketGap.push_back(value);
+//    }
     }
 
-
-    return stdev/mean;
 }
-
-
-double CollectStats::getBeta(double n)
-{
-    return 2/(n+1);
-}
-std::vector<double> CollectStats::prepareData(std::vector<double> v1, std::vector<double> v2, std::vector<double> v3)
-{
-    std::vector<double>  v;
-    if((v1.size()>2)&&(v2.size()>2) &&(v3.size()>2))
-    {
-        // v1.back(); --> give the last value
-        //  TODO: search beta for EWA
-
-        double l1=Utilities::calculateEWA_BiasCorrection(v1,getBeta(v1.size())); // TODO: verify beta
-        double l2=Utilities::calculateEWA_BiasCorrection(v2,getBeta(v2.size()));;
-        double l3=Utilities::calculateEWA_BiasCorrection(v3,getBeta(v3.size()));;
-        double myarray [] = {l1,l2,l3};
-        v.insert(v.begin(), myarray, myarray+3);
-    }
-    return v;
-}
-
-double CollectStats::updateDTL(double x)
-{
-    return exp(-1*x) + dtlMin;
-}
-
-double CollectStats::prepareNetAttributes()
-{
-
-   std::vector<double> vTh=prepareData(listOfCriteria80211.throughput,listOfCriteria80215.throughput,listOfCriteriaLte.throughput);
-   std::vector<double> vLatency=prepareData(listOfCriteria80211.latency,listOfCriteria80215.latency,listOfCriteriaLte.latency);
-   std::vector<double> vRel=prepareData(listOfCriteria80211.reliability,listOfCriteria80215.reliability,listOfCriteriaLte.reliability);
-
-   double cv_th=0;
-   double cv_l=0;
-   double cv_rel=0;
-   double cv=0;
-   double dtl=0;
-
-   if(!vTh.empty() && !vLatency.empty() && !vRel.empty())
-   {
-        allPathsCriteriaValues=McdaAlg::buildAllPathThreeCriteria(vTh, vLatency, vRel);
-        // TODO: verify cv and dtl
-        cv_th=calculateCofficientOfVariation(vTh);
-        cv_l=calculateCofficientOfVariation(vLatency);
-        cv_rel=calculateCofficientOfVariation(vRel);
-        cv=(cv_th+cv_l+cv_rel)/3;
-        dtl=updateDTL(cv);
-   }
-
-   // TODO: implement DTL adaptation
-
-   return dtl;
-}
-
-
-
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
 
-    std::string ModuleName=source->getParentModule()->getFullName();
-    int interfaceId=Utilities::extractNumber(ModuleName);
+    std::string moduleName = source->getParentModule()->getName();
+    int interfaceId=0;
+    auto packet=dynamic_cast<cMessage*>(msg);
+    std::string msgName=packet->getName();
+    bool b = msgName == "hetNets" ;
 
-    // Wlan interfaces
-    if(interfaceId==0)
-    {
-        recordStats(signal,packetSentToLowerSignal,packetReceivedFromLowerSignal,msg,listOfCriteria80211);
+       if(b){
+        if(moduleName=="wlan")
+        {
+            std::string fullModuleName = source->getParentModule()->getFullName();
+            interfaceId = Utilities::extractNumber(fullModuleName);
+            if(listOfCriteriabyInterfaceId.find(interfaceId) == listOfCriteriabyInterfaceId.end())
+                listOfCriteriabyInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
+            std::string test=source->getName();
+            recordStatsForWlan(signal,source->getName(), packet, listOfCriteriabyInterfaceId[interfaceId]);
+        }
+        else if(moduleName=="lteNic")
+        {
+            interfaceId=MODE4;
+           if(listOfCriteriabyInterfaceId.find(interfaceId)== listOfCriteriabyInterfaceId.end())
+                listOfCriteriabyInterfaceId.insert({interfaceId,new listOfCriteria()});
+            recordStatsForLte(signal, packet, listOfCriteriabyInterfaceId[interfaceId]);
+        }
     }
-    else if(interfaceId==1)
-    {
-        recordStats(signal,packetSentToLowerSignal,packetReceivedFromLowerSignal,msg,listOfCriteria80215);
-    }
-    else
-    {
-        EV_INFO<< "no valid interface" << endl;
-    }
-
-    // lte
-    recordStats(signal,lteSentMsg,lteRcvdMsg,msg,listOfCriteriaLte);
-    prepareNetAttributes();
-   // emit(criteriaListSignal,allPathsCriteriaValues.c_str());
-
-//    cv_l=calculateCofficientOfVariation(listOfCriteria80211.latency);
-//    cv_th=calculateCofficientOfVariation(listOfCriteria80211.throughput);
-//    cv_rel=calculateCofficientOfVariation(listOfCriteria80211.reliability);
-
-//    cv_latency.record(cv_l);
-//    cv_throughput.record(cv_th);
-//    cv_reliability.record(cv_rel);
-//
-//    if(!listOfCriteria80211.latency.empty())
-//        emit(delay80211, listOfCriteria80211.latency.back());
-//
-//    if(!listOfCriteria80215.latency.empty())
-//            emit(delay80215, listOfCriteria80215.latency.back());
-//
-//    if(!listOfCriteriaLte.latency.empty())
-//            emit(delayLte, listOfCriteriaLte.latency.back());
-
-    //double test=Utilities::calculateEWA_BiasCorrection(listOfCriteria80211.latency,0.3);
-    //std::cout<< "test ema = " << test;
-    // verif EMA
-    //std::cout << "latency= "  << listOfCriteria80211.latency;
-    // TODO call prepareNetAttributes
-
+    // TODO call prepareNetAttributes with DLT adaptation ;
+    //prepareNetAttributes();
 }
 
 
-void CollectStats::finish()
-{
 
 
-}
 
