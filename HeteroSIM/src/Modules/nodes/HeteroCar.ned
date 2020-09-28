@@ -103,7 +103,7 @@ module car
             nodeType = "UE";  // DO NOT CHANGE
         }
 
-        statistics: <default("CollectStats")> like IStatistics {
+        collectStatistics: <default("CollectStats")> like IStatistics {
             parameters:
                 @display("p=1050.45,223.49998;is=s");
                 

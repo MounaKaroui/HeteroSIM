@@ -28,6 +28,7 @@
 
 #include "../../Base/Utilities.h"
 #include "stack/phy/layer/LtePhyVUeMode4.h"
+#include "stack/mac/layer/LteMacVUeMode4.h"
 
 
 using namespace omnetpp;
@@ -42,62 +43,58 @@ public:
 
     struct listOfCriteria{
         std::vector<double>  delay;
-        std::vector<double>  interPacketGap;
-        std::vector<double>  receivedPackets;
-        std::vector<double>  sentPackets;
         std::vector<double>  throughput;
         std::vector<double>  reliability;
-
+        std::vector<double>  receivedPackets;
+        std::vector<double>  sentPackets;
+        std::vector<double>  droppedPackets;
     };
 
-
+    map<long,simtime_t>  packetFromUpperTimeStamps;
+//    struct throughput{
+//        double value;
+//        unsigned long numPackets=0;
+//        unsigned long numBits=0;
+//
+//        // current measurement interval
+//        simtime_t intvlStartTime=0;
+//        simtime_t intvlLastPkTime=0;
+//
+//        unsigned long intvlNumPackets=0;
+//        unsigned long intvlNumBits=0;
+//    };
 
     map<int,listOfCriteria*> listOfCriteriabyInterfaceId;
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
-    map<long,simtime_t> packetFromUpperTimeStamps;
-
-    map<int,simtime_t> wlanPreviousTransmissionTimes;
 
     double dltMin;
-
     std::string allPathsCriteriaValues;
 
-    // throughput calculation related variables
-    simtime_t startTime=0;    // start time
-    unsigned int batchSize=1;    // number of packets in a batch
-    simtime_t maxInterval=1;    // max length of measurement interval
-    //(measurement ends if either batchSize or maxInterval is reached, whichever is reached first)
-    unsigned long numPackets=0;
-    unsigned long numBits=0;
-    // current measurement interval
-    simtime_t intvlStartTime=0;
-    simtime_t intvlLastPkTime=0;
-    unsigned long intvlNumPackets=0;
-    unsigned long intvlNumBits=0;
+    int batchSize;
+    simtime_t maxInterval;
 
-    simsignal_t delay80211;
-    simsignal_t delay80215;
-    simsignal_t delayLte;
 
-    void registerSignals();
-    template<typename T>void subscribeToSignal(std::string,simsignal_t);
-    void recordThroughputStats(simsignal_t comingSignal,simsignal_t sigName, cMessage* msg,  listOfCriteria* l);
+    template<typename T>
+    void subscribeToSignal(std::string moduleName, simsignal_t sigName)
+    {
+        cModule* module = getModuleByPath(moduleName.c_str());
+        T * mLinkLayer=dynamic_cast<T*>(module);
+        mLinkLayer->subscribe(sigName, this);
+    }
 
 protected:
 
-    //virtual void handleMessage(cMessage *msg);
-
+    void printMsg(std::string type, cMessage*  msg);
     virtual void initialize();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
-    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
-
-    void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
-    void recordStatsForWlan(simsignal_t comingSignal,std::string sourceName, cMessage* msg,  listOfCriteria* l);
+    void computeThroughput(simtime_t now, unsigned long bits, double& th);
+    void recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l);
-    void printMapElements();
     void prepareNetAttributes();
     double updateDLT(double x);
+    void registerSignals();
+    void recordThroughputStats(simsignal_t comingSignal,simsignal_t sigName, cMessage* msg,  listOfCriteria* l);
 
 
 };

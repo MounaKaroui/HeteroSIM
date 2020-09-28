@@ -130,10 +130,10 @@ int DecisionMaker::takeDecision(cMessage* msg)
     HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
     std::string trafficType=hetMsg->getTrafficType();
 
-    cModule* mStats=getParentModule()->getSubmodule("statistics");
+    cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
     CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
 
-    //networkInit(networkIndex);
+    networkInit(networkIndex);
     if(isDeciderActive)
     {
         if(stats->allPathsCriteriaValues!="")

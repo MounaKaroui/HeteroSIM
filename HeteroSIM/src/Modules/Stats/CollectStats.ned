@@ -27,9 +27,9 @@ simple CollectStats like IStatistics
     parameters:
           
           double dltMin=default(0.1);
-          
-          //string interfaceToProtocolMapping=default("0:80211;1:80215;2:mode4");
-          string interfaceToProtocolMapping=default("1:80215");
+          string interfaceToProtocolMapping=default("0:80211;1:80215;2:mode4");
+          int batchSize=default(1);    // number of packets in a batch
+    	  double maxInterval=default(1);    // max length of measurement interval
           
 }
 

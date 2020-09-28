@@ -69,8 +69,6 @@ Ieee802Ctrl* Ieee802CtrlInfo(std::string ModuleName)
     return controlInfo;
 }
 
-
-
 FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_)
 {
     auto lteControlInfo = new FlowControlInfoNonIp();
@@ -101,4 +99,6 @@ double calculateRollingMean(std::vector<double> v, int windowSize)
     accumulator_set<int, stats<tag::rolling_mean> > acc(tag::rolling_window::window_size = windowSize);
     return rolling_mean(acc);
 }
+
+
 } /* namespace Builder */
