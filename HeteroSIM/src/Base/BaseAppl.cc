@@ -26,7 +26,7 @@ void BaseAppl::initialize()
     msgLength=par("msgLength").intValue();
 
     appIndex=par("appIndex").intValue();
-    appName=par("appName").stringValue();
+    trafficType=par("trafficType").stringValue();
     setNodeId();
 }
 
@@ -48,7 +48,7 @@ HeterogeneousMessage* BaseAppl::BuildMsg(std::string namePrefix)
             heteroMsg->setByteLength(msgLength);
             heteroMsg->setTimestamp(simTime());
 
-            heteroMsg->setTrafficType(appName.c_str());
+            heteroMsg->setTrafficType(trafficType.c_str());
             heteroMsg->setApplId(appIndex);
 
             heteroMsg->setNodeId(nodeId);

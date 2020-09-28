@@ -24,7 +24,7 @@ moduleinterface IBaseAppl
         double updateInterval @unit(s);
         int msgLength @unit(B);
         int appIndex;
-        string appName;
+        string trafficType;
 
 	gates:
         input  fromDecisionMaker;

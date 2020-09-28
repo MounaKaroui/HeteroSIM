@@ -50,19 +50,6 @@ public:
         std::vector<double>  droppedPackets;
     };
 
-    map<long,simtime_t>  packetFromUpperTimeStamps;
-//    struct throughput{
-//        double value;
-//        unsigned long numPackets=0;
-//        unsigned long numBits=0;
-//
-//        // current measurement interval
-//        simtime_t intvlStartTime=0;
-//        simtime_t intvlLastPkTime=0;
-//
-//        unsigned long intvlNumPackets=0;
-//        unsigned long intvlNumBits=0;
-//    };
 
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
@@ -92,18 +79,14 @@ protected:
     virtual void initialize();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
 
-    void computeThroughput(simtime_t now, unsigned long bits, double& th);
-    void recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l);
-    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
-
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
-    void recordStatsForWlan(simsignal_t comingSignal,std::string sourceName, cMessage* msg,  int interfaceId);
+    void recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  int interfaceId);
 
-    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l);
+    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
     void prepareNetAttributes();
     double updateDLT(double x);
     void registerSignals();
-    void recordThroughputStats(simsignal_t comingSignal,simsignal_t sigName, cMessage* msg,  listOfCriteria* l);
+    void recordThroughputStats(simsignal_t comingSignal,simsignal_t sigName, cMessage* msg, int interfaceId);
 
 
 };

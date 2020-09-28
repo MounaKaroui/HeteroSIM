@@ -27,7 +27,7 @@ simple VanetApp like IBaseAppl
      int msgLength=default(10 B) @unit(B);  
      double updateInterval=default(0.1 s) @unit(s);
      int appIndex=default(0);
-     string appName=default("interactive");
+     string trafficType=default("interactive");
      
     gates:
         

@@ -138,6 +138,8 @@ int DecisionMaker::takeDecision(cMessage* msg)
     {
         if(stats->allPathsCriteriaValues!="")
         {
+            // TODO call MCDM here
+            // allPathsCriteriaValues is the final list of criteria
 
             //networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, pathToConfigFiles,critNumb, trafficType, "VIKOR");
             //std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;

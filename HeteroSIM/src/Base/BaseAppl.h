@@ -39,7 +39,7 @@ protected:
     int nodeId;
     int  msgLength;
     int appIndex;
-    std::string appName;
+    std::string trafficType;
 
     virtual void initialize();
     void setNodeId();

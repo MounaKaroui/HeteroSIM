@@ -28,6 +28,7 @@ simple CollectStats like IStatistics
           
           double dltMin=default(0.1);
           string interfaceToProtocolMapping=default("0:80211;1:80215;2:mode4");
+          // params for throughput calculation
           int batchSize=default(1);    // number of packets in a batch
     	  double maxInterval=default(1);    // max length of measurement interval
           
