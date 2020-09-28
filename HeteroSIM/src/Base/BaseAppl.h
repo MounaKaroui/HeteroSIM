@@ -28,7 +28,7 @@ class BaseAppl: public cSimpleModule{
 public:
 
 
-    HeterogeneousMessage* BuildMsg(std::string name);
+    HeterogeneousMessage* BuildMsg(std::string namePrefix);
 
 
 protected:

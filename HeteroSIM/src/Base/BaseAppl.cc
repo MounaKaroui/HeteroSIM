@@ -39,11 +39,11 @@ void BaseAppl::setNodeId()
 
 
 
-HeterogeneousMessage* BaseAppl::BuildMsg(std::string name)
+HeterogeneousMessage* BaseAppl::BuildMsg(std::string namePrefix)
         {
 
             HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
-            heteroMsg->setName(name.c_str());
+            heteroMsg->setName((namePrefix+"-"+std::to_string(heteroMsg->getTreeId())).c_str());
 
             heteroMsg->setByteLength(msgLength);
             heteroMsg->setTimestamp(simTime());

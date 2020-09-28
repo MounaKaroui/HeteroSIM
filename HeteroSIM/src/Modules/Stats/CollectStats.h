@@ -64,7 +64,10 @@ public:
 //        unsigned long intvlNumBits=0;
 //    };
 
-    map<int,listOfCriteria*> listOfCriteriabyInterfaceId;
+    map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
+    map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
+
+
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
 
@@ -88,8 +91,14 @@ protected:
     void printMsg(std::string type, cMessage*  msg);
     virtual void initialize();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
+
     void computeThroughput(simtime_t now, unsigned long bits, double& th);
     void recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l);
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
+
+    void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
+    void recordStatsForWlan(simsignal_t comingSignal,std::string sourceName, cMessage* msg,  int interfaceId);
+
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l);
     void prepareNetAttributes();
     double updateDLT(double x);

@@ -127,9 +127,13 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l)
 {
+    if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
+        listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
+
     // local variables
     double macDelay=0;
     double sent=0;
+
     double dropped=0;
     if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  msg->getOwner()->getName()==string("mac") ){
 
@@ -156,9 +160,26 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  
     // for Throughput calculation
     recordThroughputStats(comingSignal,
             LayeredProtocolBase::packetReceivedFromLowerSignal, msg, l);
+    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName=="mac"){
 
+        std::cout<< simTime()<<", Inserting id=" << msg->getName() << ", Msg name=" << msg->getName()
+                                          << ", Class Name=" << msg->getClassName()
+                                          << ", Owner=" << msg->getOwner()->getName()<< endl;
+
+        packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
+
+    } else if (comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal && sourceName=="radio") {
+
+        ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
+        macDelay = (NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]).dbl();
+
+        std::cout<< simTime()<<", Reading id=" << msg->getName() <<", Msg name=" << msg->getName()
+                                          << ", Class Name=" << msg->getClassName()
+                                          << ", Owner=" << msg->getOwner()->getName()<< endl;
+
+        packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(macDelay);
 }
-
 
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l)
@@ -197,13 +218,14 @@ void CollectStats::prepareNetAttributes()
     for(int i=0; i<3;i++) // Fixme
     {
         criteriaStr.push_back( boost::lexical_cast<std::string>(
-        Utilities::calculateMeanVec(listOfCriteriabyInterfaceId[i]->throughput)));
+        Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->throughput)));
 
         criteriaStr.push_back( boost::lexical_cast<std::string>(
+
         Utilities::calculateMeanVec(listOfCriteriabyInterfaceId[i]->delay)));
 
         criteriaStr.push_back( boost::lexical_cast<std::string>(
-                Utilities::calculateMeanVec(listOfCriteriabyInterfaceId[i]->reliability)));
+                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->reliability)));
     }
     for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
         if (a == 0) {
@@ -222,6 +244,17 @@ void CollectStats::prepareNetAttributes()
 }
 
 
+void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, double value,cObject *details)
+{
+    std::string moduleName = source->getParentModule()->getName();
+    if(moduleName=="lteNic")
+    {
+//    if(signal== LtePhyVUeMode4::interPacketDelay)
+//    {
+//        listOfCriteriabyInterfaceId.insert({ MODE4, new listOfCriteria() });
+//        listOfCriteriabyInterfaceId[MODE4]->interPacketGap.push_back(value);
+//    }
+    }
 
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
@@ -233,6 +266,7 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
     auto packet=dynamic_cast<cMessage*>(msg);
     std::string msgName=packet->getName();
 
+
     if(moduleName=="wlan")
     {
         b = msgName == "hetNets" ;
@@ -242,6 +276,15 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
             if(listOfCriteriabyInterfaceId.find(interfaceId) == listOfCriteriabyInterfaceId.end())
                 listOfCriteriabyInterfaceId.insert({ interfaceId, new listOfCriteria()});
             recordStatsForWlan(signal, packet,listOfCriteriabyInterfaceId[interfaceId]); // FixMe
+
+    bool b = (msgName.find("hetNets") == 0);
+       if(b){ // To ignore any control traffic
+        if(moduleName=="wlan")
+        {
+            std::string fullModuleName = source->getParentModule()->getFullName();
+            interfaceId = Utilities::extractNumber(fullModuleName);
+            recordStatsForWlan(signal,source->getName(),packet,interfaceId );
+
         }
     }else if(moduleName=="lteNic")
     {
@@ -250,10 +293,16 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
         bool searchResult=Utilities::findKeyByValue(result, interfaceToProtocolMap, string("mode4"));
         if(searchResult)
         {
+
             interfaceId=result.at(0);
             if(listOfCriteriabyInterfaceId.find(interfaceId)== listOfCriteriabyInterfaceId.end())
                 listOfCriteriabyInterfaceId.insert({interfaceId,new listOfCriteria()});
             recordStatsForLte(signal, packet, listOfCriteriabyInterfaceId[interfaceId]);
+
+            interfaceId=MODE4;
+           if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
+                listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
+            recordStatsForLte(signal, packet, listOfCriteriaByInterfaceId[interfaceId]);
         }
        }
     // TODO call prepareNetAttributes with DLT adaptation ;
