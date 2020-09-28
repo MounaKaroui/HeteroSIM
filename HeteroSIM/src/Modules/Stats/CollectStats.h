@@ -47,17 +47,18 @@ public:
         std::vector<double>  sentPackets;
         std::vector<double>  throughput;
         std::vector<double>  reliability;
-
     };
 
 
 
-    map<int,listOfCriteria*> listOfCriteriabyInterfaceId;
+    map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
+    map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
+
+
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
-    map<long,simtime_t> packetFromUpperTimeStamps;
 
-    map<int,simtime_t> wlanPreviousTransmissionTimes;
+//    map<int,simtime_t> wlanPreviousTransmissionTimes;
 
     double dltMin;
 
@@ -93,7 +94,7 @@ protected:
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
 
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
-    void recordStatsForWlan(simsignal_t comingSignal,std::string sourceName, cMessage* msg,  listOfCriteria* l);
+    void recordStatsForWlan(simsignal_t comingSignal,std::string sourceName, cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg,  listOfCriteria* l);
     void printMapElements();
     void prepareNetAttributes();
