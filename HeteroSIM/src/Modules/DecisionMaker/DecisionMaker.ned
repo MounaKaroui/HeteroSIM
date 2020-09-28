@@ -30,7 +30,7 @@ simple DecisionMaker
         bool mode4IsActive = default(false);
         int criteriaNum=default(3);
         // TODO: transform absolute path to relative
-        string pathToConfigFiles=default("/home/mouna1/HeteroSimWorkSpace/HeteroSIM/src/Base/mcda/");
+        string pathToConfigFiles=default("/home/mouna1/HeteroSimWorkSpace/HeteroSIM/src/Base/mcda/"); //TODO replace to generic name 
    
  		bool isDeciderActive=default(true); 
  		int dummyNetworkChoice=default(0);     
