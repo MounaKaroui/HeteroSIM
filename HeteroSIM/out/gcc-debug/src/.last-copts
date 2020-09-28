@@ -1,1 +1,0 @@
--g -Wall -MMD -MP -MF .d  -fPIC  -fno-stack-protector -DHAVE_SWAPCONTEXT -DWITH_MPI -DXMLPARSER=libxml -DPREFER_QTENV -DWITH_QTENV -DWITH_PARSIM -DWITH_NETBUILDER -DWITH_OSG  -DINET_IMPORT -I. -I/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src -I/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src -I/home/mouna1/omnetpp-5.5.1/include
