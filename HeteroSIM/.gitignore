@@ -1,1 +1,38 @@
+# local and generated files not to be committed
+src/Makefile
+src/Makefile.vc
+*_m.h
+*_m.cc
+*_sm.h
+*_sm.cc
+
+
+# output and result files
+.settings/
+*.log
+*.sim
+*.pyc
+*.pcap
+*.sca
+*.vec
+*.vci
+.buildlog*
+
+# ignore binary files
 out/
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.o
+*.obj
+*.pdb
+*.idb
+*.manifest
+.qtenv.ini
+.qtenvrc
+.cmdenv-log
+netanim-trace.txt
+*.out
