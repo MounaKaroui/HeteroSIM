@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.VanetNic;
+package heterosim.src.VanetNic;
 import inet.linklayer.ieee80211.Ieee80211Nic;
 
 module VanetNic extends Ieee80211Nic

@@ -13,9 +13,9 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.Modules.nodes;
-import heterosim.Base.IBaseAppl;
-import heterosim.Modules.DecisionMaker.DecisionMaker;
+package heterosim.src.Modules.nodes;
+import heterosim.src.Base.IBaseAppl;
+import heterosim.src.Modules.DecisionMaker.DecisionMaker;
 import inet.common.queue.DropTailQueue;
 import inet.linklayer.ieee802154.Ieee802154NarrowbandNic;
 import inet.linklayer.ieee802154.Ieee802154UWBIRNic;

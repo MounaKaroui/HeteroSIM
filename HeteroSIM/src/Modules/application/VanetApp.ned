@@ -13,12 +13,12 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.Modules.application;
+package heterosim.src.Modules.application;
 
 //
 // TODO auto-generated module
 //
-import heterosim.Base.IBaseAppl;
+import heterosim.src.Base.IBaseAppl;
 simple VanetApp like IBaseAppl
 {
    

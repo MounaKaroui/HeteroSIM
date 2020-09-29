@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.VanetNic;
+package heterosim.src.VanetNic;
 
 //
 // TODO auto-generated module

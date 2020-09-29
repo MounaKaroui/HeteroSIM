@@ -1,3 +1,0 @@
-package heterosim;
-
-@license(LGPL);

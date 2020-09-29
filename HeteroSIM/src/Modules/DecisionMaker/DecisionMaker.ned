@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.Modules.DecisionMaker;
+package heterosim.src.Modules.DecisionMaker;
 
 import inet.common.queue.DropTailQueue;
 

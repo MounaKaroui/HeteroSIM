@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.Base;
+package heterosim.src.Base;
 
 // Base module for Appl layer module
 moduleinterface IBaseAppl
