@@ -5,7 +5,7 @@ src/Makefile.vc
 *_m.cc
 *_sm.h
 *_sm.cc
-
+.cproject
 
 # output and result files
 .settings/
