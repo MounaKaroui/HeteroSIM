@@ -77,6 +77,7 @@ FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_)
     lteControlInfo->setDuration(1000);
     lteControlInfo->setPriority(3);
     lteControlInfo->setCreationTime(simTime());
+    lteControlInfo->setMsgFlag(random());
     return lteControlInfo;
 }
 

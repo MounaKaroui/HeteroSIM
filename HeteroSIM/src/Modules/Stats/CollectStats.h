@@ -23,9 +23,8 @@
 #include <inet/linklayer/ieee80211/mac/Ieee80211Mac.h>
 #include "Base/mcda/MCDM.h"
 #include "inet/linklayer/csma/CSMA.h"
-
+#include "stack/pdcp_rrc/layer/LtePdcpRrc.h"
 #include <omnetpp.h>
-
 #include "../../Base/Utilities.h"
 #include "stack/phy/layer/LtePhyVUeMode4.h"
 #include "stack/mac/layer/LteMacVUeMode4.h"
@@ -45,7 +44,6 @@ public:
         std::vector<double>  delay;
         std::vector<double>  throughput;
         std::vector<double>  reliability;
-//        long  receivedPackets; obsolete
         long  sentPackets;
         long  droppedPackets;
     };
