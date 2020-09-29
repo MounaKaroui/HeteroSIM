@@ -56,24 +56,29 @@ void CollectStats::registerSignals()
         // TODO: subscribe to the drop signals
 
         if (result[1] == "80211" || result[1] == "80215") {
+
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal);
-            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromLowerSignal);
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
-            subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
+            subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetSentToLowerSignal);
+
+//            cModule* module = getModuleByPath(macModuleName.c_str());
+//            module->isSubscribed(signalID, listener)
+
+
             //NF_LINK_BREAK dropped signal for CSMA Todo
             //NF_PACKET_DROP dropped signal // Todo
         }
         else if(result[1]=="mode4")
         {
-            std::string macModuleName = "^.lteNic.mac";
-            std::string phyModuleName = "^.lteNic.phy";
-            bool mode4 = getAncestorPar("withMode4");
-            if (mode4) {
-                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacBase::receivedPacketFromLowerLayer);
-                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacBase::receivedPacketFromUpperLayer);
-                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::rcvdFromUpperLayerSignal);
-
-            }
+//            std::string macModuleName = "^.lteNic.mac";
+//            std::string phyModuleName = "^.lteNic.phy";
+//            bool mode4 = getAncestorPar("withMode4");
+//            if (mode4) {
+//                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacBase::receivedPacketFromLowerLayer);
+//                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacBase::receivedPacketFromUpperLayer);
+//                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::rcvdFromUpperLayerSignal);
+//
+//            }
         }
 
     }
@@ -110,8 +115,8 @@ void CollectStats::recordThroughputStats(simsignal_t comingSignal,simsignal_t si
            computeThroughput(simTime(), PK(msg)->getBitLength(),th); // FixMe
            listOfCriteriaByInterfaceId[interfaceId]->throughput.push_back(th);
            // rcvd packets
-           rcvd++;
-           listOfCriteriaByInterfaceId[interfaceId]->receivedPackets.push_back(rcvd);
+//           rcvd++;
+//           listOfCriteriaByInterfaceId[interfaceId]->receivedPackets.push_back(rcvd);
        }
 
 }
@@ -125,64 +130,66 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 
 
 
-void CollectStats::recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  int interfaceId)
+void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
         listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
     // local variables
-    double macDelay=0;
-    double sent=0;
-    double dropped=0;
+    simtime_t macDelay;
+    simtime_t transmissionDurattion;
 
-    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  msg->getOwner()->getName()==string("mac") ){
+    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac") ){
 
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
         printMsg("Inserting",msg);
 
-    } else if (comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal && msg->getOwner()->getName()==string("radio")) {
+    } else if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) {
 
         ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-        macDelay = (NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]).dbl();
-        packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(macDelay);
-        sent++;
-        listOfCriteriaByInterfaceId[interfaceId]->sentPackets.push_back(sent);
         printMsg("Reading",msg);
+        macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
+
+        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
+        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
+        transmissionDurattion = radioFrame->getDuration() ;
+
+        simtime_t delay = macDelay+transmissionDurattion;  // delay.inUnit(SIMTIME_MS)
+        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(delay));
+        packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+
+        listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
     }
 
     if(comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // for packet drop calculation
     {
-        dropped++;
-        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets.push_back(dropped);
+        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
     }
 
-    recordThroughputStats(comingSignal,LayeredProtocolBase::packetReceivedFromLowerSignal, msg, interfaceId);
+//    recordThroughputStats(comingSignal,LayeredProtocolBase::packetReceivedFromLowerSignal, msg, interfaceId);
 }
 
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
-    double sent=0;
-    double macDelay=0;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
                     listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
 
-     if ( comingSignal == LteMacBase::receivedPacketFromUpperLayer){
+//     if ( comingSignal == LteMacBase::receivedPacketFromUpperLayer){
 
            //printMsg("Inserting",msg);
            // FixMe: Lte delay
 
-       }
+//       }
 
-     if ( comingSignal ==  LtePhyVUeMode4::rcvdFromUpperLayerSignal) {
+//     if ( comingSignal ==  LtePhyVUeMode4::rcvdFromUpperLayerSignal) {
 
        // TODO LTE delay
-           sent++;
-           listOfCriteriaByInterfaceId[interfaceId]->sentPackets.push_back(sent);
-       }
-    recordThroughputStats(comingSignal,LteMacBase::receivedPacketFromLowerLayer,msg,interfaceId);
+//           sent++;
+//           listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
+//       }
+//    recordThroughputStats(comingSignal,LteMacBase::receivedPacketFromLowerLayer,msg,interfaceId);
     // Todo
 }
 
@@ -235,7 +242,6 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 {
     std::string moduleName = source->getParentModule()->getName();
     int interfaceId=0;
-    bool b=false;
     auto packet=dynamic_cast<cMessage*>(msg);
     std::string msgName=packet->getName();
     if(moduleName=="wlan")
@@ -246,7 +252,7 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
         {
           std::string fullModuleName = source->getParentModule()->getFullName();
           interfaceId = Utilities::extractNumber(fullModuleName);
-          recordStatsForWlan(signal,packet,interfaceId);
+          recordStatsForWlan(signal,source->getName(),packet,interfaceId);
 
         }
     }else if(moduleName=="lteNic")

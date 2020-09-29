@@ -45,9 +45,9 @@ public:
         std::vector<double>  delay;
         std::vector<double>  throughput;
         std::vector<double>  reliability;
-        std::vector<double>  receivedPackets;
-        std::vector<double>  sentPackets;
-        std::vector<double>  droppedPackets;
+//        long  receivedPackets; obsolete
+        long  sentPackets;
+        long  droppedPackets;
     };
 
 
@@ -80,7 +80,7 @@ protected:
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
 
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
-    void recordStatsForWlan(simsignal_t comingSignal, cMessage* msg,  int interfaceId);
+    void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
 
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
     void prepareNetAttributes();
