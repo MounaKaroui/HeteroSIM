@@ -47,9 +47,10 @@ bool findKeyByValue(std::vector<K> & keyVec, std::map<K, V> mapOfElements, V val
        if (it.second == value) {
            keyVec.push_back(it.first);
            bResult=true;
-           return bResult;
+           break;
        }
     }
+    return bResult;
 }
 
 } /* namespace Builder */

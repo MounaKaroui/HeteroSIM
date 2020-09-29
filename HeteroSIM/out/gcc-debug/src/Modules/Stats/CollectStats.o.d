@@ -189,12 +189,45 @@
  /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/contract/IMACProtocolControlInfo.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/csma/CSMAFrame_m.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/base/MACFrameBase_m.h \
- Modules/Stats/../../Base/Utilities.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/common/Ieee802Ctrl.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteControlInfo.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteControlInfo_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/layer/LtePdcpRrc.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/LteBinder.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteCommon.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/features.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/PhyPisaData.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/nodes/ExtCell.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/layer/LteMacBase.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/ConnectionsTable.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/NonIpConnectionsTable.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/ipv4/IPv4Datagram.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/INetworkDatagram.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/ipv4/IPv4Datagram_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/TLVOption.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/TLVOption_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/INETDefs.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/common/IPProtocolId_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/lteip/LteIp.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/queue/QueueBase.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/queue/AbstractQueue.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/ipv4/IPv4ControlInfo.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/INetworkProtocolControlInfo.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/ipv4/IPv4ControlInfo_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ProtocolMap.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteControlInfo.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteControlInfo_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/tcp_common/TCPSegment.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/contract/ITransportPacket.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/tcp_common/TCPSegment_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ByteArray.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ByteArray_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/udp/UDPPacket.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/udp/UDPPacket_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/udp/UDP.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/contract/udp/UDPControlInfo.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/contract/udp/UDPControlInfo_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/packet/LtePdcpPdu_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/layer/entity/LtePdcpEntity.h \
+ Modules/Stats/../../Base/Utilities.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/common/Ieee802Ctrl.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ModuleAccess.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/IInterfaceTable.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/layer/LtePhyVUeMode4.h \
@@ -209,12 +242,8 @@
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/packet/LteAirFrame.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/packet/LteAirFrame_m.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/layer/LteMacEnb.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/layer/LteMacBase.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/deployer/LteDeployer.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/das/RemoteAntennaSet.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/LteBinder.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/PhyPisaData.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/nodes/ExtCell.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/amc/LteAmc.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/feedback/LteFeedback.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/amc/UserTxParams.h \
@@ -251,7 +280,6 @@
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/timer/TTimer.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/timer/TTimerMsg_m.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/timer/TMultiTimerMsg_m.h \
- /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/packet/LtePdcpPdu_m.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/packet/SidelinkControlInformation_m.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/packet/LteSchedulingGrant.h \
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/packet/LteSchedulingGrant_m.h \
@@ -273,7 +301,8 @@
  /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/packet/cbr_m.h \
  Modules/Stats/../../Modules/DecisionMaker/DecisionMaker.h \
  Modules/Stats/../../Modules/DecisionMaker/../../Base/Utilities.h \
- Modules/Stats/../../Modules/DecisionMaker/../../Modules/messages/HeterogeneousMessage_m.h
+ Modules/Stats/../../Modules/DecisionMaker/../../Modules/messages/HeterogeneousMessage_m.h \
+ /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/layer/LtePdcpRrcUeD2D.h
 
 Modules/Stats/CollectStats.h:
 
@@ -659,17 +688,83 @@ Base/mcda/Matrix.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/base/MACFrameBase_m.h:
 
-Modules/Stats/../../Base/Utilities.h:
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/layer/LtePdcpRrc.h:
 
-/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/common/Ieee802Ctrl.h:
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/LteBinder.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteCommon.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/features.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/PhyPisaData.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/nodes/ExtCell.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/layer/LteMacBase.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/ConnectionsTable.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/NonIpConnectionsTable.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/ipv4/IPv4Datagram.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/INetworkDatagram.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/ipv4/IPv4Datagram_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/TLVOption.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/TLVOption_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/INETDefs.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/common/IPProtocolId_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/lteip/LteIp.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/queue/QueueBase.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/queue/AbstractQueue.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/ipv4/IPv4ControlInfo.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/INetworkProtocolControlInfo.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/networklayer/contract/ipv4/IPv4ControlInfo_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ProtocolMap.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteControlInfo.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteControlInfo_m.h:
 
-/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/LteCommon.h:
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/tcp_common/TCPSegment.h:
 
-/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/features.h:
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/contract/ITransportPacket.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/tcp_common/TCPSegment_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ByteArray.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ByteArray_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/udp/UDPPacket.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/udp/UDPPacket_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/udp/UDP.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/contract/udp/UDPControlInfo.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/transportlayer/contract/udp/UDPControlInfo_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/packet/LtePdcpPdu_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/layer/entity/LtePdcpEntity.h:
+
+Modules/Stats/../../Base/Utilities.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/linklayer/common/Ieee802Ctrl.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/inet/src/inet/common/ModuleAccess.h:
 
@@ -699,17 +794,9 @@ Modules/Stats/../../Base/Utilities.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/layer/LteMacEnb.h:
 
-/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/layer/LteMacBase.h:
-
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/deployer/LteDeployer.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/das/RemoteAntennaSet.h:
-
-/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/LteBinder.h:
-
-/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/binder/PhyPisaData.h:
-
-/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/corenetwork/nodes/ExtCell.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/amc/LteAmc.h:
 
@@ -783,8 +870,6 @@ Modules/Stats/../../Base/Utilities.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/common/timer/TMultiTimerMsg_m.h:
 
-/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/packet/LtePdcpPdu_m.h:
-
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/phy/packet/SidelinkControlInformation_m.h:
 
 /home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/mac/packet/LteSchedulingGrant.h:
@@ -828,3 +913,5 @@ Modules/Stats/../../Modules/DecisionMaker/DecisionMaker.h:
 Modules/Stats/../../Modules/DecisionMaker/../../Base/Utilities.h:
 
 Modules/Stats/../../Modules/DecisionMaker/../../Modules/messages/HeterogeneousMessage_m.h:
+
+/home/mouna1/myGitDepot/HeteroSIM/dependency/simulte/src/stack/pdcp_rrc/layer/LtePdcpRrcUeD2D.h:

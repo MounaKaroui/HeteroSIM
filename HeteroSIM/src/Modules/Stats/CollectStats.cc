@@ -19,13 +19,13 @@
 #include <numeric>
 #include "../../Modules/DecisionMaker/DecisionMaker.h"
 #include<boost/lexical_cast.hpp>
-
-
-
+#include "stack/pdcp_rrc/layer/LtePdcpRrcUeD2D.h"
 #include <bits/stdc++.h>
 #include <boost/algorithm/string.hpp>
 
 Define_Module(CollectStats);
+static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
+static const  simsignal_t sentPacketToLowerLayerLteSignal = cComponent::registerSignal("sentPacketToLowerLayer");
 
 void CollectStats::initialize()
 {
@@ -65,12 +65,13 @@ void CollectStats::registerSignals()
         }
         else if(result[1]=="mode4")
         {
-            std::string macModuleName = "^.lteNic.mac";
+            std::string macModuleName = "^.lteNic.pdcpRrc";
             std::string phyModuleName = "^.lteNic.phy";
             bool mode4 = getAncestorPar("withMode4");
             if (mode4) {
-                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacBase::receivedPacketFromLowerLayer);
-                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacBase::receivedPacketFromUpperLayer);
+
+                    subscribeToSignal<LtePdcpRrcUeD2D>(macModuleName,receivedPacketFromUpperLayerLteSignal);
+                    subscribeToSignal<LtePdcpRrcUeD2D>(macModuleName,sentPacketToLowerLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::rcvdFromUpperLayerSignal);
 
             }
@@ -120,7 +121,7 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 {
     std::cout<< simTime()<< ", "<< type  <<" id=" << msg->getTreeId()  << " ,tree id= " << msg->getTreeId()<<", Msg name=" << msg->getName()
                   << ", Class Name=" << msg->getClassName()
-                  << ", Owner=" << msg->getOwner()->getName()<< endl;
+                  << ", Owner=" << msg->getOwner()->getName() << endl;
 }
 
 
@@ -169,21 +170,33 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
                     listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
 
-     if ( comingSignal == LteMacBase::receivedPacketFromUpperLayer){
+     if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){
+         FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
+         packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
+         std::cout<< "SimTime= "<< simTime() <<" ,Inserting msgFlag= "<< lteInfo->getMsgFlag() <<endl;
 
-           //printMsg("Inserting",msg);
-           // FixMe: Lte delay
-
-       }
-
+     }
      if ( comingSignal ==  LtePhyVUeMode4::rcvdFromUpperLayerSignal) {
+         // TODO LTE delay
 
-       // TODO LTE delay
-           sent++;
-           listOfCriteriaByInterfaceId[interfaceId]->sentPackets.push_back(sent);
+         if(msg->getClassName()==string("LteMacPdu"))
+         {
+             LteMacPdu* pkt=dynamic_cast<LteMacPdu*>(msg);
+             UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(pkt->getControlInfo());
+             std::cout<< "SimTime= "<< simTime() <<" ,Reading msgFlag= "<< lteInfo->getMsgFlag() <<endl;
+             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(to_string(lteInfo->getMsgFlag())) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
+             macDelay = (NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]).dbl();
+             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(to_string(lteInfo->getMsgFlag()));
+             listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(macDelay);
+             std::cout<< "Lte Mac delay= " << macDelay <<endl;
+         }
+         sent++;
+         listOfCriteriaByInterfaceId[interfaceId]->sentPackets.push_back(sent);
        }
-    recordThroughputStats(comingSignal,LteMacBase::receivedPacketFromLowerLayer,msg,interfaceId);
-    // Todo
+
+     // throughput calculation
+     //recordThroughputStats(comingSignal,LtePhyVUeMode4::rcvdFromUpperLayerSignal,msg,interfaceId);
+
 }
 
 
@@ -235,7 +248,6 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 {
     std::string moduleName = source->getParentModule()->getName();
     int interfaceId=0;
-    bool b=false;
     auto packet=dynamic_cast<cMessage*>(msg);
     std::string msgName=packet->getName();
     if(moduleName=="wlan")
