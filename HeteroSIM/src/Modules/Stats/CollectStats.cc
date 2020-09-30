@@ -93,10 +93,10 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 }
 
 
-void CollectStats::recordThroughputStats(int interfaceId,cMessage* msg, double interval)
+void CollectStats::computeEffectiveTransmissionRate(int interfaceId,cMessage* msg, double interval)
 {
-    double th = (listOfCriteriaByInterfaceId[interfaceId]->sentPackets)*(PK(msg)->getBitLength())/interval; // bps
-    listOfCriteriaByInterfaceId[interfaceId]->effectiveTransmissionRate.push_back(th);
+    double effectiveRate= (listOfCriteriaByInterfaceId[interfaceId]->sentPackets)*(PK(msg)->getBitLength())/interval; // bps
+    listOfCriteriaByInterfaceId[interfaceId]->effectiveTransmissionRate.push_back(effectiveRate);
 }
 
 
@@ -167,7 +167,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
              listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(macDelay.dbl());
              packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
              listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
-             recordThroughputStats(interfaceId,msg,macDelay.dbl());
+             computeEffectiveTransmissionRate(interfaceId,msg,macDelay.dbl());
          }
 
        }
