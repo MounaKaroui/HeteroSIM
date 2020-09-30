@@ -59,6 +59,7 @@ void CollectStats::registerSignals()
 
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal);
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
+            subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
             subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetSentToLowerSignal);
 
 //            cModule* module = getModuleByPath(macModuleName.c_str());
@@ -137,26 +138,25 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
     // local variables
-    simtime_t macDelay;
-    simtime_t transmissionDurattion;
+    simtime_t macAndRadioDelay;
 
-    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac") ){
+    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac") ){ //when packet enter to MAC layer
 
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
         printMsg("Inserting",msg);
 
-    } else if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) {
+    } else if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
 
         ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
         printMsg("Reading",msg);
-        macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
+        macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
-        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
-        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
-        transmissionDurattion = radioFrame->getDuration() ;
+        /* TODO Uncomment these 3 lines in case of the need of the macDelay only*/
+//        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
+//        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
+//        simtime_t macDelay = macAndRadioDelay -radioFrame->getDuration();
 
-        simtime_t delay = macDelay+transmissionDurattion;  // delay.inUnit(SIMTIME_MS)
-        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(delay));
+        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(macAndRadioDelay));
         packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
 
         listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
@@ -192,7 +192,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
              UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(pkt->getControlInfo());
              std::cout<< "SimTime= "<< simTime() <<" ,Reading msgFlag= "<< lteInfo->getMsgFlag() <<endl;
              ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(to_string(lteInfo->getMsgFlag())) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-             macDelay = (NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]).dbl();
+             double macDelay = (NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]).dbl();
              packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(to_string(lteInfo->getMsgFlag()));
              listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(macDelay);
              std::cout<< "Lte Mac delay= " << macDelay <<endl;
