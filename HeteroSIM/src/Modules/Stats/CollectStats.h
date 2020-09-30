@@ -76,6 +76,7 @@ protected:
     void printMsg(std::string type, cMessage*  msg);
     virtual void initialize();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
 
     void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);

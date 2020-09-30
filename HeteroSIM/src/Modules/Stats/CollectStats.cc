@@ -25,7 +25,7 @@
 
 Define_Module(CollectStats);
 static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
-static const  simsignal_t sentPacketToLowerLayerLteSignal = cComponent::registerSignal("sentPacketToLowerLayer");
+//static const  simsignal_t macPacketLossD2D=cComponent::registerSignal("macPacketLossD2D");
 
 void CollectStats::initialize()
 {
@@ -63,21 +63,20 @@ void CollectStats::registerSignals()
 
 //            cModule* module = getModuleByPath(macModuleName.c_str());
 //            module->isSubscribed(signalID, listener)
-
-
             //NF_LINK_BREAK dropped signal for CSMA Todo
             //NF_PACKET_DROP dropped signal // Todo
         }
         else if(result[1]=="mode4")
         {
-            std::string macModuleName = "^.lteNic.pdcpRrc";
+            std::string pdcpRrcModuleName = "^.lteNic.pdcpRrc";
+            std::string macModuleName = "^.lteNic.mac";
             std::string phyModuleName = "^.lteNic.phy";
             bool mode4 = getAncestorPar("withMode4");
             if (mode4) {
 
-                    subscribeToSignal<LtePdcpRrcUeD2D>(macModuleName,receivedPacketFromUpperLayerLteSignal);
-                    subscribeToSignal<LtePdcpRrcUeD2D>(macModuleName,sentPacketToLowerLayerLteSignal);
+                    subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::rcvdFromUpperLayerSignal);
+                    //subscribeToSignal<LteMacVUeMode4>(macModuleName, macPacketLossD2D);
 
             }
         }
@@ -178,27 +177,34 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                     listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
 
      if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){
+         std::string msgName=PK(msg)->getName();
+         if((msgName.find("hetNets")==0))
+         {
+         std::cout<< "Msg Name= "<< PK(msg)->getName()<<endl;
          FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
          packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
          std::cout<< "SimTime= "<< simTime() <<" ,Inserting msgFlag= "<< lteInfo->getMsgFlag() <<endl;
-
+         }
      }
      if ( comingSignal ==  LtePhyVUeMode4::rcvdFromUpperLayerSignal) {
-         // TODO LTE delay
-
          if(msg->getClassName()==string("LteMacPdu"))
          {
              LteMacPdu* pkt=dynamic_cast<LteMacPdu*>(msg);
              UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(pkt->getControlInfo());
              std::cout<< "SimTime= "<< simTime() <<" ,Reading msgFlag= "<< lteInfo->getMsgFlag() <<endl;
              ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(to_string(lteInfo->getMsgFlag())) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-             macDelay = (NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]).dbl();
+             double macDelay = (NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]).dbl();
              packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(to_string(lteInfo->getMsgFlag()));
              listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(macDelay);
              std::cout<< "Lte Mac delay= " << macDelay <<endl;
          }
          listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
        }
+
+//     if(comingSignal==macPacketLossD2D)
+//      {
+//         listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
+//      }
 
      // throughput calculation
      //recordThroughputStats(comingSignal,LtePhyVUeMode4::rcvdFromUpperLayerSignal,msg,interfaceId);
@@ -217,7 +223,7 @@ void CollectStats::prepareNetAttributes()
     std::vector<std::string> criteriaStr;
     std::string critValuesPerPathStr = "";
 
-    for(int i=0; i<3;i++) // Fixme
+    for(int i=0; i<3;i++) // Fixme 3 is the number of alternatives
     {
         // TODO change Calculate Mean with EMA and DTL adaptation staff
         criteriaStr.push_back( boost::lexical_cast<std::string>(
@@ -247,7 +253,12 @@ void CollectStats::prepareNetAttributes()
 }
 
 
+void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, double value,cObject *details)
+{
 
+
+
+}
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
@@ -268,7 +279,7 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
         }
     }else if(moduleName=="lteNic")
     {
-        // Fixme : which message name to consider as mine...
+
         std::vector<int> result;
         bool searchResult=Utilities::findKeyByValue(result, interfaceToProtocolMap, string("mode4"));
         if(searchResult)
