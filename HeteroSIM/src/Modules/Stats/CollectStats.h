@@ -42,7 +42,7 @@ public:
 
     struct listOfCriteria{
         std::vector<double>  delay;
-        std::vector<double>  throughput;
+        std::vector<double>  effectiveTransmissionRate;
         std::vector<double>  reliability;
         long  sentPackets;
         long  droppedPackets;
@@ -71,20 +71,23 @@ public:
         mLinkLayer->subscribe(sigName, this);
     }
 
+    void printMsg(std::string type, cMessage*  msg);
+
 protected:
 
-    void printMsg(std::string type, cMessage*  msg);
     virtual void initialize();
+    void registerSignals();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
 
-    void computeThroughput(simtime_t now, unsigned long bits, double& throughput);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
-
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
+    void computeEffectiveTransmissionRate(int interfaceId,cMessage* msg,double interval);
+
     void prepareNetAttributes();
     double updateDLT(double x);
-    void registerSignals();
-    void recordThroughputStats(simsignal_t comingSignal,simsignal_t sigName, cMessage* msg, int interfaceId);
+
+
 
 
 };
