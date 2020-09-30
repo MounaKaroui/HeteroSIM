@@ -59,7 +59,6 @@ void CollectStats::registerSignals()
 
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal);
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
-            subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
             subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetSentToLowerSignal);
 
 //            cModule* module = getModuleByPath(macModuleName.c_str());
