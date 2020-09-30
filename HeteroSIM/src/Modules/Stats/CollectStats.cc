@@ -75,9 +75,8 @@ void CollectStats::registerSignals()
             if (mode4) {
 
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
-                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::rcvdFromUpperLayerSignal);
-                    //subscribeToSignal<LteMacVUeMode4>(macModuleName, macPacketLossD2D);
-
+                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
+                    //subscribeToSignal<LteMacVUeMode4>(macModuleName, macPacketLossD2D); // ToDO: track dropped in Lte Mac layer
             }
         }
 
@@ -144,7 +143,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
 
-    simtime_t macDelay;
+    simtime_t lteInterLayerDelay;
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
                     listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
 
@@ -156,18 +155,19 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
          packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
          }
      }
-     if ( comingSignal ==  LtePhyVUeMode4::rcvdFromUpperLayerSignal) {
-         if(msg->getClassName()==string("LteMacPdu"))
+     if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) {
+         if(msg->getClassName()==string("LteAirFrame")) //
          {
-             LteMacPdu* pkt=dynamic_cast<LteMacPdu*>(msg);
-             UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(pkt->getControlInfo());
+             printMsg("Reading", msg);
+             UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
              std::string msgFlag=to_string(lteInfo->getMsgFlag());
              ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-             macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag];
-             listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(macDelay.dbl());
-             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+             lteInterLayerDelay= NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag];
+             listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(lteInterLayerDelay.dbl());
              listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
-             computeEffectiveTransmissionRate(interfaceId,msg,macDelay.dbl());
+             computeEffectiveTransmissionRate(interfaceId,msg,lteInterLayerDelay.dbl());
+             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+             //std::cout<< "Lte Mac delay= "<< lteInterLayerDelay <<endl;
          }
 
        }
