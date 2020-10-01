@@ -81,6 +81,15 @@ FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_)
     return lteControlInfo;
 }
 
+bool checkLteCtrlInfo(UserControlInfo* lteInfo)
+{
+    if (lteInfo)
+        return (lteInfo->getFrameType() != HANDOVERPKT
+                && lteInfo->getFrameType() != D2DMODESWITCHPKT
+                && lteInfo->getFrameType() != RACPKT
+                && lteInfo->getFrameType() != GRANTPKT
+                && lteInfo->getFrameType() != HARQPKT);
+}
 double calculateStdVec(std::vector<double> v)
 {
     accumulator_set<double, stats<tag::variance> > acc;
