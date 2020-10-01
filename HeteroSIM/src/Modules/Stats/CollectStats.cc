@@ -126,7 +126,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
     }
 
-    if (comingSignal== NF_PACKET_DROP || comingSignal== NF_PACKET_DROP || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
+    if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
     {
         listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
         double currentReliability = getCurrentInterfaceReliability(interfaceId);
@@ -276,7 +276,7 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 double CollectStats::getCurrentInterfaceReliability(int interfaceId) {
     long currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPackets;
     long currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
-    return (currentlySentPck - currentlyDroppedPck) / currentlyDroppedPck;;
+    return (currentlySentPck - currentlyDroppedPck) / currentlySentPck;;
 }
 
 
