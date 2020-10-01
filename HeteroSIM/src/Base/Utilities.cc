@@ -55,6 +55,11 @@ int extractNumber(std::string input)
     return id;
 }
 
+string getInterfaceNameFromFullPath(std::string pathName){
+    return cStringTokenizer(pathName.c_str(),string(".").c_str()).asVector()[2];
+}
+
+
 Ieee802Ctrl* Ieee802CtrlInfo(std::string ModuleName)
 {
     auto controlInfo = new Ieee802Ctrl();

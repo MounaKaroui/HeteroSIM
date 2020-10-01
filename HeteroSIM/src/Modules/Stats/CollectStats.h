@@ -72,6 +72,7 @@ public:
     }
 
     void printMsg(std::string type, cMessage*  msg);
+    double getCurrentInterfaceReliability(int interfaceId);
 
 protected:
 
