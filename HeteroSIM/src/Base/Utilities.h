@@ -30,6 +30,7 @@ namespace Utilities {
 Ieee802Ctrl* Ieee802CtrlInfo(std::string moduleName);
 FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_);
 int extractNumber(std::string input);
+string getInterfaceNameFromFullPath(std::string pathName);
 template<typename K, typename V>
 double calculateEMA(std::vector<double> v);
 double calculateStdVec(std::vector<double> v);

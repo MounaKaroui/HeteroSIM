@@ -54,21 +54,20 @@ void CollectStats::registerSignals()
         boost::split(result, mappingEntry, boost::is_any_of(":"));
         interfaceToProtocolMap.insert({stoi(result[0]),result[1]});
 
-        std::string macModuleName= "^.wlan["+ result[0]+"].mac";
-        std::string radioModuleName= "^.wlan["+ result[0]+"].radio";
-
-        // TODO: subscribe to the drop signals
 
         if (result[1] == "80211" || result[1] == "80215") {
 
-            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal);
+            std::string macModuleName= "^.wlan["+ result[0]+"].mac";
+            std::string radioModuleName= "^.wlan["+ result[0]+"].radio";
+
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
             subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetSentToLowerSignal);
 
-//            cModule* module = getModuleByPath(macModuleName.c_str());
-//            module->isSubscribed(signalID, listener)
-            //NF_LINK_BREAK dropped signal for CSMA Todo
-            //NF_PACKET_DROP dropped signal // Todo
+            //packet drop signals
+            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_PACKET_DROP);
+            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_LINK_BREAK);
+            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal); //TODO seek into replacing this signal by NF_PACKET_DROP --> modification of CSMA.cc
+
         }
         else if(result[1]=="mode4")
         {
@@ -88,12 +87,6 @@ void CollectStats::registerSignals()
 }
 
 
-void CollectStats::printMsg(std::string type, cMessage*  msg)
-{
-    std::cout<< simTime()<< ", "<< type  <<" id=" << msg->getTreeId()  << " ,tree id= " << msg->getTreeId()<<", Msg name=" << msg->getName()
-                  << ", Class Name=" << msg->getClassName()
-                  << ", Owner=" << msg->getOwner()->getName() << ", Msg length= " << PK(msg)->getByteLength() << endl;
-}
 
 
 void CollectStats::computeEffectiveTransmissionRate(int interfaceId,cMessage* msg, double interval)
@@ -111,34 +104,41 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
     // local variables
-    simtime_t macDelay;
-    simtime_t transmissionDurattion;
+    simtime_t macAndRadioDelay;
 
-    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac") ){
+    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac") ){ //when packet enter to MAC layer
 
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
         printMsg("Inserting",msg);
 
-    } else if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) {
+    } else if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
 
         ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
         printMsg("Reading",msg);
-        macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
+        macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
-        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
-        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
-        transmissionDurattion = radioFrame->getDuration() ;
+        /* TODO Uncomment these 3 lines in case of the need of the macDelay only*/
+//        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
+//        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
+//        simtime_t macDelay = macAndRadioDelay -radioFrame->getDuration();
 
-        simtime_t delay = macDelay+transmissionDurattion;  // delay.inUnit(SIMTIME_MS)
-        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(delay));
+        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(macAndRadioDelay));
         packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+
         listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
+        double currentReliability = getCurrentInterfaceReliability(interfaceId);
+        listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
     }
 
-    if(comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // for packet drop calculation
+    if (comingSignal== NF_PACKET_DROP || comingSignal== NF_PACKET_DROP || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
     {
         listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
+        double currentReliability = getCurrentInterfaceReliability(interfaceId);
+        listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
+
+        //TODO add delay penalties to consider in case of packet drop
     }
+
 
 //    recordThroughputStats(interfaceId, msg, delay);
 }
@@ -243,22 +243,21 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, double 
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
-    std::string moduleName = source->getParentModule()->getName();
+
+    std::string interfaceName = Utilities::getInterfaceNameFromFullPath(source->getFullPath());
     int interfaceId=0;
     auto packet=dynamic_cast<cMessage*>(msg);
     std::string msgName=packet->getName();
-    if(moduleName=="wlan")
-    {
-        std::string msgName=packet->getName();
-        bool b = (msgName.find("hetNets") == 0);
-        if(b)
-        {
-          std::string fullModuleName = source->getParentModule()->getFullName();
-          interfaceId = Utilities::extractNumber(fullModuleName);
-          recordStatsForWlan(signal,source->getName(),packet,interfaceId);
 
+    if(interfaceName.find("wlan")==0)
+    {
+        if((msgName.find("hetNets") == 0))
+        {
+          interfaceId = Utilities::extractNumber(interfaceName);
+          recordStatsForWlan(signal,source->getName(),packet,interfaceId);
         }
-    }else if(moduleName=="lteNic")
+
+    }else if(interfaceName.find("lteNic")==0)
     {
 
         std::vector<int> result;
@@ -273,6 +272,19 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
     //prepareNetAttributes();
 }
 
+
+void CollectStats::printMsg(std::string type, cMessage*  msg)
+{
+    std::cout<< simTime()<< ", "<< type  <<" id=" << msg->getTreeId()  << " ,tree id= " << msg->getTreeId()<<", Msg name=" << msg->getName()
+                  << ", Class Name=" << msg->getClassName()
+                  << ", Owner=" << msg->getOwner()->getName() << endl;
+}
+
+double CollectStats::getCurrentInterfaceReliability(int interfaceId) {
+    long currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPackets;
+    long currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
+    return (currentlySentPck - currentlyDroppedPck) / currentlyDroppedPck;;
+}
 
 
 
