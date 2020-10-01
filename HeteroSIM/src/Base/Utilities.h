@@ -38,6 +38,7 @@ double calculateMeanVec(vector<double> v);
 double calculateRollingMean(std::vector<double> v, int windowSize);
 double calculateCofficientOfVariation(std::vector<double> v);
 double calculateBeta(double n);
+bool checkLteCtrlInfo(UserControlInfo* lteInfo);
 
 
 template<typename K, typename V>
