@@ -22,6 +22,10 @@
 #include "stack/pdcp_rrc/layer/LtePdcpRrcUeD2D.h"
 #include <bits/stdc++.h>
 #include <boost/algorithm/string.hpp>
+#include "common/LteCommon.h"
+
+#include <omnetpp/cclassdescriptor.h>
+
 
 Define_Module(CollectStats);
 static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
@@ -88,7 +92,7 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 {
     std::cout<< simTime()<< ", "<< type  <<" id=" << msg->getTreeId()  << " ,tree id= " << msg->getTreeId()<<", Msg name=" << msg->getName()
                   << ", Class Name=" << msg->getClassName()
-                  << ", Owner=" << msg->getOwner()->getName() << endl;
+                  << ", Owner=" << msg->getOwner()->getName() << ", Msg length= " << PK(msg)->getByteLength() << endl;
 }
 
 
@@ -140,38 +144,40 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 }
 
 
+
+
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
 
     simtime_t lteInterLayerDelay;
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
-                    listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
+        listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
 
-     if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){
-         std::string msgName=PK(msg)->getName();
-         if((msgName.find("hetNets")==0))
-         {
-         FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
-         packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
-         }
-     }
-     if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) {
-         if(msg->getClassName()==string("LteAirFrame")) //
-         {
-             printMsg("Reading", msg);
-             UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-             std::string msgFlag=to_string(lteInfo->getMsgFlag());
-             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-             lteInterLayerDelay= NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag];
-             listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(lteInterLayerDelay.dbl());
-             listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
-             computeEffectiveTransmissionRate(interfaceId,msg,lteInterLayerDelay.dbl());
-             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
-             //std::cout<< "Lte Mac delay= "<< lteInterLayerDelay <<endl;
-         }
+    if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){
+        std::string msgName=PK(msg)->getName();
+        if((msgName.find("hetNets")==0))
+        {
+            FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
+            packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
+        }
+    }
+    if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) {
+            LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
+            UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+            if(Utilities::checkLteCtrlInfo(lteInfo)){
+                std::string msgFlag = to_string(lteInfo->getMsgFlag());
+                ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag)!= packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
+                lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
+                listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(lteInterLayerDelay.dbl());
+                listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
+                computeEffectiveTransmissionRate(interfaceId, msg, lteInterLayerDelay.dbl());
+                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+            }
 
-       }
+    }
 }
+
+
 
 
 

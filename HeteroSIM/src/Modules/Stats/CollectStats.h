@@ -28,8 +28,6 @@
 #include "../../Base/Utilities.h"
 #include "stack/phy/layer/LtePhyVUeMode4.h"
 #include "stack/mac/layer/LteMacVUeMode4.h"
-
-
 using namespace omnetpp;
 using namespace inet;
 using namespace inet::physicallayer;
@@ -86,7 +84,6 @@ protected:
 
     void prepareNetAttributes();
     double updateDLT(double x);
-
 
 
 
