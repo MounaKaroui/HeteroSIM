@@ -125,6 +125,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
         double currentReliability = getCurrentInterfaceReliability(interfaceId);
         listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
+        listOfCriteriaByInterfaceId[interfaceId]->timeStamp=NOW;
     }
 
     if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
@@ -177,8 +178,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 double currentReliability =(listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower/listOfCriteriaByInterfaceId[interfaceId]->receivedFromUpper)*100;
                 listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
             }
-
-        }}
+        }
+        listOfCriteriaByInterfaceId[interfaceId]->timeStamp=NOW;
+    }
 
 
 }

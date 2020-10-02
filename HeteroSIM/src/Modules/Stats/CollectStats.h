@@ -45,6 +45,7 @@ public:
         double  sentPacketsToLower;
         double  droppedPackets;
         double  receivedFromUpper;
+        simtime_t timeStamp;
     };
 
 
