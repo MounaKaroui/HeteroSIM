@@ -24,12 +24,9 @@
 #include <boost/algorithm/string.hpp>
 #include "common/LteCommon.h"
 
-#include <omnetpp/cclassdescriptor.h>
-
 
 Define_Module(CollectStats);
 static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
-//static const  simsignal_t macPacketLossD2D=cComponent::registerSignal("macPacketLossD2D");
 
 void CollectStats::initialize()
 {
@@ -79,7 +76,7 @@ void CollectStats::registerSignals()
 
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-                    //subscribeToSignal<LteMacVUeMode4>(macModuleName, macPacketLossD2D); // ToDO: track dropped in Lte Mac layer
+
             }
         }
 
@@ -91,7 +88,7 @@ void CollectStats::registerSignals()
 
 void CollectStats::computeEffectiveTransmissionRate(int interfaceId,cMessage* msg, double interval)
 {
-    double effectiveRate= (listOfCriteriaByInterfaceId[interfaceId]->sentPackets)*(PK(msg)->getBitLength())/interval; // bps
+    double effectiveRate= (listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower)*(PK(msg)->getBitLength())/interval; // bps
     listOfCriteriaByInterfaceId[interfaceId]->effectiveTransmissionRate.push_back(effectiveRate);
 }
 
@@ -125,7 +122,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(macAndRadioDelay));
         packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
 
-        listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
+        listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
         double currentReliability = getCurrentInterfaceReliability(interfaceId);
         listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
     }
@@ -153,28 +150,37 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
 
-    if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){
+    if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){ // When a packet enter to PDCP_RRC layer
         std::string msgName=PK(msg)->getName();
         if((msgName.find("hetNets")==0))
         {
             FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
             packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
+            listOfCriteriaByInterfaceId[interfaceId]->receivedFromUpper++;
         }
     }
-    if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) {
-            LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
-            UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-            if(Utilities::checkLteCtrlInfo(lteInfo)){
-                std::string msgFlag = to_string(lteInfo->getMsgFlag());
-                ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag)!= packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-                lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
-                listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(lteInterLayerDelay.dbl());
-                listOfCriteriaByInterfaceId[interfaceId]->sentPackets++;
-                computeEffectiveTransmissionRate(interfaceId, msg, lteInterLayerDelay.dbl());
-                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+
+    if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) { // when the  packet comes to the Phy layer for transmission
+        LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
+        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+        if(Utilities::checkLteCtrlInfo(lteInfo)){
+            std::string msgFlag = to_string(lteInfo->getMsgFlag());
+            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag)!= packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
+            lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
+            listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(lteInterLayerDelay.dbl());
+            listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
+            computeEffectiveTransmissionRate(interfaceId, msg, lteInterLayerDelay.dbl());
+            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+
+            if(listOfCriteriaByInterfaceId[interfaceId]->receivedFromUpper!=0)
+            {
+                double currentReliability =(listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower/listOfCriteriaByInterfaceId[interfaceId]->receivedFromUpper)*100;
+                listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
             }
 
-    }
+        }}
+
+
 }
 
 
@@ -281,7 +287,7 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 }
 
 double CollectStats::getCurrentInterfaceReliability(int interfaceId) {
-    long currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPackets;
+    long currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower;
     long currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
     return (currentlySentPck - currentlyDroppedPck) / currentlyDroppedPck;;
 }

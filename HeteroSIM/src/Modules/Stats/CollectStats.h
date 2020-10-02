@@ -42,8 +42,9 @@ public:
         std::vector<double>  delay;
         std::vector<double>  effectiveTransmissionRate;
         std::vector<double>  reliability;
-        long  sentPackets;
-        long  droppedPackets;
+        double  sentPacketsToLower;
+        double  droppedPackets;
+        double  receivedFromUpper;
     };
 
 
