@@ -87,87 +87,70 @@ void CollectStats::registerSignals()
 
 
 
-void CollectStats::computeEffectiveTransmissionRate(int interfaceId,cMessage* msg, double interval)
-{
-    double effectiveRate= (listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower)*(PK(msg)->getBitLength())/interval; // bps
-    listOfCriteriaByInterfaceId[interfaceId]->effectiveTransmissionRate.push_back(effectiveRate);
-}
-
-
 
 
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
-    if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
-        listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-
-    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac") ){ //when packet enter to MAC layer
-
+    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac")){ //when packet enter to MAC layer
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
         printMsg("Inserting",msg);
-
-    } else if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
-
-        ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-        printMsg("Reading",msg);
-        simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
-
-        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
-        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
-        /* TODO Uncomment the next line in case of the need of the macDelay only*/
-//        simtime_t macDelay = macAndRadioDelay -radioFrame->getDuration();
-
-        //Delay metric
-        listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(macAndRadioDelay));
-        packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-
-        //Successful transmission metric
-        listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
-        double successfulTransmissionRate = getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
-        listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(successfulTransmissionRate);
-
-        //Transmission rate metric
-        computeEffectiveTransmissionRate(interfaceId, msg,  (radioFrame->getDuration()).dbl());
-
-        //TODO record time stamp
-//        listOfCriteriaByInterfaceId[interfaceId]->timeStamp=NOW;
         return ;
     }
 
-    if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
-    {
+    if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
+           listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
+
+    double delay, transmissionRate, successfulTransmissionRate;
+
+    if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
+
+        //Delay
         ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
         printMsg("Reading",msg);
-        simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
+        simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
+        packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+        delay = SIMTIME_DBL(macAndRadioDelay);
 
-        if(macDelay == 0){ //case of packet drop due to queue overflow
-            //In case of full queue 802.15.4 interface sends "packetFromUpperDroppedSignal" signal
-            //In case of full queue 802.11 interface sends "NF_PACKET_DROP" signal
-            //so check the following assertion
-            ASSERT(comingSignal == NF_PACKET_DROP  || comingSignal == LayeredProtocolBase::packetFromUpperDroppedSignal);
-            //TODO add delay penalties to consider in case of packet drop
-            throw cRuntimeError("Packet drop due to queue overflow not supported yet");
+        //Transmission rate
+        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
+        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
+        transmissionRate = getTransmissionRate((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl());
 
-        }else { //case of packet drop due failing CSMA process
+        //For successful transmission
+        listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
 
-            //Successful transmission metric
-            listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
-            double currentSuccessfulTransmissionRate = getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
-            listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(currentSuccessfulTransmissionRate);
+    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
+        {
+            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
+            printMsg("Reading",msg);
+            simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
-            //Delay metric
-            listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(macDelay));
-            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
 
-            //TODO record time stamp
+            if(macDelay == 0){ //case of packet drop due to queue overflow
+                //In case of full queue 802.15.4 interface sends "packetFromUpperDroppedSignal" signal
+                //In case of full queue 802.11 interface sends "NF_PACKET_DROP" signal
+                //so check the following assertion
+                ASSERT(comingSignal == NF_PACKET_DROP  || comingSignal == LayeredProtocolBase::packetFromUpperDroppedSignal);
+                //TODO add delay penalties to consider in case of packet drop
+                throw cRuntimeError("Packet drop due to queue overflow not supported yet");
 
+            }else { //case of packet drop due failing CSMA process
+
+                //Delay
+                delay = SIMTIME_DBL(macDelay);
+                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+
+                //Transmission rate
+                transmissionRate = getTransmissionRate(0,delay); //consider 0 bits are transmitted
+
+                //For successful transmission
+                listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
+            }
         }
 
-    }
-
-
-//    recordThroughputStats(interfaceId, msg, delay);
+    successfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
+    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
 }
 
 
@@ -176,7 +159,8 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
 
-    simtime_t lteInterLayerDelay;
+    double delay, transmissionRate, successfulTransmissionRate;
+
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
 
@@ -194,31 +178,36 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         // TODO: check again if the LTE MAC PDU is corresponding to my data
         UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
         if(Utilities::checkLteCtrlInfo(lteInfo)){
+            //delay
             std::string msgFlag = to_string(lteInfo->getMsgFlag());
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag)!= packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-            lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
-            listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(lteInterLayerDelay.dbl());
+            simtime_t lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
+            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+            delay = SIMTIME_DBL(lteInterLayerDelay);
+
+            //Transmission rate
+            transmissionRate = getTransmissionRate((PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl());
+
+            //For successful transmission
             listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
-            computeEffectiveTransmissionRate(interfaceId, msg,  (lteAirFrame->getDuration()).dbl());
-            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
         }
-        listOfCriteriaByInterfaceId[interfaceId]->timeStamp=NOW;
     }
 
-    if(comingSignal==droppedPacketsLteSignal)
-    {
-        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-        if(Utilities::checkLteCtrlInfo(lteInfo)){
-            std::string msgFlag = to_string(lteInfo->getMsgFlag());
-            simtime_t delay=(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
-            listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(delay.dbl());
-            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
-        }
-        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
-    }
+    //TODO handle packet drop scenarios
+    //    if(comingSignal==droppedPacketsLteSignal)
+//    {
+//        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+//        if(Utilities::checkLteCtrlInfo(lteInfo)){
+//            std::string msgFlag = to_string(lteInfo->getMsgFlag());
+//            simtime_t delay=(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
+//            listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(delay.dbl());
+//            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+//        }
+//        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
+//    }
 
-    double currentSuccessfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
-    listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(currentSuccessfulTransmissionRate);
+    successfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
+    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
 }
 
 
@@ -266,25 +255,6 @@ void CollectStats::prepareNetAttributes()
 }
 
 
-void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, double value,cObject *details)
-{
-//    std::string moduleName = source->getParentModule()->getName();
-//    if (moduleName == "lteNic") {
-//
-//        std::vector<int> result;
-//        bool searchResult = Utilities::findKeyByValue(result,
-//                interfaceToProtocolMap, string("mode4"));
-//        if (searchResult) {
-//            int interfaceId = result.at(0);
-//            if (signal == macPacketLossD2D) {
-//
-//                listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
-//            }
-//        }
-//    }
-
-}
-
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
 
@@ -324,12 +294,27 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
                   << ", Owner=" << msg->getOwner()->getName() << endl;
 }
 
+double CollectStats::getTransmissionRate(int64_t dataLength, double sendInterval)
+{
+    return dataLength/sendInterval; // bps
+}
+
+
+void CollectStats::recordStatTyple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate){
+
+    //time stamp
+    listOfCriteriaByInterfaceId[interfaceId]->timeStamp.push_back(NOW);
+    //delay
+    listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(delay);
+    //transmission rate
+    listOfCriteriaByInterfaceId[interfaceId]->transmissionRate.push_back(transmissionRate) ;
+    //Successful transmission
+    listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(successfulTransmissionRate);
+}
+
 double CollectStats::getCurrentInterfaceSuccessfulTransmissionRate(int interfaceId) {
     double currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower;
     double currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
     return ((currentlySentPck - currentlyDroppedPck) / currentlySentPck)*100;
 }
-
-
-
 

@@ -39,12 +39,13 @@ class CollectStats : public cListener, public cSimpleModule
 public:
 
     struct listOfCriteria{
-        std::vector<double>  delay;
-        std::vector<double>  effectiveTransmissionRate;
-        std::vector<double>  successfulTransmissionRate;
+
+        vector<simtime_t> timeStamp;
+        vector<double>  delay;
+        vector<double>  transmissionRate;
+        vector<double>  successfulTransmissionRate;
         double  sentPacketsToLower;
         double  droppedPackets;
-        simtime_t timeStamp;
     };
 
 
@@ -72,17 +73,18 @@ public:
 
     void printMsg(std::string type, cMessage*  msg);
     double getCurrentInterfaceSuccessfulTransmissionRate(int interfaceId);
+    double getTransmissionRate(int64_t dataLength, double sendInterval);
 
 protected:
 
     virtual void initialize();
     void registerSignals();
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
-    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value, cObject *details);
 
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
-    void computeEffectiveTransmissionRate(int interfaceId,cMessage* msg,double interval);
+    void recordStatTyple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate);
+
 
     void prepareNetAttributes();
     double updateDLT(double x);
