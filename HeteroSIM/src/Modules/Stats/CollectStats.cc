@@ -300,10 +300,7 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 double CollectStats::getCurrentInterfaceSuccessfulTransmissionRate(int interfaceId) {
     double currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower;
     double currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
-    if(currentlySentPck!=0)
-    {
     return ((currentlySentPck - currentlyDroppedPck) / currentlySentPck)*100;
-    }
 }
 
 
