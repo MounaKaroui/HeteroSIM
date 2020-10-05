@@ -41,10 +41,9 @@ public:
     struct listOfCriteria{
         std::vector<double>  delay;
         std::vector<double>  effectiveTransmissionRate;
-        std::vector<double>  reliability;
+        std::vector<double>  successfulTransmissionRate;
         double  sentPacketsToLower;
         double  droppedPackets;
-        double  receivedFromUpper;
         simtime_t timeStamp;
     };
 
@@ -72,7 +71,7 @@ public:
     }
 
     void printMsg(std::string type, cMessage*  msg);
-    double getCurrentInterfaceReliability(int interfaceId);
+    double getCurrentInterfaceSuccessfulTransmissionRate(int interfaceId);
 
 protected:
 

@@ -27,6 +27,7 @@
 
 Define_Module(CollectStats);
 static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
+static const simsignal_t  droppedPacketsLteSignal=cComponent::registerSignal("macBufferOverflowD2D");
 
 void CollectStats::initialize()
 {
@@ -76,7 +77,7 @@ void CollectStats::registerSignals()
 
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-
+                    subscribeToSignal<LteMacUeRealistic>(macModuleName,droppedPacketsLteSignal);
             }
         }
 
@@ -115,24 +116,25 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
         /* TODO Uncomment these 3 lines in case of the need of the macDelay only*/
-//        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
-//        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
+        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
+        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
 //        simtime_t macDelay = macAndRadioDelay -radioFrame->getDuration();
 
         listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(SIMTIME_DBL(macAndRadioDelay));
         packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
 
         listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
-        double currentReliability = getCurrentInterfaceReliability(interfaceId);
-        listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
+        double successfulTransmissionRate = getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
+        listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(successfulTransmissionRate);
+        computeEffectiveTransmissionRate(interfaceId, msg,  (radioFrame->getDuration()).dbl());
         listOfCriteriaByInterfaceId[interfaceId]->timeStamp=NOW;
     }
 
     if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
     {
         listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
-        double currentReliability = getCurrentInterfaceReliability(interfaceId);
-        listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
+        double currentSuccessfulTransmissionRate = getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
+        listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(currentSuccessfulTransmissionRate);
 
         //TODO add delay penalties to consider in case of packet drop
     }
@@ -157,12 +159,12 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         {
             FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
             packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
-            listOfCriteriaByInterfaceId[interfaceId]->receivedFromUpper++;
         }
     }
 
     if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) { // when the  packet comes to the Phy layer for transmission
         LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
+        // TODO: check again if the LTE MAC PDU is corresponding to my data
         UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
         if(Utilities::checkLteCtrlInfo(lteInfo)){
             std::string msgFlag = to_string(lteInfo->getMsgFlag());
@@ -170,19 +172,26 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
             listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(lteInterLayerDelay.dbl());
             listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
-            computeEffectiveTransmissionRate(interfaceId, msg, lteInterLayerDelay.dbl());
+            computeEffectiveTransmissionRate(interfaceId, msg,  (lteAirFrame->getDuration()).dbl());
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
-
-            if(listOfCriteriaByInterfaceId[interfaceId]->receivedFromUpper!=0)
-            {
-                double currentReliability =(listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower/listOfCriteriaByInterfaceId[interfaceId]->receivedFromUpper)*100;
-                listOfCriteriaByInterfaceId[interfaceId]->reliability.push_back(currentReliability);
-            }
         }
         listOfCriteriaByInterfaceId[interfaceId]->timeStamp=NOW;
     }
 
+    if(comingSignal==droppedPacketsLteSignal)
+    {
+        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+        if(Utilities::checkLteCtrlInfo(lteInfo)){
+            std::string msgFlag = to_string(lteInfo->getMsgFlag());
+            simtime_t delay=(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
+            listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(delay.dbl());
+            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+        }
+        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
+    }
 
+    double currentSuccessfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
+    listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(currentSuccessfulTransmissionRate);
 }
 
 
@@ -288,10 +297,13 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
                   << ", Owner=" << msg->getOwner()->getName() << endl;
 }
 
-double CollectStats::getCurrentInterfaceReliability(int interfaceId) {
-    long currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower;
-    long currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
-    return (currentlySentPck - currentlyDroppedPck) / currentlySentPck;;
+double CollectStats::getCurrentInterfaceSuccessfulTransmissionRate(int interfaceId) {
+    double currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower;
+    double currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
+    if(currentlySentPck!=0)
+    {
+    return ((currentlySentPck - currentlyDroppedPck) / currentlySentPck)*100;
+    }
 }
 
 
