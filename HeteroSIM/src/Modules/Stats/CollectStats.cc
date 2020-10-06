@@ -29,6 +29,7 @@ Define_Module(CollectStats);
 static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
 static const simsignal_t  droppedPacketsLteSignal=cComponent::registerSignal("macBufferOverflowD2D");
 
+
 void CollectStats::initialize()
 {
 
@@ -259,11 +260,11 @@ std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttribute
 }
 
 
-CollectStats::listOfCriteria CollectStats::getSublistByDLT(){
+map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT(){
 
 }
 
-CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(listOfCriteria dataSet)
+CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(   map<int,listOfCriteria*> dataSet)
 {
     std::vector<double> emaDelay;
     std::vector<double> emaSuccessfulTransmissionRatio;
@@ -280,7 +281,7 @@ std::string CollectStats::prepareNetAttributes()
 {
 
     // 1- get Data until NOW -DLT
-    listOfCriteria dataSet= getSublistByDLT();
+    map<int,listOfCriteria*> dataSet= getSublistByDLT();
     // 2- Apply average method
     listAlternativeAttributes a=applyAverageMethod(dataSet);
     // 3- convert to string

@@ -58,8 +58,9 @@ public:
 
     struct listAlternativeAttributes
     {
-        vector<alternativeAttributes> data;
+        map<int,alternativeAttributes*> data;
     };
+
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
 
@@ -79,8 +80,8 @@ public:
     double getTransmissionRate(int64_t dataLength, double sendInterval);
     double updateDLT(double x);
 
-    listAlternativeAttributes applyAverageMethod(listOfCriteria dataSet);
-    listOfCriteria getSublistByDLT();
+    map<int,listOfCriteria*> getSublistByDLT();
+    listAlternativeAttributes applyAverageMethod(map<int,listOfCriteria*> dataSet);
     std::string convertListOfCriteriaToString(listAlternativeAttributes a);
     std::string prepareNetAttributes();
 
