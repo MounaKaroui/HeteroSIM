@@ -150,7 +150,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         }
 
     successfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
-    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
+    recordStatTuple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
 }
 
 
@@ -207,7 +207,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 //    }
 
     successfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
-    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
+    recordStatTuple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
 }
 
 
@@ -300,7 +300,7 @@ double CollectStats::getTransmissionRate(int64_t dataLength, double sendInterval
 }
 
 
-void CollectStats::recordStatTyple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate){
+void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate){
 
     //time stamp
     listOfCriteriaByInterfaceId[interfaceId]->timeStamp.push_back(NOW);
