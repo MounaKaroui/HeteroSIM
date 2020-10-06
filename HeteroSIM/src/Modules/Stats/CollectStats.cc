@@ -264,8 +264,37 @@ std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttribute
 
 map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
 {
+    map<int,CollectStats::listOfCriteria*> rMap;
 
+    for (const auto &pair : listOfCriteriaByInterfaceId){
+        int interfaceId = pair.first;
+       rMap.insert({interfaceId, getSublistByDLT(interfaceId)}) ;
+    }
+
+    return rMap;
 }
+CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
+
+    listOfCriteria* rList = new listOfCriteria();
+    listOfCriteria* tmp = listOfCriteriaByInterfaceId[interfaceId];
+
+    simtime_t historyBound = NOW - (SimTime(dlt));
+
+    int recentStatIndex ;
+    for(recentStatIndex=tmp->timeStamp.size()-1; recentStatIndex>=0; recentStatIndex--){
+
+        if(tmp->timeStamp[recentStatIndex]<= historyBound)
+            insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex], tmp->successfulTransmissionRatio[recentStatIndex]) ;
+        else
+            break ;
+    }
+
+    if (recentStatIndex<0)
+        throw cRuntimeError("No available stats in DLT interval"); //TODO handle
+
+    return rList ;
+}
+
 
 CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int,listOfCriteria*> dataSet)
 {
@@ -353,14 +382,14 @@ double CollectStats::getTransmissionRate(int64_t dataLength, double sendInterval
 
 void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate){
 
-    //time stamp
-    listOfCriteriaByInterfaceId[interfaceId]->timeStamp.push_back(NOW);
-    //delay
-    listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(delay);
-    //transmission rate
-    listOfCriteriaByInterfaceId[interfaceId]->transmissionRate.push_back(transmissionRate) ;
-    //Successful transmission
-    listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRatio.push_back(successfulTransmissionRate);
+    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, successfulTransmissionRate) ;
+}
+
+void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double successfulTransmissionRate){
+    list->timeStamp.push_back(timestamp);
+    list->delay.push_back(delay);
+    list->transmissionRate.push_back(transmissionRate) ;
+    list->successfulTransmissionRatio.push_back(successfulTransmissionRate);
 }
 
 double CollectStats::getCurrentInterfaceSuccessfulTransmissionRatio(int interfaceId) {

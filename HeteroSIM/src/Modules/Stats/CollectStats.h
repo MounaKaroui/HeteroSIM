@@ -82,6 +82,7 @@ public:
     double getTransmissionRate(int64_t dataLength, double sendInterval);
     double updateDLT(double x);
 
+    //TODO change to protected or private
     map<int,listOfCriteria*> getSublistByDLT();
     listAlternativeAttributes applyAverageMethod(map<int,listOfCriteria*> dataSet);
     std::string convertListOfCriteriaToString(listAlternativeAttributes a);
@@ -96,13 +97,9 @@ protected:
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
     void recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate);
+    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double successfulTransmissionRate);
 
-
-
-
-
-
-
+    listOfCriteria* getSublistByDLT(int interfaceID);
 
 };
 
