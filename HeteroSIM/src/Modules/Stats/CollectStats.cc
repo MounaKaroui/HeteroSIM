@@ -27,7 +27,7 @@
 
 Define_Module(CollectStats);
 static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
-static const simsignal_t  droppedPacketsLteSignal=cComponent::registerSignal("macBufferOverflowD2D");
+static const simsignal_t  droppedPacketsDueToBufferOverFlowLteSignal=cComponent::registerSignal("macBufferOverflowD2D");
 
 
 void CollectStats::initialize()
@@ -79,6 +79,7 @@ void CollectStats::registerSignals()
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
                     subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacVUeMode4::dropPacketDueToNonAvailableHARQProcess);
+                    subscribeToSignal<LteMacVUeMode4>(macModuleName,droppedPacketsDueToBufferOverFlowLteSignal);
             }
         }
 
@@ -193,7 +194,13 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         }
     }
 
-    if(comingSignal==LteMacVUeMode4::dropPacketDueToNonAvailableHARQProcess)
+    if(comingSignal==droppedPacketsDueToBufferOverFlowLteSignal)
+    {
+
+        throw cRuntimeError("Packet drop due to buffer overflow not supported yet");
+
+
+    } else if(comingSignal==LteMacVUeMode4::dropPacketDueToNonAvailableHARQProcess)
     {
         if (strcmp(msg->getName(), "LteMacPdu") == 0){
         UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(PK(msg)->getControlInfo());
@@ -209,9 +216,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
     }
     }
+
     successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
     recordStatTuple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
-
 }
 
 
@@ -220,7 +227,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
 double CollectStats::updateDLT(double x)
 {
-    return exp(-1*x) + dlt;
+    return exp(-1*x); // Fixme : adjust the function to consider or not dtlMax
 }
 
 std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttributes listOfAlternativeAttributes)
