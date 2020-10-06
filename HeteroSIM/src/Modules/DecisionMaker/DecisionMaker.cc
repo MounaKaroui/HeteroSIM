@@ -132,11 +132,12 @@ int DecisionMaker::takeDecision(cMessage* msg)
 
     cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
     CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+    std::string decisionData= stats->prepareNetAttributes();
 
-    networkInit(networkIndex);
+    //networkInit(networkIndex);
     if(isDeciderActive)
     {
-        if(stats->allPathsCriteriaValues!="")
+        if(decisionData!="")
         {
             // TODO call MCDM here
             // allPathsCriteriaValues is the final list of criteria

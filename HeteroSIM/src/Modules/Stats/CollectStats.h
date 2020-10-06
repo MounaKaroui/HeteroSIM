@@ -34,10 +34,11 @@ using namespace inet::physicallayer;
 /**
  * TODO - Generated class
  */
+
 class CollectStats : public cListener, public cSimpleModule
 {
-public:
 
+public:
     struct listOfCriteria{
 
         vector<simtime_t> timeStamp;
@@ -48,21 +49,23 @@ public:
         double  droppedPackets;
     };
 
+    struct alternativeAttributes
+    {
+        double delay ;
+        double transmissionRate;
+        double successfulTransmissionRatio;
+    };
 
+    struct listAlternativeAttributes
+    {
+        vector<alternativeAttributes> data;
+    };
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
 
-
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
-
-    double dltMin;
-    std::string allPathsCriteriaValues;
-
-    int batchSize;
-    simtime_t maxInterval;
-
-
+    double dlt;
     template<typename T>
     void subscribeToSignal(std::string moduleName, simsignal_t sigName)
     {
@@ -74,6 +77,12 @@ public:
     void printMsg(std::string type, cMessage*  msg);
     double getCurrentInterfaceSuccessfulTransmissionRatio(int interfaceId);
     double getTransmissionRate(int64_t dataLength, double sendInterval);
+    double updateDLT(double x);
+
+    listAlternativeAttributes applyAverageMethod(listOfCriteria dataSet);
+    listOfCriteria getSublistByDLT();
+    std::string convertListOfCriteriaToString(listAlternativeAttributes a);
+    std::string prepareNetAttributes();
 
 protected:
 
@@ -86,8 +95,9 @@ protected:
     void recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate);
 
 
-    void prepareNetAttributes();
-    double updateDLT(double x);
+
+
+
 
 
 

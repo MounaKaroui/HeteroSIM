@@ -33,9 +33,7 @@ void CollectStats::initialize()
 {
 
     interfaceToProtocolMapping =par("interfaceToProtocolMapping").stringValue();
-    dltMin=par("dltMin").doubleValue();
-    batchSize=par("batchSize").intValue();
-    maxInterval=SimTime(par("maxInterval").doubleValue());
+    dlt=par("dlt").doubleValue();
     registerSignals();
 }
 
@@ -70,8 +68,9 @@ void CollectStats::registerSignals()
         else if(result[1]=="mode4")
         {
             std::string pdcpRrcModuleName = "^.lteNic.pdcpRrc";
-            std::string macModuleName = "^.lteNic.mac";
             std::string phyModuleName = "^.lteNic.phy";
+            std::string macModuleName = "^.lteNic.mac";
+
             bool mode4 = getAncestorPar("withMode4");
             if (mode4) {
 
@@ -150,7 +149,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         }
 
     successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
-    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
+    recordStatTuple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
 }
 
 
@@ -209,7 +208,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     }
     }
     successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
-    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
+    recordStatTuple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
 
 }
 
@@ -219,42 +218,75 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
 double CollectStats::updateDLT(double x)
 {
-    return exp(-1*x) + dltMin;
+    return exp(-1*x) + dlt;
 }
 
-void CollectStats::prepareNetAttributes()
+std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttributes a)
 {
-    std::string pathsCriteriaValues = "";
-    std::vector<std::string> criteriaStr;
-    std::string critValuesPerPathStr = "";
 
-    for(int i=0; i<3;i++) // Fixme 3 is the number of alternatives
-    {
-        // TODO change Calculate Mean with EMA and DTL adaptation staff
-//        criteriaStr.push_back( boost::lexical_cast<std::string>(
-//        Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->effectiveTransmissionRate)));
-//
-//        criteriaStr.push_back( boost::lexical_cast<std::string>(
-//
-//        Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->delay)));
-//
-//        criteriaStr.push_back( boost::lexical_cast<std::string>(
-//                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->reliability)));
-    }
-//    for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
-//        if (a == 0) {
-//            pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
-//        } else {
-//            pathsCriteriaValues = pathsCriteriaValues + ","
-//                    + criteriaStr[a];
-//        }}
-//    allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
-//            + ",";
-//    criteriaStr.clear();
-     // prepare data
-    /// return string that contains alternatives and call EMA
-    // calculate dtl;
-    // organize the data per alternative
+    //    std::string pathsCriteriaValues = "";
+    //    std::vector<std::string> criteriaStr;
+    //    std::string critValuesPerPathStr = "";
+    //
+    //    for(int i=0; i<3;i++) // Fixme 3 is the number of alternatives
+    //    {
+    //        // TODO change Calculate Mean with EMA and DTL adaptation staff
+    //        criteriaStr.push_back( boost::lexical_cast<std::string>(
+    //                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->effectiveTransmissionRate)));
+    //
+    //        criteriaStr.push_back( boost::lexical_cast<std::string>(
+    //
+    //                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->delay)));
+    //
+    //        criteriaStr.push_back( boost::lexical_cast<std::string>(
+    //                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->reliability)));
+    //    }
+    //    for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
+    //        if (a == 0) {
+    //            pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
+    //        } else {
+    //            pathsCriteriaValues = pathsCriteriaValues + ","
+    //                    + criteriaStr[a];
+    //        }}
+    //    allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
+    //            + ",";
+    //    criteriaStr.clear();
+
+         // prepare data
+        /// return string that contains alternatives and call EMA
+        // calculate dtl;
+        // organize the data per alternative
+}
+
+
+CollectStats::listOfCriteria CollectStats::getSublistByDLT(){
+
+}
+
+CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(listOfCriteria dataSet)
+{
+    std::vector<double> emaDelay;
+    std::vector<double> emaSuccessfulTransmissionRatio;
+    std::vector<double> emaTransmissionRate;
+    std::vector<double> cv;
+    double meanCv=0;
+    double dtl=0;
+
+
+
+}
+
+std::string CollectStats::prepareNetAttributes()
+{
+
+    // 1- get Data until NOW -DLT
+    listOfCriteria dataSet= getSublistByDLT();
+    // 2- Apply average method
+    listAlternativeAttributes a=applyAverageMethod(dataSet);
+    // 3- convert to string
+
+    return convertListOfCriteriaToString(a);
+
 }
 
 
@@ -272,6 +304,7 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
         {
           interfaceId = Utilities::extractNumber(interfaceName);
           recordStatsForWlan(signal,source->getName(),packet,interfaceId);
+
         }
 
     }else if(interfaceName.find("lteNic")==0)
@@ -283,10 +316,11 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
         {
             interfaceId=result.at(0);
             recordStatsForLte(signal, packet, interfaceId);
+
         }
        }
-    // TODO call prepareNetAttributes with DLT adaptation ;
-    //prepareNetAttributes();
+
+
 }
 
 
