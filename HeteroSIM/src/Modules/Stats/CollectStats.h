@@ -83,7 +83,7 @@ protected:
 
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
-    void recordStatTyple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate);
+    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate);
 
 
     void prepareNetAttributes();

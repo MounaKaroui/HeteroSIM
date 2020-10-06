@@ -210,6 +210,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     }
     successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
     recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
+
 }
 
 
@@ -302,7 +303,7 @@ double CollectStats::getTransmissionRate(int64_t dataLength, double sendInterval
 }
 
 
-void CollectStats::recordStatTyple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate){
+void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate){
 
     //time stamp
     listOfCriteriaByInterfaceId[interfaceId]->timeStamp.push_back(NOW);
