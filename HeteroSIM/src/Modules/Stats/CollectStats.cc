@@ -77,7 +77,7 @@ void CollectStats::registerSignals()
 
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-                    subscribeToSignal<LteMacUeRealistic>(macModuleName,droppedPacketsLteSignal);
+                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacVUeMode4::dropPacketDueToNonAvailableHARQProcess);
             }
         }
 
@@ -101,7 +101,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delay, transmissionRate, successfulTransmissionRate;
+    double delay, transmissionRate, successfulTransmissionRatio;
 
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
 
@@ -149,8 +149,8 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             }
         }
 
-    successfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
-    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
+    successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
+    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
 }
 
 
@@ -159,7 +159,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
 
-    double delay, transmissionRate, successfulTransmissionRate;
+    double delay, transmissionRate, successfulTransmissionRatio;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
@@ -175,7 +175,6 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
     if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) { // when the  packet comes to the Phy layer for transmission
         LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
-        // TODO: check again if the LTE MAC PDU is corresponding to my data
         UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
         if(Utilities::checkLteCtrlInfo(lteInfo)){
             //delay
@@ -193,21 +192,24 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         }
     }
 
-    //TODO handle packet drop scenarios
-    //    if(comingSignal==droppedPacketsLteSignal)
-//    {
-//        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-//        if(Utilities::checkLteCtrlInfo(lteInfo)){
-//            std::string msgFlag = to_string(lteInfo->getMsgFlag());
-//            simtime_t delay=(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
-//            listOfCriteriaByInterfaceId[interfaceId]->delay.push_back(delay.dbl());
-//            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
-//        }
-//        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
-//    }
-
-    successfulTransmissionRate= getCurrentInterfaceSuccessfulTransmissionRate(interfaceId);
-    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRate) ;
+    if(comingSignal==LteMacVUeMode4::dropPacketDueToNonAvailableHARQProcess)
+    {
+        if (strcmp(msg->getName(), "LteMacPdu") == 0){
+        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(PK(msg)->getControlInfo());
+        if(Utilities::checkLteCtrlInfo(lteInfo)){
+            std::string msgFlag = to_string(lteInfo->getMsgFlag());
+            simtime_t macDelay=NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag];
+            delay=SIMTIME_DBL(macDelay);
+            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+        }
+        //Transmission rate
+        transmissionRate = getTransmissionRate(0,delay); //consider 0 bits are transmitted
+        //For successful transmission
+        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
+    }
+    }
+    successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
+    recordStatTyple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
 }
 
 
@@ -309,10 +311,10 @@ void CollectStats::recordStatTyple(int interfaceId, double delay, double transmi
     //transmission rate
     listOfCriteriaByInterfaceId[interfaceId]->transmissionRate.push_back(transmissionRate) ;
     //Successful transmission
-    listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRate.push_back(successfulTransmissionRate);
+    listOfCriteriaByInterfaceId[interfaceId]->successfulTransmissionRatio.push_back(successfulTransmissionRate);
 }
 
-double CollectStats::getCurrentInterfaceSuccessfulTransmissionRate(int interfaceId) {
+double CollectStats::getCurrentInterfaceSuccessfulTransmissionRatio(int interfaceId) {
     double currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower;
     double currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
     return ((currentlySentPck - currentlyDroppedPck) / currentlySentPck)*100;

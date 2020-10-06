@@ -43,7 +43,7 @@ public:
         vector<simtime_t> timeStamp;
         vector<double>  delay;
         vector<double>  transmissionRate;
-        vector<double>  successfulTransmissionRate;
+        vector<double>  successfulTransmissionRatio;
         double  sentPacketsToLower;
         double  droppedPackets;
     };
@@ -72,7 +72,7 @@ public:
     }
 
     void printMsg(std::string type, cMessage*  msg);
-    double getCurrentInterfaceSuccessfulTransmissionRate(int interfaceId);
+    double getCurrentInterfaceSuccessfulTransmissionRatio(int interfaceId);
     double getTransmissionRate(int64_t dataLength, double sendInterval);
 
 protected:
