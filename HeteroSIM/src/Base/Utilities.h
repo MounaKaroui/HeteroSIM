@@ -31,8 +31,7 @@ Ieee802Ctrl* Ieee802CtrlInfo(std::string moduleName);
 FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_);
 int extractNumber(std::string input);
 string getInterfaceNameFromFullPath(std::string pathName);
-template<typename K, typename V>
-void  calculateEMA(vector<double> vData,vector<double>& vEMA);
+double  calculateEMA(vector<double> vData, vector<double>& vEMA);
 double calculateStdVec(std::vector<double> v);
 double calculateMeanVec(vector<double> v);
 double calculateRollingMean(std::vector<double> v, int windowSize);

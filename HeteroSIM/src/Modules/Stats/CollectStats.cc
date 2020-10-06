@@ -35,6 +35,7 @@ void CollectStats::initialize()
 
     interfaceToProtocolMapping =par("interfaceToProtocolMapping").stringValue();
     dlt=par("dlt").doubleValue();
+    averageMethod=par("averageMethod").stringValue();
     registerSignals();
 }
 
@@ -222,72 +223,77 @@ double CollectStats::updateDLT(double x)
     return exp(-1*x) + dlt;
 }
 
-std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttributes a)
+std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttributes listOfAlternativeAttributes)
 {
 
-    //    std::string pathsCriteriaValues = "";
-    //    std::vector<std::string> criteriaStr;
-    //    std::string critValuesPerPathStr = "";
-    //
-    //    for(int i=0; i<3;i++) // Fixme 3 is the number of alternatives
-    //    {
-    //        // TODO change Calculate Mean with EMA and DTL adaptation staff
-    //        criteriaStr.push_back( boost::lexical_cast<std::string>(
-    //                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->effectiveTransmissionRate)));
-    //
-    //        criteriaStr.push_back( boost::lexical_cast<std::string>(
-    //
-    //                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->delay)));
-    //
-    //        criteriaStr.push_back( boost::lexical_cast<std::string>(
-    //                Utilities::calculateMeanVec(listOfCriteriaByInterfaceId[i]->reliability)));
-    //    }
-    //    for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
-    //        if (a == 0) {
-    //            pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
-    //        } else {
-    //            pathsCriteriaValues = pathsCriteriaValues + ","
-    //                    + criteriaStr[a];
-    //        }}
-    //    allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
-    //            + ",";
-    //    criteriaStr.clear();
+    std::string pathsCriteriaValues = "";
+    std::vector<std::string> criteriaStr;
+    std::string critValuesPerPathStr = "";
+    std::string alternativeAttributesStr="";
 
-         // prepare data
-        /// return string that contains alternatives and call EMA
-        // calculate dtl;
-        // organize the data per alternative
+    for (auto& x : listOfAlternativeAttributes.data)
+    {
+        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->transmissionRate));
+
+        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->delay));
+
+        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->successfulTransmissionRatio));
+    }
+
+    for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
+        if (a == 0) {
+            pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
+        } else {
+            pathsCriteriaValues = pathsCriteriaValues + ","
+                    + criteriaStr[a];
+        }}
+    alternativeAttributesStr = alternativeAttributesStr + pathsCriteriaValues
+            + ",";
+    criteriaStr.clear();
+
+    return alternativeAttributesStr;
 }
 
 
-map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT(){
+map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
+{
 
 }
 
-CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(   map<int,listOfCriteria*> dataSet)
+CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int,listOfCriteria*> dataSet)
 {
-    std::vector<double> emaDelay;
-    std::vector<double> emaSuccessfulTransmissionRatio;
-    std::vector<double> emaTransmissionRate;
-    std::vector<double> cv;
-    double meanCv=0;
-    double dtl=0;
-
-
-
+    listAlternativeAttributes myList;
+    if(averageMethod==string("simple"))
+    {
+        for (auto& x : dataSet)
+        {
+            myList.data.at(x.first)->delay=Utilities::calculateMeanVec(x.second->delay);
+            myList.data.at(x.first)->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
+            myList.data.at(x.first)->successfulTransmissionRatio=Utilities::calculateMeanVec(x.second->successfulTransmissionRatio);
+        }
+    }else if(averageMethod==string("ema"))
+    {
+        std::vector<double> emaOfDelay;
+        std::vector<double> emaOfTransmissionRate;
+        std::vector<double> emaOfsuccessfulTransmissionRatio;
+        for (auto& x : dataSet)
+        {
+            myList.data.at(x.first)->delay=Utilities::calculateEMA(x.second->delay,emaOfDelay);
+            myList.data.at(x.first)->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate, emaOfTransmissionRate);
+            myList.data.at(x.first)->successfulTransmissionRatio=Utilities::calculateEMA(x.second->successfulTransmissionRatio, emaOfsuccessfulTransmissionRatio);
+        }
+    }
+    return myList;
 }
 
 std::string CollectStats::prepareNetAttributes()
 {
-
     // 1- get Data until NOW -DLT
     map<int,listOfCriteria*> dataSet= getSublistByDLT();
     // 2- Apply average method
     listAlternativeAttributes a=applyAverageMethod(dataSet);
     // 3- convert to string
-
     return convertListOfCriteriaToString(a);
-
 }
 
 

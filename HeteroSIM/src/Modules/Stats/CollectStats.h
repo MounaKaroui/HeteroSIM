@@ -61,12 +61,14 @@ public:
         map<int,alternativeAttributes*> data;
     };
 
+
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
-
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
     double dlt;
+    std::string averageMethod;
+
     template<typename T>
     void subscribeToSignal(std::string moduleName, simsignal_t sigName)
     {
