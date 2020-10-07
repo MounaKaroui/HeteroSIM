@@ -44,16 +44,12 @@ public:
         vector<simtime_t> timeStamp;
         vector<double>  delay;
         vector<double>  transmissionRate;
-        vector<double>  successfulTransmissionRatio;
-        double  sentPacketsToLower;
-        double  droppedPackets;
     };
 
     struct alternativeAttributes
     {
         double delay ;
         double transmissionRate;
-        double successfulTransmissionRatio;
     };
 
     struct listAlternativeAttributes
@@ -78,7 +74,6 @@ public:
     }
 
     void printMsg(std::string type, cMessage*  msg);
-    double getCurrentInterfaceSuccessfulTransmissionRatio(int interfaceId);
     double getTransmissionRate(int64_t dataLength, double sendInterval);
     double updateDLT(double x);
 
@@ -96,8 +91,8 @@ protected:
 
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
-    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate);
-    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double successfulTransmissionRate);
+    void recordStatTuple(int interfaceId, double delay, double transmissionRate);
+    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate);
 
     listOfCriteria* getSublistByDLT(int interfaceID);
 

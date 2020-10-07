@@ -26,9 +26,8 @@
 
 
 Define_Module(CollectStats);
-static const  simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
+static const simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
 static const simsignal_t  droppedPacketsDueToBufferOverFlowLteSignal=cComponent::registerSignal("macBufferOverflowD2D");
-
 
 void CollectStats::initialize()
 {
@@ -74,11 +73,11 @@ void CollectStats::registerSignals()
             std::string macModuleName = "^.lteNic.mac";
 
             bool mode4 = getAncestorPar("withMode4");
-            if (mode4) {
-
+            if (mode4)
+            {
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacVUeMode4::dropPacketDueToNonAvailableHARQProcess);
+                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::cbrMsg);
                     subscribeToSignal<LteMacVUeMode4>(macModuleName,droppedPacketsDueToBufferOverFlowLteSignal);
             }
         }
@@ -103,7 +102,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delay, transmissionRate, successfulTransmissionRatio;
+    double delay, transmissionRate;
 
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
 
@@ -119,8 +118,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
         transmissionRate = getTransmissionRate((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl());
 
-        //For successful transmission
-        listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
         {
@@ -146,13 +143,11 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //Transmission rate
                 transmissionRate = getTransmissionRate(0,delay); //consider 0 bits are transmitted
 
-                //For successful transmission
-                listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
+
             }
         }
 
-    successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
-    recordStatTuple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
+    recordStatTuple(interfaceId, delay, transmissionRate) ;
 }
 
 
@@ -161,7 +156,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
 
-    double delay, transmissionRate, successfulTransmissionRatio;
+    double delay, transmissionRate;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
@@ -188,9 +183,6 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
             //Transmission rate
             transmissionRate = getTransmissionRate((PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl());
-
-            //For successful transmission
-            listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower++;
         }
     }
 
@@ -212,13 +204,10 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         }
         //Transmission rate
         transmissionRate = getTransmissionRate(0,delay); //consider 0 bits are transmitted
-        //For successful transmission
-        listOfCriteriaByInterfaceId[interfaceId]->droppedPackets++;
     }
     }
 
-    successfulTransmissionRatio= getCurrentInterfaceSuccessfulTransmissionRatio(interfaceId);
-    recordStatTuple(interfaceId, delay, transmissionRate, successfulTransmissionRatio) ;
+    recordStatTuple(interfaceId, delay, transmissionRate) ;
 }
 
 
@@ -244,7 +233,6 @@ std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttribute
 
         criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->delay));
 
-        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->successfulTransmissionRatio));
     }
 
     for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
@@ -284,7 +272,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
     for(recentStatIndex=tmp->timeStamp.size()-1; recentStatIndex>=0; recentStatIndex--){
 
         if(tmp->timeStamp[recentStatIndex]<= historyBound)
-            insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex], tmp->successfulTransmissionRatio[recentStatIndex]) ;
+            insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex]) ;
         else
             break ;
     }
@@ -305,7 +293,6 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
         {
             myList.data.at(x.first)->delay=Utilities::calculateMeanVec(x.second->delay);
             myList.data.at(x.first)->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
-            myList.data.at(x.first)->successfulTransmissionRatio=Utilities::calculateMeanVec(x.second->successfulTransmissionRatio);
         }
     }else if(averageMethod==string("ema"))
     {
@@ -316,7 +303,6 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
         {
             myList.data.at(x.first)->delay=Utilities::calculateEMA(x.second->delay,emaOfDelay);
             myList.data.at(x.first)->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate, emaOfTransmissionRate);
-            myList.data.at(x.first)->successfulTransmissionRatio=Utilities::calculateEMA(x.second->successfulTransmissionRatio, emaOfsuccessfulTransmissionRatio);
         }
     }
     return myList;
@@ -380,21 +366,15 @@ double CollectStats::getTransmissionRate(int64_t dataLength, double sendInterval
 }
 
 
-void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double successfulTransmissionRate){
+void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate){
 
-    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, successfulTransmissionRate) ;
+    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate) ;
 }
 
-void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double successfulTransmissionRate){
+void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate){
     list->timeStamp.push_back(timestamp);
     list->delay.push_back(delay);
     list->transmissionRate.push_back(transmissionRate) ;
-    list->successfulTransmissionRatio.push_back(successfulTransmissionRate);
 }
 
-double CollectStats::getCurrentInterfaceSuccessfulTransmissionRatio(int interfaceId) {
-    double currentlySentPck = listOfCriteriaByInterfaceId[interfaceId]->sentPacketsToLower;
-    double currentlyDroppedPck = listOfCriteriaByInterfaceId[interfaceId]->droppedPackets;
-    return ((currentlySentPck - currentlyDroppedPck) / currentlySentPck)*100;
-}
 
