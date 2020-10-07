@@ -1,6 +1,7 @@
 #include "../mcda/MCDM.h"
 #include<boost/lexical_cast.hpp>
 #include <string>
+
 namespace McdaAlg {};
 namespace McdaAlg
 {
@@ -57,7 +58,9 @@ void showSetNorma(std::vector<Norma> &norm)
 std::vector<Norma> setNorma(int critNumb, std::string path)
 {
     std::vector<Norma> norm;
-    std::ifstream inf(path+"enhNorm"+std::to_string(critNumb)+".dat");
+    char resolved_path[PATH_MAX];
+    realpath(path.c_str(), resolved_path);
+    std::ifstream inf(std::string(resolved_path)+"/"+"enhNorm"+std::to_string(critNumb)+".dat");
     // If we couldn't open the output file stream for reading
     if (!inf)
     {
@@ -135,7 +138,10 @@ Matrix norm1(Matrix a, std::vector<Norma> norm)
 std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a)
 {
     std::vector<Norma> norm;
-    std::ifstream inf(path+"enhNorm"+std::to_string(critNumb)+".dat");
+    char resolved_path[PATH_MAX];
+    realpath(path.c_str(), resolved_path);
+    std::ifstream inf(std::string(resolved_path)+"/"+"enhNorm"+std::to_string(critNumb)+".dat");
+    std::cout<< "absolute path is= " << resolved_path <<std::endl;
     // If we couldn't open the output file stream for reading
     if (!inf)
     {
@@ -201,7 +207,9 @@ Matrix readPreferences(std::string trafficType,std::string path, int critNumb)
 {
 
     Matrix A(critNumb,critNumb);
-    std::ifstream inf(path+"A"+std::to_string(critNumb)+trafficType+".dat");
+    char resolved_path[PATH_MAX];
+    realpath(path.c_str(), resolved_path);
+    std::ifstream inf(std::string(resolved_path)+"/"+"A"+std::to_string(critNumb)+trafficType+".dat");
     // If we couldn't open the output file stream for reading
     if (!inf)
     {
@@ -579,18 +587,18 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
     D.print();
     // weighting stage ...
     Matrix A = readPreferences(trafficType,path,critNumb);
-    Matrix W_s = wls_weighting(A);
+    Matrix W = wls_weighting(A);
     std::cout<<"Subjective Weighted matrix : " <<"\n";
-    W_s.print();
-
-    Matrix W_obj= entropy_weighting(D);
-
-    std::cout<<"Objective Weighted matrix : " <<"\n";
-    W_obj.print();
-
-    Matrix W=hybrid_weighting(W_s,W_obj,0.9);
-    std::cout<<"Hybrid Weighted matrix : " <<"\n";
     W.print();
+
+//    Matrix W_obj= entropy_weighting(D);
+//
+//    std::cout<<"Objective Weighted matrix : " <<"\n";
+//    W_obj.print();
+//
+//    Matrix W=hybrid_weighting(W_s,W_obj,0.9);
+//    std::cout<<"Hybrid Weighted matrix : " <<"\n";
+//    W.print();
     // decision stage ...
 
     Matrix score(D.size(1),1);

@@ -22,6 +22,8 @@
 #include "../../Modules/messages/HeterogeneousMessage_m.h"
 #include "corenetwork/binder/LteBinder.h"
 #include "Base/mcda/MCDM.h"
+#include <iostream>
+
 using namespace omnetpp;
 using namespace inet;
 

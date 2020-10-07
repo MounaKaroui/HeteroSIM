@@ -15,7 +15,6 @@
 
 package heterosim.src.Modules.DecisionMaker;
 
-import inet.common.queue.DropTailQueue;
 
 
 //
@@ -29,8 +28,11 @@ simple DecisionMaker
         
         bool mode4IsActive = default(false);
         int criteriaNum=default(3);
-        // TODO: transform absolute path to relative
-        string pathToConfigFiles=default("/home/mouna1/HeteroSimWorkSpace/HeteroSIM/src/Base/mcda/"); //TODO replace to generic name 
+     
+        //string pathToConfigFiles=default("/home/mouna1/myGitDepot/HeteroSIM/HeteroSIM/src/Base/mcda/"); 
+   		
+   		// TODO: transform absolute path to relative
+        string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
    
  		bool isDeciderActive=default(true); 
  		int dummyNetworkChoice=default(0);     

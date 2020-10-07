@@ -129,28 +129,25 @@ int DecisionMaker::takeDecision(cMessage* msg)
     // MCDM_procedure
     HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
     std::string trafficType=hetMsg->getTrafficType();
-
-    cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
-    CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-    std::string decisionData= stats->prepareNetAttributes();
-
     //networkInit(networkIndex);
     if(isDeciderActive)
     {
+
+        cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+        CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+        std::string decisionData= stats->prepareNetAttributes();
+
         if(decisionData!="")
         {
             // TODO call MCDM here
             // allPathsCriteriaValues is the final list of criteria
-
-            //networkIndex=McdaAlg::decisionProcess(stats->allPathsCriteriaValues, pathToConfigFiles,critNumb, trafficType, "VIKOR");
-            //std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
+            networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
+            std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
         }
     }
     else
     {
-
         networkIndex=dummyNetworkChoice;
-
     }
 
 
