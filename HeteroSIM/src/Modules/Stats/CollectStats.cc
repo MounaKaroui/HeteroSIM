@@ -16,6 +16,8 @@
 #include "CollectStats.h"
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
+#include "stack/mac/packet/BufferOccupancyIndication_m.h"
+
 #include <numeric>
 #include "../../Modules/DecisionMaker/DecisionMaker.h"
 #include<boost/lexical_cast.hpp>
@@ -27,7 +29,6 @@
 
 Define_Module(CollectStats);
 static const simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
-static const simsignal_t  droppedPacketsDueToBufferOverFlowLteSignal=cComponent::registerSignal("macBufferOverflowD2D");
 
 void CollectStats::initialize()
 {
@@ -77,8 +78,8 @@ void CollectStats::registerSignals()
             {
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::cbrMsg);
-                    subscribeToSignal<LteMacVUeMode4>(macModuleName,droppedPacketsDueToBufferOverFlowLteSignal);
+                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::cbrSignal);
+                    subscribeToSignal<LteMacVUeMode4>(macModuleName,LteMacVUeMode4::bufferOccupancySignal);
             }
         }
 
@@ -186,28 +187,28 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         }
     }
 
-    if(comingSignal==droppedPacketsDueToBufferOverFlowLteSignal)
+    if(comingSignal==LtePhyVUeMode4::cbrSignal)
     {
-
-        throw cRuntimeError("Packet drop due to buffer overflow not supported yet");
-
-
-    } else if(comingSignal==LteMacVUeMode4::dropPacketDueToNonAvailableHARQProcess)
-    {
-        if (strcmp(msg->getName(), "LteMacPdu") == 0){
-        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(PK(msg)->getControlInfo());
-        if(Utilities::checkLteCtrlInfo(lteInfo)){
-            std::string msgFlag = to_string(lteInfo->getMsgFlag());
-            simtime_t macDelay=NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag];
-            delay=SIMTIME_DBL(macDelay);
-            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+        if (strcmp(msg->getName(), "CBR") == 0)
+        {
+            Cbr* cbrPkt=dynamic_cast<Cbr*>(msg);
+            cbr=cbrPkt->getCbr();
         }
-        //Transmission rate
-        transmissionRate = getTransmissionRate(0,delay); //consider 0 bits are transmitted
-    }
     }
 
-   recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
+    if(comingSignal==LteMacVUeMode4::bufferOccupancySignal)
+    {
+        if (strcmp(msg->getName(), "BufferOccupancyMsg") == 0)
+        {
+            BufferOccupancyIndication* bufferPkt=dynamic_cast<BufferOccupancyIndication*>(msg);
+            queueVacancy=bufferPkt->getBufferVacancy();
+        }
+
+    }
+
+    recordStatTuple(interfaceId,delay,transmissionRate,cbr,queueVacancy) ;
+
+
 }
 
 
@@ -261,6 +262,7 @@ map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
 
     return rMap;
 }
+
 CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
 
     listOfCriteria* rList = new listOfCriteria();
