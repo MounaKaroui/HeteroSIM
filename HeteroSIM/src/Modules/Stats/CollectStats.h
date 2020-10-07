@@ -44,12 +44,16 @@ public:
         vector<simtime_t> timeStamp;
         vector<double>  delay;
         vector<double>  transmissionRate;
+        vector<double> cbr;  // TODO compute cbr
+        vector<double> queueVacancy; // TODO compute queueVacancy
     };
 
     struct alternativeAttributes
     {
         double delay ;
         double transmissionRate;
+        double cbr;
+        double queueVacancy;
     };
 
     struct listAlternativeAttributes
@@ -91,8 +95,8 @@ protected:
 
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
-    void recordStatTuple(int interfaceId, double delay, double transmissionRate);
-    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate);
+    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double cbr, double queueVacancy);
+    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double cbr, double queueVacancy);
 
     listOfCriteria* getSublistByDLT(int interfaceID);
 

@@ -102,7 +102,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delay, transmissionRate;
+    double delay, transmissionRate, cbr, queueVacancy;
 
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
 
@@ -147,7 +147,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             }
         }
 
-    recordStatTuple(interfaceId, delay, transmissionRate) ;
+    recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
 }
 
 
@@ -156,7 +156,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
 
-    double delay, transmissionRate;
+    double delay, transmissionRate,cbr, queueVacancy;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
@@ -207,7 +207,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     }
     }
 
-    recordStatTuple(interfaceId, delay, transmissionRate) ;
+   recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
 }
 
 
@@ -272,7 +272,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
     for(recentStatIndex=tmp->timeStamp.size()-1; recentStatIndex>=0; recentStatIndex--){
 
         if(tmp->timeStamp[recentStatIndex]<= historyBound)
-            insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex]) ;
+            insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex],tmp->cbr[recentStatIndex],tmp->queueVacancy[recentStatIndex]) ;
         else
             break ;
     }
@@ -293,16 +293,22 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
         {
             myList.data.at(x.first)->delay=Utilities::calculateMeanVec(x.second->delay);
             myList.data.at(x.first)->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
+            myList.data.at(x.first)->cbr=Utilities::calculateMeanVec(x.second->cbr);
+            myList.data.at(x.first)->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
         }
     }else if(averageMethod==string("ema"))
     {
         std::vector<double> emaOfDelay;
         std::vector<double> emaOfTransmissionRate;
         std::vector<double> emaOfsuccessfulTransmissionRatio;
+        std::vector<double> emaOfcbr;
+        std::vector<double> emaOfQueueVacancy;
         for (auto& x : dataSet)
         {
             myList.data.at(x.first)->delay=Utilities::calculateEMA(x.second->delay,emaOfDelay);
             myList.data.at(x.first)->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate, emaOfTransmissionRate);
+            myList.data.at(x.first)->cbr=Utilities::calculateEMA(x.second->cbr, emaOfcbr);
+            myList.data.at(x.first)->queueVacancy=Utilities::calculateEMA(x.second->queueVacancy, emaOfQueueVacancy);
         }
     }
     return myList;
@@ -366,15 +372,18 @@ double CollectStats::getTransmissionRate(int64_t dataLength, double sendInterval
 }
 
 
-void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate){
+void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double cbr, double queueVacancy){
 
-    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate) ;
+    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, cbr, queueVacancy) ;
 }
 
-void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate){
+void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double cbr, double queueVacancy){
     list->timeStamp.push_back(timestamp);
     list->delay.push_back(delay);
     list->transmissionRate.push_back(transmissionRate) ;
+    list->cbr.push_back(cbr) ;
+    list->queueVacancy.push_back(queueVacancy) ;
+
 }
 
 
