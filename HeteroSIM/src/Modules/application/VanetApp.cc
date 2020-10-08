@@ -23,32 +23,12 @@ Define_Module(VanetApp);
 
 // Use BaseApp  to create an App
 
-void VanetApp::initialize(int stage)
-{
-
-    if(stage==0)
-    {
-        BaseAppl::initialize();
-        selfSender=new cMessage("Send");
-        const auto jitter = uniform(SimTime(0, SIMTIME_MS), updateInterval);
-        scheduleAt(simTime()+jitter  + updateInterval, selfSender);
-    }
-
-}
-
-
 
 
 void VanetApp::handleMessage(cMessage *msg)
 {
     if(msg->isSelfMessage())
-    {
-        // vanet Msg
-        HeterogeneousMessage* vanetMsg=BaseAppl::BuildMsg("hetNets");
-        send(vanetMsg, toDecisionMaker);
-        simtime_t offset = ((updateInterval*1000)/1000)+simTime();
-        scheduleAt(offset, selfSender);
-    }
+        BaseAppl::handleMessage(msg);
     else
     {
         int arrivalGate=msg->getArrivalGateId();
@@ -59,10 +39,5 @@ void VanetApp::handleMessage(cMessage *msg)
         }
 
     }
-}
-
-void VanetApp::finish()
-{
-    cancelAndDelete(selfSender);
 }
 

@@ -13,17 +13,25 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package heterosim.src.Modules.application;
+package heterosim.src.Base;
 
 //
-// TODO auto-generated module
+// TODO auto-generated type
 //
-import heterosim.src.Base.BaseAppl;
-
-simple VanetApp extends BaseAppl
+simple BaseAppl like IBaseAppl
 {
-
-       startTime=default(0s) @unit(s); // application start time (start of the first packet)
-       stopTime=default(-1s) @unit(s);
+     parameters:
+     
+         int appID=default(0);
+         string trafficType=default("Interactive");
+         int msgLength=default(50B) @unit(B);  // 
          
+         double startTime=default(0.0s) @unit(s); // application start time (start of the first packet)
+         double stopTime=default(-1 s) @unit(s);
+         double sendInterval=default(0.1 s) @unit(s);
+         
+    gates:
+        input  fromDecisionMaker;
+        output toDecisionMaker;
+
 }

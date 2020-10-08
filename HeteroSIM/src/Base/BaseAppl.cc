@@ -16,18 +16,43 @@
 #include "BaseAppl.h"
 #include <inet/common/ModuleAccess.h>
 
+Define_Module(BaseAppl);
 
 void BaseAppl::initialize()
 {
     toDecisionMaker =findGate("toDecisionMaker");
     fromDecisionMaker=findGate("toDecisionMaker");
 
-    updateInterval=par("updateInterval").doubleValue();
+    sendInterval=SimTime(par("sendInterval").doubleValue());
+    startTime=SimTime(par("startTime").doubleValue());
+    stopTime=SimTime(par("stopTime").doubleValue());
+
     msgLength=par("msgLength").intValue();
 
-    appIndex=par("appIndex").intValue();
+    appID=par("appID").intValue();
     trafficType=par("trafficType").stringValue();
     setNodeId();
+
+
+    msgSentTrigger=new cMessage("Send trigger");
+
+    if(startTime>=0)
+        scheduleAt(startTime, msgSentTrigger);
+    else
+        throw cRuntimeError("Start time '%d' can not be negative.",SIMTIME_DBL(startTime));
+
+}
+
+void BaseAppl::handleMessage(cMessage *msg)
+{
+    if (msg->isSelfMessage()) {
+        HeterogeneousMessage* vanetMsg = BaseAppl::BuildMsg("hetNets");
+        send(vanetMsg, toDecisionMaker);
+
+        if (stopTime >= simTime() || stopTime < 0)
+            scheduleAt(simTime() + sendInterval, msgSentTrigger);
+    }
+
 }
 
 void BaseAppl::setNodeId()
@@ -40,22 +65,27 @@ void BaseAppl::setNodeId()
 
 
 HeterogeneousMessage* BaseAppl::BuildMsg(std::string namePrefix)
-        {
+{
 
-            HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
-            heteroMsg->setName((namePrefix+"-"+std::to_string(heteroMsg->getTreeId())).c_str());
+    HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
+    heteroMsg->setName((namePrefix+"-"+std::to_string(heteroMsg->getTreeId())).c_str());
 
-            heteroMsg->setByteLength(msgLength);
-            heteroMsg->setTimestamp(simTime());
+    heteroMsg->setByteLength(msgLength);
+    heteroMsg->setTimestamp(simTime());
 
-            heteroMsg->setTrafficType(trafficType.c_str());
-            heteroMsg->setApplId(appIndex);
+    heteroMsg->setTrafficType(trafficType.c_str());
+    heteroMsg->setApplId(appID);
 
-            heteroMsg->setNodeId(nodeId);
+    heteroMsg->setNodeId(nodeId);
 
-            return  heteroMsg;
-        }
+    return  heteroMsg;
+}
 
+
+void BaseAppl::finish()
+{
+    cancelAndDelete(msgSentTrigger);
+}
 
 
 

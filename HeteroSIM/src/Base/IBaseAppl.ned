@@ -18,13 +18,6 @@ package heterosim.src.Base;
 // Base module for Appl layer module
 moduleinterface IBaseAppl
 {
-    
-    parameters:
-        @class(BaseAppl);
-        double updateInterval @unit(s);
-        int msgLength @unit(B);
-        int appIndex;
-        string trafficType;
 
 	gates:
         input  fromDecisionMaker;

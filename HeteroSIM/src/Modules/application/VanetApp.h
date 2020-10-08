@@ -30,11 +30,9 @@ class VanetApp : public BaseAppl
 {
 
   protected:
-    void initialize(int stage);
     virtual void handleMessage(cMessage *msg);
-    void finish();
-  private:
-    cMessage* selfSender;
+
+
 
 
 };

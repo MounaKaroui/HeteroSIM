@@ -27,7 +27,6 @@ class BaseAppl: public cSimpleModule{
 
 public:
 
-
     HeterogeneousMessage* BuildMsg(std::string namePrefix);
 
 
@@ -35,13 +34,21 @@ protected:
 
     int toDecisionMaker ;
     int fromDecisionMaker;
-    double updateInterval;
+    simtime_t sendInterval;
+    simtime_t startTime;
+    simtime_t stopTime;
     int nodeId;
     int  msgLength;
-    int appIndex;
+    int appID;
     std::string trafficType;
 
+    cMessage* msgSentTrigger;
+
+
     virtual void initialize();
+    virtual void handleMessage(cMessage *msg);
+    void finish();
+
     void setNodeId();
 
 
