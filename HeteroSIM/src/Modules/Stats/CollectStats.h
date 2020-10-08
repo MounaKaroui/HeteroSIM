@@ -87,7 +87,9 @@ public:
     std::string convertListOfCriteriaToString(listAlternativeAttributes a);
     std::string prepareNetAttributes();
     double extractQueueVacancy(int interfaceId);
-    double extractBufferOccupancy();
+    double extractLteBufferVacancy();
+    double getLteCBR();
+
 protected:
 
     virtual void initialize();
