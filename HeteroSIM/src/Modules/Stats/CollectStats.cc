@@ -17,7 +17,6 @@
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
 #include "stack/mac/packet/BufferOccupancyIndication_m.h"
-
 #include <numeric>
 #include "../../Modules/DecisionMaker/DecisionMaker.h"
 #include<boost/lexical_cast.hpp>
@@ -25,10 +24,12 @@
 #include <bits/stdc++.h>
 #include <boost/algorithm/string.hpp>
 #include "common/LteCommon.h"
+#include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
 
 
 Define_Module(CollectStats);
 static const simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
+
 
 void CollectStats::initialize()
 {
@@ -147,6 +148,16 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
             }
         }
+
+    using namespace inet::ieee80211;
+    if(comingSignal==Hcf::queueVacancySignal)
+    {
+        if (strcmp(msg->getName(), "QueueVacancyIndication") == 0)
+        {
+            QueueVacancyIndication*  queueVacancyMsg=dynamic_cast<QueueVacancyIndication*>(msg);
+            queueVacancy=queueVacancyMsg->getValue();
+        }
+    }
 
     recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
 }
