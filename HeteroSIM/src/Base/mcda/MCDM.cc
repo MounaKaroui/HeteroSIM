@@ -141,7 +141,7 @@ std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a)
     char resolved_path[PATH_MAX];
     realpath(path.c_str(), resolved_path);
     std::ifstream inf(std::string(resolved_path)+"/"+"enhNorm"+std::to_string(critNumb)+".dat");
-    std::cout<< "absolute path is= " << resolved_path <<std::endl;
+    //std::cout<< "absolute path is= " << resolved_path <<std::endl;
     // If we couldn't open the output file stream for reading
     if (!inf)
     {
@@ -233,16 +233,6 @@ Matrix readPreferences(std::string trafficType,std::string path, int critNumb)
     return A;
 }
 
-
-
-void displayExpression(Matrix D, int i, int j)
-{
-std::cout<< "D("+ std::to_string(i) +","+ std::to_string(j)+")*log(D("+std::to_string(i) +","+ std::to_string(j)+"))= "
-<< (D.at(i,j)*std::log(D.at(i,j))) <<"\n";
-}
-//
-// TODO (mouna1#1#): Correct entropy ...
-//
 Matrix entropy_weighting(Matrix D)
 {
 
@@ -496,13 +486,14 @@ Matrix VIKOR(Matrix D, Matrix W,  double v)
     for (int i=0; i<altNumb; i++)
     {
         Q.at(i,0)=v*(S.at(i,0)-Sminus)/(Splus-Sminus) +
-                  (1-v)*(R.at(i,0)-Rminus)/(Rplus-Rminus);
+                (1-v)*(R.at(i,0)-Rminus)/(Rplus-Rminus);
         //std::cout<<(1-v)*(R.at(i,0)-Rminus)/(Rplus-Rminus) <<"\n";
     }
     //std::cout<<" Q marix of VIKOR= \n";
     //Q.print();
     return Q;
 }
+
 //overloaded VIKOR w stability checking
 Matrix VIKOR( Matrix D, Matrix W, bool &checkStability)
 {
@@ -535,7 +526,7 @@ Matrix VIKOR( Matrix D, Matrix W, bool &checkStability)
     for (int i=0; i<altNumb; i++)
     {
         Q.at(i,0)=v*(S.at(i,0)-Sminus)/(Splus-Sminus) +
-                  (1-v)*(R.at(i,0)-Rminus)/(Rplus-Rminus);
+                (1-v)*(R.at(i,0)-Rminus)/(Rplus-Rminus);
         //std::cout<<(1-v)*(R.at(i,0)-Rminus)/(Rplus-Rminus) <<"\n";
     }
     //check conditions of acceptable advantage and stability
@@ -591,14 +582,14 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
     std::cout<<"Subjective Weighted matrix : " <<"\n";
     W.print();
 
-//    Matrix W_obj= entropy_weighting(D);
-//
-//    std::cout<<"Objective Weighted matrix : " <<"\n";
-//    W_obj.print();
-//
-//    Matrix W=hybrid_weighting(W_s,W_obj,0.9);
-//    std::cout<<"Hybrid Weighted matrix : " <<"\n";
-//    W.print();
+    //    Matrix W_obj= entropy_weighting(D);
+    //
+    //    std::cout<<"Objective Weighted matrix : " <<"\n";
+    //    W_obj.print();
+    //
+    //    Matrix W=hybrid_weighting(W_s,W_obj,0.9);
+    //    std::cout<<"Hybrid Weighted matrix : " <<"\n";
+    //    W.print();
     // decision stage ...
 
     Matrix score(D.size(1),1);
@@ -629,103 +620,6 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
 
 
 
-std::string buildAllPathThreeCriteria(std::vector<double> datarate,std::vector<double> delay,std::vector<double> Th)
-{
-
-	std::string allPathsCriteriaValues = "";
-	std::string pathsCriteriaValues = "";
-	std::vector<std::string> criteriaStr;
-    std::string critValuesPerPathStr = "";
-    // rssi,  delay, jitter , throughput, cost should have the same length
-    int s=delay.size();
-    for(int i=0; i<s; i++)
-    {
-
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        datarate.at(i)));
-
-	criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        delay.at(i)));
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        Th.at(i)));
-    }
-
-	for (int a = 0; a < criteriaStr.size(); ++a) {
-		if (a == 0) {
-			pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
-		} else {
-			pathsCriteriaValues = pathsCriteriaValues + ","
-					+ criteriaStr[a];
-		}}
-
-	allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
-			+ ",";
-	criteriaStr.clear();
-
-    //std::cout<<"All paths criteria values:  "<<allPathsCriteriaValues<<"\n";
-
-	return allPathsCriteriaValues;
-}
-
-
-
-
-std::string buildAllPathFiveCriteria(std::vector<double> rssi,std::vector<double> delay,std::vector<double> jitter
-,std::vector<double> th, std::vector<double> cost)
-{
-
-	std::string allPathsCriteriaValues = "";
-	std::string pathsCriteriaValues = "";
-	std::vector<std::string> criteriaStr;
-    std::string critValuesPerPathStr = "";
-    // rssi,  delay, jitter , throughput, cost should have the same length
-    int s=delay.size();
-    for(int i=0; i<s; i++)
-    {
-
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        rssi.at(i)));
-
-	criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        delay.at(i)));
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        jitter.at(i)));
-
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        th.at(i)));
-
-    criteriaStr.push_back(
-	                boost::lexical_cast<std::string>(
-	                        cost.at(i)));
-    }
-
-	for (int a = 0; a < criteriaStr.size(); ++a) {
-		if (a == 0) {
-			pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
-		} else {
-			pathsCriteriaValues = pathsCriteriaValues + ","
-					+ criteriaStr[a];
-		}}
-
-	allPathsCriteriaValues = allPathsCriteriaValues + pathsCriteriaValues
-			+ ",";
-	criteriaStr.clear();
-
-    //std::cout<<"All paths criteria values:  "<<allPathsCriteriaValues<<"\n";
-
-	return allPathsCriteriaValues;
-}
-
-
-
-
 //
 double calculateConsistency(Matrix A,Matrix w,int n)
 {
@@ -733,7 +627,7 @@ double calculateConsistency(Matrix A,Matrix w,int n)
     Matrix s(1,n);
     for(int i=0; i<n; i++)
     {
-    s.at(0,i)=sum(A,i,"column");
+        s.at(0,i)=sum(A,i,"column");
     }
     //s.print();
     Matrix sp(1,n);
@@ -742,6 +636,13 @@ double calculateConsistency(Matrix A,Matrix w,int n)
     //double lambdaMax=sum(s*w,0, "row");
     double CI=(sp.at(0,0)-n) /(n-1);
     return CI/0.58;
+}
+
+
+void displayExpression(Matrix D, int i, int j)
+{
+    std::cout<< "D("+ std::to_string(i) +","+ std::to_string(j)+")*log(D("+std::to_string(i) +","+ std::to_string(j)+"))= "
+            << (D.at(i,j)*std::log(D.at(i,j))) <<"\n";
 }
 
 

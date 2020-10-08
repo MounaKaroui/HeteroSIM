@@ -46,9 +46,6 @@ Matrix norm3(Matrix a, std::vector<Norma> norm);
 Matrix wls_weighting(Matrix A);
 
 // objective weighting
-Matrix obj_weighting(Matrix D);
-
-void displayExpression(Matrix D, int i, int j);
 Matrix entropy_weighting(Matrix D);
 
 // hybrid weighting
@@ -75,6 +72,7 @@ they are the same for several alternatives (from observations).
 The idea is to add or substract some very small random value,
 such that ideal and antiIdeal vectors will be different.
 */
+
 void checkAndModifyInputForVikor(Matrix &D);
 
 //VIKOR version w/o stability checking
@@ -92,15 +90,8 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes);
 
 int decisionProcess(std::string allPathsCriteriaValues, std::string path,int critNumb,std::string trafficType,std::string algName);
 
-//  RSSI, MacDelay, Jitter, availBitrate, Cost
-std::string buildAllPathFiveCriteria(std::vector<double> rssi,std::vector<double> delay,std::vector<double> jitter
-,std::vector<double> th, std::vector<double> cost);
-
-//
-std::string buildAllPathThreeCriteria(std::vector<double> datarate,std::vector<double> delay,std::vector<double> Th);
-
-
-
+// To display some matrix expresssions
+void displayExpression(Matrix D, int i, int j);
 
 }
 
