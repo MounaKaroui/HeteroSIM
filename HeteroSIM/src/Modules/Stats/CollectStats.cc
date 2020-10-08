@@ -81,56 +81,57 @@ void CollectStats::registerSignals()
             {
                     subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
                     subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::cbrSignal);
             }
         }
 
     }
 }
 
-// TODO: extract for Buffer vacancy for LTE
-//double CollectStats::extractBufferOccupancy()
-//{
-//
-//    LteMacBuffer* vqueue;
-//    cModule* host=getContainingNode(this);
-//
-//
-//
-//
-//}
-
-double CollectStats::extractQueueVacancy(int interfaceId)
+double CollectStats::extractLteBufferVacancy()
 {
-    cModule* host=getContainingNode(this);
     double queueVacancy=0;
-    if(interfaceId==0)
+    cModule* host=getContainingNode(this);
+    std::string moduleName=string(host->getFullName())+".lteNic.mac";
+    cModule* macModule=getModuleByPath(moduleName.c_str());
+    LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
+
+    for(auto& buf: lteMac->macBuffers_)
     {
-        std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.dcf";
-        cModule* dcfModule=getModuleByPath(moduleName.c_str());
-        using namespace inet::ieee80211;
-        Dcf* dcf= dynamic_cast<Dcf*>(dcfModule);
-        queueVacancy=dcf->pendingQueue->getMaxQueueSize() - dcf->pendingQueue->getLength();
-    }else if(interfaceId==1)
-    {
-        std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac";
-        cModule* csmaModule=getModuleByPath(moduleName.c_str());
-        CSMA* csma= dynamic_cast<CSMA*>(csmaModule);
-        queueVacancy=csma->macQueue.size() - csma->queueLength;
+
+        queueVacancy+=buf.second->getQueueLength()-buf.second->getQueueOccupancy();
+
     }
+
     return queueVacancy;
 }
 
-double CollectStats::getCBR(int interfaceId){
+double CollectStats::getWlanCBR(int interfaceId){
 
     cModule* host=getContainingNode(this);
     std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.rx";
     cModule* rxModule=getModuleByPath(moduleName.c_str());
     ChannelLoadAccess* channelLoadRx= dynamic_cast<ChannelLoadAccess*>(rxModule);
     return channelLoadRx->getCBR();
-
 }
 
+double CollectStats::extractQueueVacancy(int interfaceId)
+{
+    cModule* host=getContainingNode(this);
+    std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.dcf";
+    cModule* dcfModule=getModuleByPath(moduleName.c_str());
+    using namespace inet::ieee80211;
+    Dcf* dcf= dynamic_cast<Dcf*>(dcfModule);
+    return (dcf->pendingQueue->getMaxQueueSize() - dcf->pendingQueue->getLength());
+}
+
+double CollectStats::getLteCBR()
+{
+    cModule* host=getContainingNode(this);
+    std::string moduleName=string(host->getFullName())+".lteNic.phy";
+    cModule* phyModule=getModuleByPath(moduleName.c_str());
+    LtePhyVUeMode4* lteMac=dynamic_cast<LtePhyVUeMode4*>(phyModule);
+    return lteMac->mCBR;
+}
 
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
@@ -164,7 +165,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         queueVacancy=extractQueueVacancy(interfaceId);
 
         //CBR
-        cbr = getCBR(interfaceId);
+        cbr = getWlanCBR(interfaceId);
 
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
@@ -192,13 +193,12 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 transmissionRate = getTransmissionRate(0,delay); //consider 0 bits are transmitted
                 // Queue vacancy
                 queueVacancy=extractQueueVacancy(interfaceId);
+                // cbr
 
                 //CBR
-                 cbr = getCBR(interfaceId);
+                 cbr = getWlanCBR(interfaceId);
             }
         }
-
-
     recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
 }
 
@@ -207,7 +207,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
-
     double delay, transmissionRate,cbr, queueVacancy;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
@@ -232,30 +231,15 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             simtime_t lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
             delay = SIMTIME_DBL(lteInterLayerDelay);
-
             //Transmission rate
             transmissionRate = getTransmissionRate((PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl());
-
-            // TODO buffer vacancy
-
-
-            // TODO cbr
+            // buffer vacancy
+            queueVacancy=extractLteBufferVacancy();
+            // cbr
+            cbr=getLteCBR();
         }
     }
-
-//    if(comingSignal==LtePhyVUeMode4::cbrSignal)
-//    {
-//        if (strcmp(msg->getName(), "CBR") == 0)
-//        {
-//            Cbr* cbrPkt=dynamic_cast<Cbr*>(msg);
-//            cbr=cbrPkt->getCbr();
-//        }
-//    }
-
-
     recordStatTuple(interfaceId,delay,transmissionRate,cbr,queueVacancy) ;
-
-
 }
 
 

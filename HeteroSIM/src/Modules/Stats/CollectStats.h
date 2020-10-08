@@ -88,7 +88,9 @@ public:
     std::string prepareNetAttributes();
     double extractQueueVacancy(int interfaceId);
     double extractBufferOccupancy();
-    double getCBR(int interfaceId);
+    double getWlanCBR(int interfaceId);
+    double extractLteBufferVacancy();
+    double getLteCBR();
 
 protected:
 
