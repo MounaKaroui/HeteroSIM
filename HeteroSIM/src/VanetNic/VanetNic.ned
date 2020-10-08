@@ -28,7 +28,7 @@ module VanetNic extends Ieee80211Nic
         radio.bandwidth = 10 MHz;
         radio.channelNumber = default(180);
         radio.carrierFrequency = default(5.9 GHz);
-		
+        mac.rx.typename = default("heterosim.src.Modules.CBRMeasurement.ChannelLoadRx");		
 		
 //        mac.hcf.rateSelection.dataFrameBitrate = bitrate;
 //        mac.hcf.rateSelection.mgmtFrameBitrate = bitrate;

@@ -25,6 +25,8 @@
 #include <boost/algorithm/string.hpp>
 #include "common/LteCommon.h"
 #include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
+//#include "inet/linklayer/ieee80211/mac/Rx.h"
+#include "Modules/CBRMeasurement/util/ChannelLoadAccess.h"
 
 
 Define_Module(CollectStats);
@@ -119,6 +121,16 @@ double CollectStats::extractQueueVacancy(int interfaceId)
     return queueVacancy;
 }
 
+double CollectStats::getCBR(int interfaceId){
+
+    cModule* host=getContainingNode(this);
+    std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.rx";
+    cModule* rxModule=getModuleByPath(moduleName.c_str());
+    ChannelLoadAccess* channelLoadRx= dynamic_cast<ChannelLoadAccess*>(rxModule);
+    return channelLoadRx->getCBR();
+
+}
+
 
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
@@ -151,7 +163,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         // Queue vacancy
         queueVacancy=extractQueueVacancy(interfaceId);
 
-        // TODO: add CBR
+        //CBR
+        cbr = getCBR(interfaceId);
+
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
         {
@@ -179,7 +193,8 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 // Queue vacancy
                 queueVacancy=extractQueueVacancy(interfaceId);
 
-
+                //CBR
+                 cbr = getCBR(interfaceId);
             }
         }
 

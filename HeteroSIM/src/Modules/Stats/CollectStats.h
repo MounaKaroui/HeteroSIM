@@ -88,6 +88,8 @@ public:
     std::string prepareNetAttributes();
     double extractQueueVacancy(int interfaceId);
     double extractBufferOccupancy();
+    double getCBR(int interfaceId);
+
 protected:
 
     virtual void initialize();
