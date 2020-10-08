@@ -10,5 +10,4 @@ simple ChannelLoadRx extends Rx
         @statistic[ChannelLoad](record=timeavg,vector?);
 
         bool cbrWithTx = default(false);
-        bool asyncChannelReport = default(true);
 }
