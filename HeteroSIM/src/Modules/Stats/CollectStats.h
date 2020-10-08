@@ -86,7 +86,8 @@ public:
     listAlternativeAttributes applyAverageMethod(map<int,listOfCriteria*> dataSet);
     std::string convertListOfCriteriaToString(listAlternativeAttributes a);
     std::string prepareNetAttributes();
-
+    double extractQueueVacancy(int interfaceId);
+    double extractBufferOccupancy();
 protected:
 
     virtual void initialize();
