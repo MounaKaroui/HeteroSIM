@@ -150,7 +150,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         }
 
     using namespace inet::ieee80211;
-    if(comingSignal==Hcf::queueVacancySignal)
+    if(comingSignal==Hcf::queueVacancySignal || comingSignal==CSMA::queueVacancyCSMASignal)
     {
         if (strcmp(msg->getName(), "QueueVacancyIndication") == 0)
         {
@@ -158,7 +158,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             queueVacancy=queueVacancyMsg->getValue();
         }
     }
-
     recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
 }
 
