@@ -16,7 +16,6 @@
 #include "CollectStats.h"
 #include <inet/common/ModuleAccess.h>
 #include "stack/phy/packet/cbr_m.h"
-#include "stack/mac/packet/BufferOccupancyIndication_m.h"
 #include <numeric>
 #include "../../Modules/DecisionMaker/DecisionMaker.h"
 #include<boost/lexical_cast.hpp>
@@ -25,7 +24,6 @@
 #include <boost/algorithm/string.hpp>
 #include "common/LteCommon.h"
 #include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
-//#include "inet/linklayer/ieee80211/mac/Rx.h"
 #include "Modules/CBRMeasurement/util/ChannelLoadAccess.h"
 
 
