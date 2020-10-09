@@ -28,7 +28,9 @@ simple CollectStats like IStatistics
           
           double dlt=default(0);
 
-          string interfaceToProtocolMapping=default("0:80211;1:80215;2:mode4");
+          //string interfaceToProtocolMapping=default("0:80211;1:80215;2:mode4");
+          string interfaceToProtocolMapping=default("0:80211;1:mode4");
+          
        	  string averageMethod=default("simple"); // ema for EMA method
 }
 

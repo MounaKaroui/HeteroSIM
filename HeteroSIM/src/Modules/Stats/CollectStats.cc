@@ -114,12 +114,14 @@ double CollectStats::getWlanCBR(int interfaceId){
 
 double CollectStats::extractQueueVacancy(int interfaceId)
 {
+    double queueVacancy=0;
     cModule* host=getContainingNode(this);
     std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.dcf";
     cModule* dcfModule=getModuleByPath(moduleName.c_str());
     using namespace inet::ieee80211;
     Dcf* dcf= dynamic_cast<Dcf*>(dcfModule);
-    return (dcf->pendingQueue->getMaxQueueSize() - dcf->pendingQueue->getLength());
+    queueVacancy= dcf->pendingQueue->getMaxQueueSize() - dcf->pendingQueue->getLength();
+    return queueVacancy;
 }
 
 double CollectStats::getLteCBR()
