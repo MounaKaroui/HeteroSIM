@@ -181,29 +181,22 @@ int DecisionMaker::takeDecision(cMessage* msg)
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
-    BasicMsg* hetMsg=dynamic_cast<BasicMsg*>(msg);
-    int id;
+    BasicMsg* hetMsg = dynamic_cast<BasicMsg*>(msg);
 
+    if (hetMsg != nullptr) {
 
-    if(hetMsg!=nullptr)
-    {
-    id=hetMsg->getApplId();
+        cGate* gate = msg->getArrivalGate();
+        std::string gateName = gate->getName();
 
+        if (gateName.find("fromApplication")==0) {
+            int networkIndex = takeDecision(msg);
+            sendToLower(msg, networkIndex);
 
-    int arrivalGate = msg->getArrivalGateId();
-    int gateId=gate("fromApplication",id)->getId();
+        } else {
+            // from  radio
+            sendToUpper(msg);
 
-    if (arrivalGate == gateId)
-    {
-        int networkIndex=takeDecision(msg);
-        sendToLower(msg, networkIndex);
-
-    }else
-    {
-        // from  radio
-        sendToUpper(msg);
-
-    }
+        }
     }
 
    // handleLteLowerMsg(msg);
