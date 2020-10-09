@@ -54,11 +54,25 @@ void DecisionMaker::registerNodeToBinder()
 }
 
 
+int  DecisionMaker::getMode4InterfaceId()
+{
+    cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+    CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+    std::vector<int> result;
+    bool searchResult=Utilities::findKeyByValue(result, stats->interfaceToProtocolMap, string("mode4"));
+    int interfaceId;
+    if(searchResult)
+    {
+        interfaceId=result.at(0);
+    }
+    return interfaceId;
+}
+
 void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
 {
 
-
-    if(networkType==MODE4)
+    int interfaceId=getMode4InterfaceId();
+    if(networkType==interfaceId)
     {
         msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
 
@@ -129,21 +143,21 @@ int DecisionMaker::takeDecision(cMessage* msg)
     // MCDM_procedure
     HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
     std::string trafficType=hetMsg->getTrafficType();
-    //networkInit(networkIndex);
+    networkInit(networkIndex);
     if(isDeciderActive)
     {
 
-        cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
-        CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-        std::string decisionData= stats->prepareNetAttributes();
-
-        if(decisionData!="")
-        {
-            // TODO call MCDM here
-            // allPathsCriteriaValues is the final list of criteria
-            networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
-            std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
-        }
+//        cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+//        CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+//        std::string decisionData= stats->prepareNetAttributes();
+//
+//        if(decisionData!="")
+//        {
+//            // TODO call MCDM here
+//            // allPathsCriteriaValues is the final list of criteria
+//            networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
+//            std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
+//        }
     }
     else
     {

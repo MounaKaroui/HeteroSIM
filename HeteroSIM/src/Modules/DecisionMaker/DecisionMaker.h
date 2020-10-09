@@ -47,7 +47,7 @@ public:
 
     int takeDecision(cMessage*  msg);
     void ctrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
-
+    int getMode4InterfaceId();
   protected:
 
     void initialize() override;
