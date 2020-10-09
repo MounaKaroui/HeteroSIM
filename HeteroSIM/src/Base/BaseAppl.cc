@@ -16,6 +16,12 @@
 #include "BaseAppl.h"
 #include <inet/common/ModuleAccess.h>
 
+Register_Abstract_Class(BaseAppl);
+
+BaseAppl::BaseAppl()
+{
+}
+
 
 void BaseAppl::initialize()
 {
@@ -44,7 +50,7 @@ void BaseAppl::initialize()
 void BaseAppl::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
-        BasicMsg* basicMsg = BaseAppl::BuildMsg("hetNets");
+        BasicMsg* basicMsg = BuildMsg("hetNets");
         send(basicMsg, toDecisionMaker);
 
         if (stopTime >= simTime() || stopTime < 0)
@@ -61,14 +67,10 @@ void BaseAppl::setNodeId()
 }
 
 
-
-
-
 void BaseAppl::finish()
 {
     cancelAndDelete(msgSentTrigger);
 }
-
 
 
 

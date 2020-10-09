@@ -29,5 +29,6 @@ simple ControlTrafficApp  extends BaseAppl
         msgLength=default(10B);
         startTime=default(0s);
         stopTime=default(10s);
+        @class(ControlTrafficApp);  
      
 }

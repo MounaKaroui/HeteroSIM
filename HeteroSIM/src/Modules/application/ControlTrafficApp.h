@@ -27,13 +27,14 @@ using namespace omnetpp;
 class ControlTrafficApp : public BaseAppl
 {
 
-
     int interfaceId;
 
   protected:
-    BasicMsg* BuildMsg(std::string namePrefix) override;
+
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
+
+    virtual BasicMsg* BuildMsg(std::string namePrefix) override;
 };
 
 #endif

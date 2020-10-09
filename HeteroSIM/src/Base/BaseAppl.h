@@ -20,14 +20,8 @@
 #include "Modules/messages/Messages_m.h"
 #include "Utilities.h"
 
-using namespace omnetpp;
 
-class BaseAppl: public cSimpleModule{
-
-
-public:
-
-    virtual BasicMsg* BuildMsg(std::string namePrefix)=0;
+class BaseAppl: public cSimpleModule {
 
 
 protected:
@@ -43,13 +37,17 @@ protected:
 
     cMessage* msgSentTrigger;
 
+protected:
+    BaseAppl();
 
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
     void finish();
 
-    void setNodeId();
+    virtual BasicMsg* BuildMsg(std::string namePrefix)=0;
 
+
+    void setNodeId();
 
 };
 

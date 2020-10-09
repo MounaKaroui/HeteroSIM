@@ -34,8 +34,9 @@ void VanetApp::initialize()
 }
 void VanetApp::handleMessage(cMessage *msg)
 {
-    if(msg->isSelfMessage())
-        BaseAppl::handleMessage(msg);
+    if(msg->isSelfMessage()){
+       BaseAppl::handleMessage(msg);
+        }
     else
     {
         int arrivalGate=msg->getArrivalGateId();
