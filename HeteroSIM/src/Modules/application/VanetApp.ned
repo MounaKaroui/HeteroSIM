@@ -23,7 +23,7 @@ import heterosim.src.Base.BaseAppl;
 simple VanetApp extends BaseAppl
 {
 
-       startTime=default(0s) @unit(s); // application start time (start of the first packet)
-       stopTime=default(-1s) @unit(s);
+       startTime=default(10s) ; // application start time (start of the first packet)
+       stopTime=default(-1s) ;
          
 }

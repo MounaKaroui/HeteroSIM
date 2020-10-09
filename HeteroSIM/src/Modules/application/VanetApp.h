@@ -17,7 +17,9 @@
 #define __HETEROSIM_SIMPLEAPP_H_
 
 #include <omnetpp.h>
-#include"Base/BaseAppl.h"
+#include "Base/BaseAppl.h"
+#include "Modules/messages/Messages_m.h"
+
 using namespace omnetpp;
 
 
@@ -28,10 +30,14 @@ using namespace omnetpp;
 
 class VanetApp : public BaseAppl
 {
-
+    std::string trafficType;
   protected:
+
+
+    virtual void initialize();
     virtual void handleMessage(cMessage *msg);
 
+    virtual BasicMsg* BuildMsg(std::string namePrefix) override;
 
 
 

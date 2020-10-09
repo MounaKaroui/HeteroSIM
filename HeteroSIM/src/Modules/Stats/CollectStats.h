@@ -16,7 +16,7 @@
 #ifndef __HETEROSIM_COLLECTSTATS_H_
 #define __HETEROSIM_COLLECTSTATS_H_
 #include "inet/common/LayeredProtocolBase.h"
-#include "../../Modules/messages/HeterogeneousMessage_m.h"
+#include "../../Modules/messages/Messages_m.h"
 #include "inet/common/misc/ThruputMeter.h"
 #include "inet/physicallayer/common/packetlevel/Radio.h"
 #include "inet/physicallayer/ieee80211/packetlevel/Ieee80211Radio.h"

@@ -19,7 +19,7 @@
 #include <omnetpp.h>
 
 #include "../../Base/Utilities.h"
-#include "../../Modules/messages/HeterogeneousMessage_m.h"
+#include "../../Modules/messages/Messages_m.h"
 #include "corenetwork/binder/LteBinder.h"
 #include "Base/mcda/MCDM.h"
 #include <iostream>

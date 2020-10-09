@@ -16,10 +16,10 @@
 #include "BaseAppl.h"
 #include <inet/common/ModuleAccess.h>
 
-Define_Module(BaseAppl);
 
 void BaseAppl::initialize()
 {
+
     toDecisionMaker =findGate("toDecisionMaker");
     fromDecisionMaker=findGate("toDecisionMaker");
 
@@ -28,9 +28,7 @@ void BaseAppl::initialize()
     stopTime=SimTime(par("stopTime").doubleValue());
 
     msgLength=par("msgLength").intValue();
-
     appID=par("appID").intValue();
-    trafficType=par("trafficType").stringValue();
     setNodeId();
 
 
@@ -46,8 +44,8 @@ void BaseAppl::initialize()
 void BaseAppl::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) {
-        HeterogeneousMessage* vanetMsg = BaseAppl::BuildMsg("hetNets");
-        send(vanetMsg, toDecisionMaker);
+        BasicMsg* basicMsg = BaseAppl::BuildMsg("hetNets");
+        send(basicMsg, toDecisionMaker);
 
         if (stopTime >= simTime() || stopTime < 0)
             scheduleAt(simTime() + sendInterval, msgSentTrigger);
@@ -64,22 +62,6 @@ void BaseAppl::setNodeId()
 
 
 
-HeterogeneousMessage* BaseAppl::BuildMsg(std::string namePrefix)
-{
-
-    HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
-    heteroMsg->setName((namePrefix+"-"+std::to_string(heteroMsg->getTreeId())).c_str());
-
-    heteroMsg->setByteLength(msgLength);
-    heteroMsg->setTimestamp(simTime());
-
-    heteroMsg->setTrafficType(trafficType.c_str());
-    heteroMsg->setApplId(appID);
-
-    heteroMsg->setNodeId(nodeId);
-
-    return  heteroMsg;
-}
 
 
 void BaseAppl::finish()

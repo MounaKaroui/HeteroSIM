@@ -25,6 +25,13 @@ Define_Module(VanetApp);
 
 
 
+void VanetApp::initialize()
+{
+    BaseAppl::initialize();
+    trafficType=par("trafficType").stringValue();
+
+
+}
 void VanetApp::handleMessage(cMessage *msg)
 {
     if(msg->isSelfMessage())
@@ -40,4 +47,21 @@ void VanetApp::handleMessage(cMessage *msg)
 
     }
 }
+
+BasicMsg* VanetApp::BuildMsg(std::string namePrefix)
+{
+
+    HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
+    heteroMsg->setName((namePrefix+string("-data-")+std::to_string(heteroMsg->getTreeId())).c_str());
+
+    heteroMsg->setByteLength(msgLength);
+    heteroMsg->setTimestamp(simTime());
+
+    heteroMsg->setTrafficType(trafficType.c_str());
+    heteroMsg->setApplId(appID);
+    heteroMsg->setNodeId(nodeId);
+
+    return  heteroMsg;
+}
+
 

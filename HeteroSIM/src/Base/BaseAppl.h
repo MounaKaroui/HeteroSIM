@@ -16,8 +16,8 @@
 #ifndef BASE_BASEAPPL_H_
 #define BASE_BASEAPPL_H_
 
-#include<omnetpp.h>
-#include "Modules/messages/HeterogeneousMessage_m.h"
+#include <omnetpp.h>
+#include "Modules/messages/Messages_m.h"
 #include "Utilities.h"
 
 using namespace omnetpp;
@@ -27,7 +27,7 @@ class BaseAppl: public cSimpleModule{
 
 public:
 
-    HeterogeneousMessage* BuildMsg(std::string namePrefix);
+    virtual BasicMsg* BuildMsg(std::string namePrefix)=0;
 
 
 protected:
@@ -40,7 +40,6 @@ protected:
     int nodeId;
     int  msgLength;
     int appID;
-    std::string trafficType;
 
     cMessage* msgSentTrigger;
 

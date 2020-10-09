@@ -107,7 +107,7 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 
 void DecisionMaker::sendToUpper(cMessage*  msg)
 {
-    HeterogeneousMessage* hetNetsMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+    BasicMsg* hetNetsMsg=dynamic_cast<BasicMsg*>(msg);
     int id=hetNetsMsg->getApplId();
     int gateId=gate("toApplication",id)->getId(); // To get Id
     send(msg, gateId);
@@ -139,29 +139,38 @@ void DecisionMaker::networkInit(int& networkIndex)
 int DecisionMaker::takeDecision(cMessage* msg)
 {
 
-    int networkIndex; // generate values between 0 and 2, Just for test
-    // MCDM_procedure
-    HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
-    std::string trafficType=hetMsg->getTrafficType();
-    networkInit(networkIndex);
-    if(isDeciderActive)
-    {
+    int networkIndex;
 
-//        cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
-//        CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-//        std::string decisionData= stats->prepareNetAttributes();
-//
-//        if(decisionData!="")
-//        {
-//            // TODO call MCDM here
-//            // allPathsCriteriaValues is the final list of criteria
-//            networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
-//            std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
-//        }
-    }
-    else
-    {
-        networkIndex=dummyNetworkChoice;
+    ControlMsg * controlMsg =dynamic_cast<ControlMsg*>(msg);
+
+    if(controlMsg){
+        networkIndex=controlMsg->getNetworkId();
+    }else{
+
+            // MCDM_procedure
+            HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+            std::string trafficType=hetMsg->getTrafficType();
+
+            if(isDeciderActive)
+            {
+
+        //        cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+        //        CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+        //        std::string decisionData= stats->prepareNetAttributes();
+        //
+        //        if(decisionData!="")
+        //        {
+        //            // TODO call MCDM here
+        //            // allPathsCriteriaValues is the final list of criteria
+        //           networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
+        //            std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
+        //        }
+            }
+            else
+            {
+                networkIndex=dummyNetworkChoice;
+            }
+
     }
 
 
@@ -172,7 +181,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
-    HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+    BasicMsg* hetMsg=dynamic_cast<BasicMsg*>(msg);
     int id;
 
 
