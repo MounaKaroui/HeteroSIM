@@ -10,24 +10,16 @@ using namespace inet;
 namespace Utilities{
 
 
-double calculateEMA(vector<double> vData,vector<double>& vEMA)
+double calculateEMA(vector<double> vData, vector<double>& vEMA)
 {
-
-    double meanSample=calculateMeanVec(vData); // TODO: calculate meanVec according [timeStamp-DTL, NOW]
-    double beta=calculateBeta(vData.size());
-
-    if(vEMA.empty())
-    {
-        vEMA.push_back(meanSample);
-    }else
-    {
-        if(vEMA.size()>1)
-        {
-            vEMA.push_back(beta*vData.back()+(1-beta)*vEMA.back());
-        }
+    double beta = calculateBeta(vData.size());
+    if (vEMA.size() == 0) {
+        vEMA.push_back(vData.back());
+    } else {
+        vEMA.push_back(beta * vData.back() + (1 - beta) * vEMA.back());
     }
-    return vEMA.back();
 
+    return vEMA.back();
 }
 
 double calculateBeta(double n)
