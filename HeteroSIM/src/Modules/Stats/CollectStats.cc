@@ -54,7 +54,7 @@ void CollectStats::registerSignals()
         interfaceToProtocolMap.insert({stoi(result[0]),result[1]});
 
 
-        if (result[1] == "80211" || result[1] == "80215") {
+        if (result[1].find("80211")== 0 || result[1].find("80215") == 0) {
 
             std::string macModuleName= "^.wlan["+ result[0]+"].mac";
             std::string radioModuleName= "^.wlan["+ result[0]+"].radio";
@@ -167,6 +167,8 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         //CBR
         cbr = getWlanCBR(interfaceId);
 
+        recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
+
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
         {
@@ -197,9 +199,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
                 //CBR
                  cbr = getWlanCBR(interfaceId);
+                 recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
             }
         }
-    recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
 }
 
 
@@ -237,9 +239,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             queueVacancy=extractLteBufferVacancy();
             // cbr
             cbr=getLteCBR();
+            recordStatTuple(interfaceId,delay,transmissionRate,cbr,queueVacancy) ;
         }
     }
-    recordStatTuple(interfaceId,delay,transmissionRate,cbr,queueVacancy) ;
 }
 
 
@@ -302,17 +304,16 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
 
     simtime_t historyBound = NOW - (SimTime(dlt));
 
-    int recentStatIndex ;
-    for(recentStatIndex=tmp->timeStamp.size()-1; recentStatIndex>=0; recentStatIndex--){
+    for(int recentStatIndex=tmp->timeStamp.size()-1; recentStatIndex>=0; recentStatIndex--){
 
         if(tmp->timeStamp[recentStatIndex]<= historyBound)
             insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex],tmp->cbr[recentStatIndex],tmp->queueVacancy[recentStatIndex]) ;
         else
             break ;
-    }
 
-    if (recentStatIndex<0)
-        throw cRuntimeError("No available stats in DLT interval"); //TODO handle
+        if (recentStatIndex<0)
+               throw cRuntimeError("No available stats in DLT interval"); //TODO handle
+    }
 
     return rList ;
 }
@@ -330,22 +331,23 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             listAttr->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
             listAttr->cbr=Utilities::calculateMeanVec(x.second->cbr);
             listAttr->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
+
             myList.data.insert({x.first,listAttr});
         }
     }else if(averageMethod==string("ema"))
     {
-        std::vector<double> emaOfDelay;
-        std::vector<double> emaOfTransmissionRate;
-        std::vector<double> emaOfsuccessfulTransmissionRatio;
-        std::vector<double> emaOfcbr;
-        std::vector<double> emaOfQueueVacancy;
         for (auto& x : dataSet)
         {
+            std::vector<double> vEMADelay;
+            std::vector<double> vEMATransmissionRate;
+            std::vector<double> vEMACBR;
+            std::vector<double> vEMAQueueVacancy;
             alternativeAttributes* listAttr=new alternativeAttributes();
-            listAttr->delay=Utilities::calculateEMA(x.second->delay,emaOfDelay);
-            listAttr->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate, emaOfTransmissionRate);
-            listAttr->cbr=Utilities::calculateEMA(x.second->cbr, emaOfcbr);
-            listAttr->queueVacancy=Utilities::calculateEMA(x.second->queueVacancy, emaOfQueueVacancy);
+            listAttr->delay=Utilities::calculateEMA(x.second->delay,vEMADelay);
+            listAttr->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate,vEMATransmissionRate);
+            listAttr->cbr=Utilities::calculateEMA(x.second->cbr,vEMACBR);
+            listAttr->queueVacancy=Utilities::calculateEMA(x.second->queueVacancy,vEMAQueueVacancy);
+
             myList.data.insert({x.first,listAttr});
         }
     }
