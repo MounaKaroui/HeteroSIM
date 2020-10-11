@@ -28,11 +28,11 @@ void Matrix::print()
     {
         for (int j=0; j<m_columns; j++)
         {
-            std::cout<<std::setw(10)<<decisionMtx[i][j]; // <<"\t";
+            std::cout<<std::setw(10)<<decisionMtx[i][j] <<"\t";
         }
-        std::cout<<"\n";
+        std::cout<< std::endl ;
     }
-    std::cout<<"\n";
+    std::cout<<std::endl;
 }
 
 //get the size of matrix, transmitting desired dimensionality

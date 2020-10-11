@@ -567,11 +567,11 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
 {
 
     Matrix C = parseInputString(allPathsCriteriaValues,',',critNumb);
-    std::cout<<"Criteria matrix : " <<"\n";
+    std::cout<<"Criteria matrix : " <<std::endl;
     C.print();
     std::vector<Norma> norm = setNorma3(critNumb,path,C); //set norm parameters
 
-    std::cout<<"Normalized matrix : " <<"\n";
+    std::cout<<"Normalized matrix : " <<std::endl;
 
     // Normalization stage ...
     Matrix D = norm3(C,norm);
