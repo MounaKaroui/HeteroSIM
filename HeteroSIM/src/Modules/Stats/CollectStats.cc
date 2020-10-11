@@ -262,8 +262,9 @@ std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttribute
     for (auto& x : listOfAlternativeAttributes.data)
     {
         criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->transmissionRate));
-
         criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->delay));
+        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->cbr));
+
 
     }
 
@@ -324,10 +325,12 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
     {
         for (auto& x : dataSet)
         {
-            myList.data.at(x.first)->delay=Utilities::calculateMeanVec(x.second->delay);
-            myList.data.at(x.first)->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
-            myList.data.at(x.first)->cbr=Utilities::calculateMeanVec(x.second->cbr);
-            myList.data.at(x.first)->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
+            alternativeAttributes* listAttr=new alternativeAttributes();
+            listAttr->delay=Utilities::calculateMeanVec(x.second->delay);
+            listAttr->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
+            listAttr->cbr=Utilities::calculateMeanVec(x.second->cbr);
+            listAttr->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
+            myList.data.insert({x.first,listAttr});
         }
     }else if(averageMethod==string("ema"))
     {
@@ -338,10 +341,12 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
         std::vector<double> emaOfQueueVacancy;
         for (auto& x : dataSet)
         {
-            myList.data.at(x.first)->delay=Utilities::calculateEMA(x.second->delay,emaOfDelay);
-            myList.data.at(x.first)->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate, emaOfTransmissionRate);
-            myList.data.at(x.first)->cbr=Utilities::calculateEMA(x.second->cbr, emaOfcbr);
-            myList.data.at(x.first)->queueVacancy=Utilities::calculateEMA(x.second->queueVacancy, emaOfQueueVacancy);
+            alternativeAttributes* listAttr=new alternativeAttributes();
+            listAttr->delay=Utilities::calculateEMA(x.second->delay,emaOfDelay);
+            listAttr->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate, emaOfTransmissionRate);
+            listAttr->cbr=Utilities::calculateEMA(x.second->cbr, emaOfcbr);
+            listAttr->queueVacancy=Utilities::calculateEMA(x.second->queueVacancy, emaOfQueueVacancy);
+            myList.data.insert({x.first,listAttr});
         }
     }
     return myList;
