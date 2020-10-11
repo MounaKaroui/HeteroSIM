@@ -14,7 +14,9 @@ src/Makefile.vc
 *.pyc
 *.pcap
 *.sca
+*.sca-journal
 *.vec
+*.vec-journal
 *.vci
 .buildlog*
 
