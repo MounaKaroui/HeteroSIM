@@ -115,26 +115,6 @@ void DecisionMaker::sendToUpper(cMessage*  msg)
 
 
 
-void DecisionMaker::networkInit(int& networkIndex)
-{
-
-//        if(simTime()<10)
-//        {
-//            networkIndex=0;
-//
-//        }else if(simTime()>10 and simTime()<20)
-//        {
-//            networkIndex=1;
-//        }else if(simTime()>20 and simTime()<50)
-//        {
-//            networkIndex=2;
-//        }
-//        else
-//        {
-           networkIndex=rand()%3;
-      //  }
-
-}
 
 int DecisionMaker::takeDecision(cMessage* msg)
 {
@@ -153,18 +133,17 @@ int DecisionMaker::takeDecision(cMessage* msg)
 
             if(isDeciderActive)
             {
+                cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+                CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+                std::string decisionData= stats->prepareNetAttributes();
 
-        //        cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
-        //        CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-        //        std::string decisionData= stats->prepareNetAttributes();
-        //
-        //        if(decisionData!="")
-        //        {
-        //            // TODO call MCDM here
-        //            // allPathsCriteriaValues is the final list of criteria
-        //           networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
-        //            std::cout<< "The best network is "<< networkIndex <<"\n"<< endl;
-        //        }
+                if(decisionData!="")
+                {
+                    // MCDM here
+                    std::cout<< "decision Data "<< decisionData << endl;
+                    networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
+                    std::cout<< "The best network is "<< networkIndex << endl;
+                }
             }
             else
             {

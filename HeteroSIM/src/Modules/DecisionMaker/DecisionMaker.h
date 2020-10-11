@@ -60,9 +60,6 @@ public:
     void handleLteLowerMsg(cMessage* msg);
 
 
-    void networkInit(int& networkIndex);
-
-
 
     bool mode4;
     bool isDeciderActive;
