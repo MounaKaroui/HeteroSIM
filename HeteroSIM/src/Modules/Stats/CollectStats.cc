@@ -35,7 +35,6 @@ void CollectStats::initialize()
 {
 
     interfaceToProtocolMapping =par("interfaceToProtocolMapping").stringValue();
-    dlt=par("dlt").doubleValue();
     averageMethod=par("averageMethod").stringValue();
     registerSignals();
 }
@@ -248,10 +247,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
 
 
-double CollectStats::updateDLT(double x)
-{
-    return exp(-1*x); // Fixme : adjust the function to consider or not dtlMax
-}
+
 
 std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttributes listOfAlternativeAttributes)
 {
@@ -284,6 +280,17 @@ std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttribute
     return alternativeAttributesStr;
 }
 
+void CollectStats::updateDLT(listOfCriteria* list)
+{
+    // update dtl according to coefficient of variation
+    std::vector<double> cv;
+    cv.push_back(Utilities::calculateCofficientOfVariation(list->delay));
+    cv.push_back(Utilities::calculateCofficientOfVariation(list->transmissionRate));
+    cv.push_back(Utilities::calculateCofficientOfVariation(list->cbr));
+    cv.push_back(Utilities::calculateCofficientOfVariation(list->queueVacancy));
+    dlt=exp(-1*Utilities::calculateMeanVec(cv));
+
+}
 
 map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
 {
@@ -302,7 +309,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
     listOfCriteria* rList = new listOfCriteria();
     listOfCriteria* tmp = listOfCriteriaByInterfaceId[interfaceId];
 
-    simtime_t historyBound = NOW - (SimTime(dlt));
+    simtime_t historyBound = NOW - SimTime(dlt);
 
     for(int recentStatIndex=tmp->timeStamp.size()-1; recentStatIndex>=0; recentStatIndex--){
 
@@ -314,7 +321,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
         if (recentStatIndex<0)
                throw cRuntimeError("No available stats in DLT interval"); //TODO handle
     }
-
+    //updateDLT(rList); TODO fix sim time overflow bug
     return rList ;
 }
 

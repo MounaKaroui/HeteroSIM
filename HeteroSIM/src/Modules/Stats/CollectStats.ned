@@ -26,7 +26,6 @@ simple CollectStats like IStatistics
    
     parameters:
           
-          double dlt=default(0);
           
           string interfaceToProtocolMapping=default("0:80211;1:80211;2:mode4");
           
