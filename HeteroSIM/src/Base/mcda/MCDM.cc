@@ -1,5 +1,9 @@
 #include "../mcda/MCDM.h"
 #include<boost/lexical_cast.hpp>
+#include <boost/tokenizer.hpp>
+#include <bits/stdc++.h>
+#include <boost/algorithm/string.hpp>
+#include<iostream>
 #include <string>
 
 namespace McdaAlg {};
@@ -32,10 +36,7 @@ Matrix parseInputString(const std::string &input, char delim, int critNumb)
             std::istringstream istr(out[i+j*critNumb]);
             std::string temp;
             istr>>temp;
-            if (temp=="-inf")   //handle case when there is AP with -inf RSS value
-                outNumb.at(j,i) = -100;
-            else
-                outNumb.at(j,i) = std::stod(temp);
+            outNumb.at(j,i) = std::stod(temp);
         }
     }
     return outNumb;
@@ -155,20 +156,19 @@ std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a)
         // read stuff from the file into matrix A elements
         for (int i=0; i<critNumb; i++)
         {
-            //Push back new subject created with default constructor.
             norm.push_back(Norma());
-            //Vector now has 1 element @ index 0, so modify it.
             inf>>norm[i].nameCrit;
-            inf>>norm[i].upwardType;
+            inf>>norm[i].upwardType; // "the larger the better"
             if(norm[i].upwardType==1)
             {
                 norm[i].upwardType=true;
+                norm[i].u=maxElement(a,i,"column");
+
             }else
             {
                 norm[i].upwardType=false;
+                norm[i].l=minElement(a,i,"column");
             }
-            norm[i].u=maxElement(a,i,"column");
-            norm[i].l=minElement(a,i,"column");
         }
     }
     norm.resize(critNumb); //assure proper size
@@ -187,7 +187,6 @@ Matrix norm3(Matrix a, std::vector<Norma> norm)
             for (int i=0; i<m; i++)
             {
                 d.at(i,j) = a.at(i,j) / (norm[j].u);
-                //std::cout<<d.at(i,j)<<"\n";
             }
         }
         else
@@ -195,7 +194,6 @@ Matrix norm3(Matrix a, std::vector<Norma> norm)
             for (int i=0; i<m; i++)
             {
                 d.at(i,j) = (norm[j].l) / (a.at(i,j));
-                //std::cout<<d.at(i,j)<<"\n";
             }
         }
     }
@@ -299,31 +297,24 @@ Matrix hybrid_weighting(Matrix w_s, Matrix w_obj, double k)
 }
 
 // Simple weighting
-Matrix simple_weighting(std::string path, int critNumb)
+Matrix simple_weighting(std::string weights)
 {
-    Matrix A(critNumb,1);
-    char resolved_path[PATH_MAX];
-    realpath(path.c_str(), resolved_path);
-    std::ifstream inf(std::string(resolved_path)+"/"+"weights"+".dat");
-    if (!inf)
-        {
-            // Print an error and exit
-            std::cerr << "Uh oh, weights file could not be opened for reading!" <<"\n";
-            exit(1);
-        }
-        // While there's still stuff left to read
-        while (inf)
-        {
-            // read stuff from the file into matrix A elements
-            for (int i=0; i<A.size(1); i++)
-            {
-                for (int j=0; j<A.size(2); j++)
-                {
-                    inf>>A.at(i,j);
-                }
-            }
-        }
-        return A;
+    std::vector<double> weight;
+    typedef boost::tokenizer<boost::char_separator<char>> tokenizer;
+    tokenizer tok{weights, boost::char_separator<char> {","}};
+    int counter=0;
+
+    for (const auto &t : tok)
+    {
+        weight.push_back(std::stod(t));
+        counter++;
+    }
+    Matrix W(counter,1);
+    for(int i=0; i< counter;i++){
+        W.at(i,0)=weight.at(i);
+    }
+
+    return W;
 }
 
 
@@ -591,7 +582,7 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes)
 }
 
 int decisionProcess(std::string decisionData, std::string path,
-        std::string weightingMethod, int critNumb, std::string trafficType,
+        std::string weightingMethod, std::string weights, int critNumb, std::string trafficType,
         std::string algName)
 {
 
@@ -610,7 +601,7 @@ int decisionProcess(std::string decisionData, std::string path,
     Matrix W(critNumb,1);
     if(weightingMethod=="simple")
     {
-        W=simple_weighting(path, critNumb);
+        W=simple_weighting(weights);
     }
     else if(weightingMethod=="pairWise")
     {

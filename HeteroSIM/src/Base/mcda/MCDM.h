@@ -44,7 +44,7 @@ Matrix norm3(Matrix a, std::vector<Norma> norm);
 
 //Simple  weighting
 
-Matrix simple_weighting(std::string path, int critNumb);
+Matrix simple_weighting(std::string weights);
 
 //Weighting stage
 Matrix wls_weighting(Matrix A);
@@ -93,7 +93,7 @@ Matrix readPreferences(std::string trafficType,std::string path, int critNumb);
 Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes);
 
 int decisionProcess(std::string decisionData, std::string path,
-        std::string weightingMethod, int critNumb, std::string trafficType,
+        std::string weightingMethod,std::string weights, int critNumb, std::string trafficType,
         std::string algName);
 
 // To display some matrix expresssions
