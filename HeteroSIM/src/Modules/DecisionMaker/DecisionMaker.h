@@ -65,6 +65,8 @@ public:
     bool isDeciderActive;
     int dummyNetworkChoice;
 
+    std::string simpleWeights;
+
     LteBinder* binder_;
     MacNodeId nodeId_;
     int critNumb;
