@@ -27,11 +27,10 @@ simple DecisionMaker
         @display("i=old/telnet");
         
         bool mode4IsActive = default(false);
-        int criteriaNum=default(3);
-     
-        //string pathToConfigFiles=default("/home/mouna1/myGitDepot/HeteroSIM/HeteroSIM/src/Base/mcda/"); 
-   		
-   		// TODO: transform absolute path to relative
+        //weights in this order TransmissionRate,Delay,Cbr,QueueVacancy
+        string simpleWeights=default("0.2,0.5,0.2,0.1");
+        int criteriaNum=default(4);
+             
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
    
  		bool isDeciderActive=default(true); 
