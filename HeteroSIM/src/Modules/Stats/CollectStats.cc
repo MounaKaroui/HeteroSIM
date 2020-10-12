@@ -62,9 +62,7 @@ void CollectStats::initializeDLT()
 void CollectStats::registerSignals()
 {
 
-    cStringTokenizer tokenizer(interfaceToProtocolMapping.c_str(),string(";").c_str());
     for(auto const & x: interfaceToProtocolMap){
-
 
         if (x.second.find("80211")== 0 || x.second.find("80215") == 0) {
 
@@ -104,15 +102,16 @@ double CollectStats::extractLteBufferVacancy()
     std::string moduleName=string(host->getFullName())+".lteNic.mac";
     cModule* macModule=getModuleByPath(moduleName.c_str());
     LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
-
+    double count=0;
     for(auto& buf: lteMac->macBuffers_)
     {
 
-        queueVacancy+=buf.second->getQueueLength()-buf.second->getQueueOccupancy();
-
+        if(buf.second->getQueueLength()!=0)
+            queueVacancy+=(buf.second->getQueueLength()-buf.second->getQueueOccupancy())/buf.second->getQueueLength();
+        count++;
     }
 
-    return queueVacancy;
+    return (queueVacancy/count)*100;
 }
 
 double CollectStats::getWlanCBR(int interfaceId){
@@ -132,7 +131,9 @@ double CollectStats::extractQueueVacancy(int interfaceId)
     cModule* dcfModule=getModuleByPath(moduleName.c_str());
     using namespace inet::ieee80211;
     Dcf* dcf= dynamic_cast<Dcf*>(dcfModule);
-    queueVacancy= dcf->pendingQueue->getMaxQueueSize() - dcf->pendingQueue->getLength();
+    queueVacancy = ((dcf->pendingQueue->getMaxQueueSize()
+            - dcf->pendingQueue->getLength())
+            / dcf->pendingQueue->getMaxQueueSize()) * 100;
     return queueVacancy;
 }
 
@@ -172,10 +173,8 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
         ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
         transmissionRate = getTransmissionRate((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl());
-
         // Queue vacancy
         queueVacancy=extractQueueVacancy(interfaceId);
-
         //CBR
         cbr = getWlanCBR(interfaceId);
 
@@ -202,13 +201,10 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //Delay
                 delay = SIMTIME_DBL(macDelay);
                 packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-
                 //Transmission rate
                 transmissionRate = getTransmissionRate(0,delay); //consider 0 bits are transmitted
                 // Queue vacancy
                 queueVacancy=extractQueueVacancy(interfaceId);
-                // cbr
-
                 //CBR
                  cbr = getWlanCBR(interfaceId);
                  recordStatTuple(interfaceId, delay, transmissionRate,cbr, queueVacancy) ;
@@ -256,51 +252,31 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     }
 }
 
-
-
-
-
-
-
 std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttributes listOfAlternativeAttributes)
 {
-
-    std::string pathsCriteriaValues = "";
-    std::vector<std::string> criteriaStr;
-    std::string critValuesPerPathStr = "";
-    std::string alternativeAttributesStr="";
+    std::string rStr="";
 
     for (auto& x : listOfAlternativeAttributes.data)
     {
-        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->transmissionRate));
-        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->delay));
-        criteriaStr.push_back( boost::lexical_cast<std::string>(x.second->cbr));
-
-
+        rStr+=to_string(x.second->transmissionRate);
+        rStr+=","+to_string(x.second->delay);
+        rStr+=","+to_string(x.second->cbr);
+        rStr+=","+to_string(x.second->queueVacancy)+",";
     }
 
-    for (unsigned int a = 0; a < criteriaStr.size(); ++a) {
-        if (a == 0) {
-            pathsCriteriaValues = pathsCriteriaValues + criteriaStr[a];
-        } else {
-            pathsCriteriaValues = pathsCriteriaValues + ","
-                    + criteriaStr[a];
-        }}
-    alternativeAttributesStr = alternativeAttributesStr + pathsCriteriaValues
-            + ",";
-    criteriaStr.clear();
-
-    return alternativeAttributesStr;
+    return rStr.substr(0, rStr.size()-1);
 }
 
 void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {
     // update dtl according to coefficient of variation
     std::vector<double> cv;
+
     cv.push_back(Utilities::calculateCofficientOfVariation(list->delay));
     cv.push_back(Utilities::calculateCofficientOfVariation(list->transmissionRate));
     cv.push_back(Utilities::calculateCofficientOfVariation(list->cbr));
     cv.push_back(Utilities::calculateCofficientOfVariation(list->queueVacancy));
+
     dltByInterfaceId[interfaceId]=exp(-1*Utilities::calculateMeanVec(cv));
 
 }
@@ -321,7 +297,6 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
 
     listOfCriteria* rList = new listOfCriteria();
     listOfCriteria* tmp = listOfCriteriaByInterfaceId[interfaceId];
-
     simtime_t historyBound = NOW - SimTime(dltByInterfaceId[interfaceId]);
 
     int statIndex;
@@ -336,8 +311,8 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
     if (statIndex==recentStatIndex)
         insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex],tmp->cbr[recentStatIndex],tmp->queueVacancy[recentStatIndex]) ;
 
-    //update
-    //updateDLT(rList, interfaceId); // TODO: RESOLVE SIM OVERFLOW BUG
+    //update DLT
+    updateDLT(rList, interfaceId);
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
     return rList ;
