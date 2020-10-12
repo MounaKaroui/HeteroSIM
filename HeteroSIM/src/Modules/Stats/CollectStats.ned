@@ -25,10 +25,8 @@ simple CollectStats like IStatistics
 {
    
     parameters:
-          
-          
+         
           string interfaceToProtocolMapping=default("0:80211;1:80211;2:mode4");
-          
        	  string averageMethod=default("simple"); // simple average or with ema
 }
 

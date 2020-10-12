@@ -19,31 +19,23 @@ struct Norma
     double l;
 };
 
-
+// parse string into vector of strings
+std::vector<std::string> split(const std::string &input, char delim);
+Matrix parseInputString(const std::string &input, char delim, int critNumb);
+void showSetNorma(std::vector<Norma> &norm);
+std::vector<Norma> selectNormCriteria(std::vector<Norma> norm, Matrix decisionCriteriaIndexes);
 
 //Normalization stage
 
-// parse string into vector of strings
-std::vector<std::string> split(const std::string &input, char delim);
-
-Matrix parseInputString(const std::string &input, char delim, int critNumb);
-
-void showSetNorma(std::vector<Norma> &norm);
-
-//read parameters fro enhMaxMin from file enhNorm.dat
+// Normalization method 1
 std::vector<Norma> setNorma(int critNumb, std::string path);
-
-std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a);
-
-std::vector<Norma> selectNormCriteria(std::vector<Norma> norm, Matrix decisionCriteriaIndexes);
-
 Matrix norm1(Matrix a, std::vector<Norma> norm);
 
 // Normalization method 3
 Matrix norm3(Matrix a, std::vector<Norma> norm);
+std::vector<Norma> readCriteriaType(std::string criteriaType ,Matrix a);
 
 //Simple  weighting
-
 Matrix simple_weighting(std::string weights);
 
 //Weighting stage
@@ -92,12 +84,17 @@ Matrix readPreferences(std::string trafficType,std::string path, int critNumb);
 
 Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes);
 
+// decision-making method
 int decisionProcess(std::string decisionData, std::string path,
-        std::string weightingMethod,std::string weights, int critNumb, std::string trafficType,
+        std::string weightingMethod, std::string weights,
+        std::string criteriaType, std::string trafficType,
         std::string algName);
 
 // To display some matrix expresssions
 void displayExpression(Matrix D, int i, int j);
+
+// Intelligent div to avoid NaN values
+double intelligentDiv(double numerator, double denominator);
 
 }
 

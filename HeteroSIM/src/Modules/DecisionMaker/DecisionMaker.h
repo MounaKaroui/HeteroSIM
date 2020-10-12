@@ -67,6 +67,8 @@ public:
 
     std::string simpleWeights;
 
+    std::string criteriaType;
+
     LteBinder* binder_;
     MacNodeId nodeId_;
     int critNumb;

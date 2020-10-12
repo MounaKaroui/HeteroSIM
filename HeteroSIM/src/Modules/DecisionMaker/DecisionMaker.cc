@@ -28,10 +28,10 @@ Define_Module(DecisionMaker);
 void DecisionMaker::initialize()
 {
 
-    critNumb=par("criteriaNum").intValue();
     mode4=par("mode4IsActive").boolValue();
     pathToConfigFiles=par("pathToConfigFiles").stringValue();
     simpleWeights=par("simpleWeights").stringValue();
+    criteriaType=par("criteriaType").stringValue();
     if(mode4)
     {
         registerNodeToBinder();
@@ -143,8 +143,8 @@ int DecisionMaker::takeDecision(cMessage* msg)
                     // MCDM here
                     std::cout<< "decision Data "<< decisionData <<"\n" << endl;
                 networkIndex = McdaAlg::decisionProcess(decisionData,
-                        pathToConfigFiles, "simple", simpleWeights, critNumb,
-                        trafficType, "VIKOR");
+                        pathToConfigFiles, "simple", simpleWeights,
+                        criteriaType, trafficType, "VIKOR");
 
                     std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
                 }

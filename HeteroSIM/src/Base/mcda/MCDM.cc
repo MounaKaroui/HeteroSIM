@@ -135,30 +135,25 @@ Matrix norm1(Matrix a, std::vector<Norma> norm)
 }
 
 
-//read parameters fro enhMaxMin from file enhNorm.dat
-std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a)
+std::vector<Norma> readCriteriaType(std::string criteriaType ,Matrix a)
 {
-    std::vector<Norma> norm;
-    char resolved_path[PATH_MAX];
-    realpath(path.c_str(), resolved_path);
-    std::ifstream inf(std::string(resolved_path)+"/"+"enhNorm"+".dat");
-    //std::cout<< "absolute path is= " << resolved_path <<std::endl;
-    // If we couldn't open the output file stream for reading
-    if (!inf)
-    {
-        // Print an error and exit
-        std::cerr << "Uh oh, file with normalization values could not be opened for reading!" <<"\n";
-        exit(1);
-    }
-    // While there's still stuff left to read
-    while (inf)
-    {
-        // read stuff from the file into matrix A elements
-        for (int i=0; i<critNumb; i++)
+
+        std::vector<double> critType; // "The larger the better or the smaller the better"
+        typedef boost::tokenizer<boost::char_separator<char>> tokenizer;
+        tokenizer tok{criteriaType, boost::char_separator<char> {","}};
+        int critNum=0;
+
+        for (const auto &t : tok)
+        {
+            critType.push_back(std::stod(t));
+            critNum++;
+        }
+        // Set Norm structure
+        std::vector<Norma> norm;
+        for (int i=0; i<critNum; i++)
         {
             norm.push_back(Norma());
-            inf>>norm[i].nameCrit;
-            inf>>norm[i].upwardType; // "the larger the better"
+            norm[i].upwardType=critType.at(i) ;
             if(norm[i].upwardType==1)
             {
                 norm[i].upwardType=true;
@@ -170,9 +165,23 @@ std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a)
                 norm[i].l=minElement(a,i,"column");
             }
         }
-    }
-    norm.resize(critNumb); //assure proper size
+    norm.resize(critNum); //assure proper size
     return norm;
+}
+
+
+double intelligentDiv(double numerator, double denominator)
+{
+
+    if(denominator==0 && numerator==denominator)
+    {
+        return 1;
+
+    }else
+    {
+        return numerator/denominator;
+    }
+
 }
 
 Matrix norm3(Matrix a, std::vector<Norma> norm)
@@ -186,14 +195,14 @@ Matrix norm3(Matrix a, std::vector<Norma> norm)
         {
             for (int i=0; i<m; i++)
             {
-                d.at(i,j) = a.at(i,j) / (norm[j].u);
+                d.at(i,j) = intelligentDiv(a.at(i,j),norm[j].u);
             }
         }
         else
         {
             for (int i=0; i<m; i++)
             {
-                d.at(i,j) = (norm[j].l) / (a.at(i,j));
+                d.at(i,j) = intelligentDiv(norm[j].l,a.at(i,j));
             }
         }
     }
@@ -582,14 +591,16 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes)
 }
 
 int decisionProcess(std::string decisionData, std::string path,
-        std::string weightingMethod, std::string weights, int critNumb, std::string trafficType,
+        std::string weightingMethod, std::string weights,
+        std::string criteriaType, std::string trafficType,
         std::string algName)
 {
 
+    int critNumb =criteriaType.size()-std::count(criteriaType.begin(), criteriaType.end(), ',');
     Matrix C = parseInputString(decisionData,',',critNumb);
     std::cout<<"Criteria matrix : " <<std::endl;
     C.print();
-    std::vector<Norma> norm = setNorma3(critNumb,path,C); //set norm parameters
+    std::vector<Norma> norm = readCriteriaType(criteriaType,C); //set norm parameters
 
     std::cout<<"Normalized matrix : " <<std::endl;
 
