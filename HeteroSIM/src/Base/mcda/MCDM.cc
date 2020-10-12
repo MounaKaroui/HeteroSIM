@@ -140,7 +140,7 @@ std::vector<Norma> setNorma3(int critNumb, std::string path,Matrix a)
     std::vector<Norma> norm;
     char resolved_path[PATH_MAX];
     realpath(path.c_str(), resolved_path);
-    std::ifstream inf(std::string(resolved_path)+"/"+"enhNorm"+std::to_string(critNumb)+".dat");
+    std::ifstream inf(std::string(resolved_path)+"/"+"enhNorm"+".dat");
     //std::cout<< "absolute path is= " << resolved_path <<std::endl;
     // If we couldn't open the output file stream for reading
     if (!inf)
@@ -265,8 +265,6 @@ Matrix entropy_weighting(Matrix D)
     }
     std::cout << "entropy " <<"\n";
     H.print();
-    double sh=0;
-
 
     for(int i=0; i<n; i++)
     {
@@ -300,7 +298,36 @@ Matrix hybrid_weighting(Matrix w_s, Matrix w_obj, double k)
 
 }
 
+// Simple weighting
+Matrix simple_weighting(std::string path, int critNumb)
+{
+    Matrix A(critNumb,1);
+    char resolved_path[PATH_MAX];
+    realpath(path.c_str(), resolved_path);
+    std::ifstream inf(std::string(resolved_path)+"/"+"weights"+".dat");
+    if (!inf)
+        {
+            // Print an error and exit
+            std::cerr << "Uh oh, weights file could not be opened for reading!" <<"\n";
+            exit(1);
+        }
+        // While there's still stuff left to read
+        while (inf)
+        {
+            // read stuff from the file into matrix A elements
+            for (int i=0; i<A.size(1); i++)
+            {
+                for (int j=0; j<A.size(2); j++)
+                {
+                    inf>>A.at(i,j);
+                }
+            }
+        }
+        return A;
+}
 
+
+// WLS weighting
 Matrix wls_weighting(Matrix A)
 {
     int critNumb = A.size(1);
@@ -563,10 +590,12 @@ Matrix selectSomeCriteria(Matrix A, Matrix decisionCriteriaIndexes)
     return Acut;
 }
 
-int decisionProcess(std::string allPathsCriteriaValues,std::string path,int critNumb,std::string trafficType,std::string algName)
+int decisionProcess(std::string decisionData, std::string path,
+        std::string weightingMethod, int critNumb, std::string trafficType,
+        std::string algName)
 {
 
-    Matrix C = parseInputString(allPathsCriteriaValues,',',critNumb);
+    Matrix C = parseInputString(decisionData,',',critNumb);
     std::cout<<"Criteria matrix : " <<std::endl;
     C.print();
     std::vector<Norma> norm = setNorma3(critNumb,path,C); //set norm parameters
@@ -576,24 +605,23 @@ int decisionProcess(std::string allPathsCriteriaValues,std::string path,int crit
     // Normalization stage ...
     Matrix D = norm3(C,norm);
     D.print();
+
     // weighting stage ...
-    Matrix A = readPreferences(trafficType,path,critNumb);
-    Matrix W = wls_weighting(A);
+    Matrix W(critNumb,1);
+    if(weightingMethod=="simple")
+    {
+        W=simple_weighting(path, critNumb);
+    }
+    else if(weightingMethod=="pairWise")
+    {
+        Matrix A = readPreferences(trafficType,path,critNumb);
+        W = wls_weighting(A);
+    }
     std::cout<<"Subjective Weighted matrix : " <<"\n";
     W.print();
 
-    //    Matrix W_obj= entropy_weighting(D);
-    //
-    //    std::cout<<"Objective Weighted matrix : " <<"\n";
-    //    W_obj.print();
-    //
-    //    Matrix W=hybrid_weighting(W_s,W_obj,0.9);
-    //    std::cout<<"Hybrid Weighted matrix : " <<"\n";
-    //    W.print();
     // decision stage ...
-
     Matrix score(D.size(1),1);
-
     if (algName == "SAW")
         score = SAW(D,W);
     else if (algName == "GRA")
