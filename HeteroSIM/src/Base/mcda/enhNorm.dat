@@ -1,7 +1,6 @@
-Datarate
+TransmissionRate
 1
 Delay
 0
-Relability
-1
-
+Cbr
+0
