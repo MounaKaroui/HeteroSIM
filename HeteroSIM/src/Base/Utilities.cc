@@ -28,8 +28,12 @@ double calculateBeta(double n)
 }
 
 double calculateCofficientOfVariation(vector<double> v) {
+
     if (v.size() != 0)
-        return calculateStdVec(v) / calculateMeanVec(v);
+        if(calculateMeanVec(v)!=0)
+            return calculateStdVec(v) / calculateMeanVec(v);
+        else
+            return 0;
     else
         return 0;
 }
