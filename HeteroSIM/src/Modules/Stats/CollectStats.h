@@ -66,7 +66,7 @@ public:
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
-    double dlt=0;
+    map<int,double> dltByInterfaceId;
     std::string averageMethod;
 
     template<typename T>
@@ -79,7 +79,9 @@ public:
 
     void printMsg(std::string type, cMessage*  msg);
     double getTransmissionRate(int64_t dataLength, double sendInterval);
-    void updateDLT(listOfCriteria* list);
+    void setInterfaceToProtocolMap();
+    void updateDLT(listOfCriteria* list,int interfaceId);
+    void initializeDLT();
 
     //TODO change to protected or private
     map<int,listOfCriteria*> getSublistByDLT();

@@ -140,9 +140,9 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 if(decisionData!="")
                 {
                     // MCDM here
-                    std::cout<< "decision Data "<< decisionData << endl;
+                    std::cout<< "decision Data "<< decisionData <<"\n" << endl;
                     networkIndex=McdaAlg::decisionProcess(decisionData, pathToConfigFiles,critNumb, trafficType, "VIKOR");
-                    std::cout<< "The best network is "<< networkIndex << endl;
+                    std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
                 }
             }
             else

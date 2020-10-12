@@ -27,21 +27,12 @@ double calculateBeta(double n)
     return 2/(n+1);
 }
 
-double calculateCofficientOfVariation(vector<double> v)
-{
-
-    double n=v.size();
-    double mean=0;
-    double stdev=0;
-    if(n!=0)
-    {
-        mean = calculateMeanVec(v);
-        stdev =  calculateStdVec(v);
-    }
-    return stdev/mean;
+double calculateCofficientOfVariation(vector<double> v) {
+    if (v.size() != 0)
+        return calculateStdVec(v) / calculateMeanVec(v);
+    else
+        return 0;
 }
-
-
 
 int extractNumber(std::string input)
 {

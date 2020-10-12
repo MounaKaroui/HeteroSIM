@@ -36,27 +36,40 @@ void CollectStats::initialize()
 
     interfaceToProtocolMapping =par("interfaceToProtocolMapping").stringValue();
     averageMethod=par("averageMethod").stringValue();
+    setInterfaceToProtocolMap();
     registerSignals();
+    initializeDLT();
 }
 
+void CollectStats::setInterfaceToProtocolMap()
+{
+    cStringTokenizer tokenizer(interfaceToProtocolMapping.c_str(),string(";").c_str());
+      while (tokenizer.hasMoreTokens()){
 
+          std::string mappingEntry= tokenizer.nextToken();
+          vector<string> result;
+          boost::split(result, mappingEntry, boost::is_any_of(":"));
+          interfaceToProtocolMap.insert({stoi(result[0]),result[1]});
+      }
+}
+
+void CollectStats::initializeDLT()
+{
+    for(auto const & x: interfaceToProtocolMap)
+        dltByInterfaceId[x.first]=0;
+}
 
 void CollectStats::registerSignals()
 {
 
     cStringTokenizer tokenizer(interfaceToProtocolMapping.c_str(),string(";").c_str());
-    while (tokenizer.hasMoreTokens()){
-
-        std::string mappingEntry= tokenizer.nextToken();
-        vector<string> result;
-        boost::split(result, mappingEntry, boost::is_any_of(":"));
-        interfaceToProtocolMap.insert({stoi(result[0]),result[1]});
+    for(auto const & x: interfaceToProtocolMap){
 
 
-        if (result[1].find("80211")== 0 || result[1].find("80215") == 0) {
+        if (x.second.find("80211")== 0 || x.second.find("80215") == 0) {
 
-            std::string macModuleName= "^.wlan["+ result[0]+"].mac";
-            std::string radioModuleName= "^.wlan["+ result[0]+"].radio";
+            std::string macModuleName= "^.wlan["+ to_string(x.first) +"].mac";
+            std::string radioModuleName= "^.wlan["+ to_string(x.first) +"].radio";
 
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
             subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetSentToLowerSignal);
@@ -67,7 +80,7 @@ void CollectStats::registerSignals()
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal); //TODO seek into replacing this signal by NF_PACKET_DROP --> modification of CSMA.cc
 
         }
-        else if(result[1]=="mode4")
+        else if(x.second=="mode4")
         {
             std::string pdcpRrcModuleName = "^.lteNic.pdcpRrc";
             std::string phyModuleName = "^.lteNic.phy";
@@ -280,7 +293,7 @@ std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttribute
     return alternativeAttributesStr;
 }
 
-void CollectStats::updateDLT(listOfCriteria* list)
+void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {
     // update dtl according to coefficient of variation
     std::vector<double> cv;
@@ -288,7 +301,7 @@ void CollectStats::updateDLT(listOfCriteria* list)
     cv.push_back(Utilities::calculateCofficientOfVariation(list->transmissionRate));
     cv.push_back(Utilities::calculateCofficientOfVariation(list->cbr));
     cv.push_back(Utilities::calculateCofficientOfVariation(list->queueVacancy));
-    dlt=exp(-1*Utilities::calculateMeanVec(cv));
+    dltByInterfaceId[interfaceId]=exp(-1*Utilities::calculateMeanVec(cv));
 
 }
 
@@ -309,19 +322,24 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
     listOfCriteria* rList = new listOfCriteria();
     listOfCriteria* tmp = listOfCriteriaByInterfaceId[interfaceId];
 
-    simtime_t historyBound = NOW - SimTime(dlt);
+    simtime_t historyBound = NOW - SimTime(dltByInterfaceId[interfaceId]);
 
-    for(int recentStatIndex=tmp->timeStamp.size()-1; recentStatIndex>=0; recentStatIndex--){
+    int statIndex;
+    int recentStatIndex=tmp->timeStamp.size()-1;
+    for(statIndex=recentStatIndex; statIndex>=0; statIndex--){
 
-        if(tmp->timeStamp[recentStatIndex]<= historyBound)
-            insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex],tmp->cbr[recentStatIndex],tmp->queueVacancy[recentStatIndex]) ;
+        if(tmp->timeStamp[statIndex]>= historyBound)
+            insertStatTuple(rList,tmp->timeStamp[statIndex], tmp->delay[statIndex], tmp->transmissionRate[statIndex],tmp->cbr[statIndex],tmp->queueVacancy[statIndex]) ;
         else
             break ;
-
-        if (recentStatIndex<0)
-               throw cRuntimeError("No available stats in DLT interval"); //TODO handle
     }
-    //updateDLT(rList); TODO fix sim time overflow bug
+    if (statIndex==recentStatIndex)
+        insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex],tmp->cbr[recentStatIndex],tmp->queueVacancy[recentStatIndex]) ;
+
+    //update
+    //updateDLT(rList, interfaceId); // TODO: RESOLVE SIM OVERFLOW BUG
+    listOfCriteriaByInterfaceId[interfaceId]=rList;
+
     return rList ;
 }
 
@@ -338,7 +356,6 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             listAttr->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
             listAttr->cbr=Utilities::calculateMeanVec(x.second->cbr);
             listAttr->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
-
             myList.data.insert({x.first,listAttr});
         }
     }else if(averageMethod==string("ema"))
@@ -354,7 +371,6 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             listAttr->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate,vEMATransmissionRate);
             listAttr->cbr=Utilities::calculateEMA(x.second->cbr,vEMACBR);
             listAttr->queueVacancy=Utilities::calculateEMA(x.second->queueVacancy,vEMAQueueVacancy);
-
             myList.data.insert({x.first,listAttr});
         }
     }
