@@ -55,25 +55,19 @@ void DecisionMaker::registerNodeToBinder()
 }
 
 
-int  DecisionMaker::getMode4InterfaceId()
+bool  DecisionMaker::isMode4InterfaceAvailable()
 {
     cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
     CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
     std::vector<int> result;
     bool searchResult=Utilities::findKeyByValue(result, stats->interfaceToProtocolMap, string("mode4"));
-    int interfaceId;
-    if(searchResult)
-    {
-        interfaceId=result.at(0);
-    }
-    return interfaceId;
+    return searchResult;
 }
 
 void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
 {
 
-    int interfaceId=getMode4InterfaceId();
-    if(networkType==interfaceId)
+    if(isMode4InterfaceAvailable())
     {
         msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
 
