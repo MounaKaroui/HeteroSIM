@@ -54,49 +54,38 @@ void DecisionMaker::registerNodeToBinder()
     binder_->setMacNodeId(nodeId_, nodeId_);
 }
 
+/**
+ * To create control info, mandatory to pass message lower layer protocol
+ */
+void DecisionMaker::setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex) {
 
-bool  DecisionMaker::isMode4InterfaceAvailable(int& interfaceId)
-{
-    cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
-    CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-    std::vector<int> result;
-    bool searchResult=Utilities::findKeyByValue(result, stats->interfaceToProtocolMap, string("mode4"));
 
-    if(searchResult)
-    {
-        interfaceId=result[0];
-    }else
-    {
-        interfaceId=NULL;
-    }
+    string networkTypeName=getNetworkProtocolName(networkIndex);
 
-    return searchResult;
-}
+    if (networkTypeName.find("802") == 0)  { // IEEE 802 protocol family have common ctrlInfo
 
-void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
-{
+        cModule* host = inet::getContainingNode(this);
+        msg->setControlInfo(Utilities::Ieee802CtrlInfo(host->getFullName()));
 
-    int interfaceId;
-
-    if(isMode4InterfaceAvailable(interfaceId)&& interfaceId==networkType)
-    {
+    } else if (networkTypeName == "mode4") {
         msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
 
-    }else
-    {
-        // WLAN
-        cModule* host = inet::getContainingNode(this);
-        std::string name=host->getFullName();
-        // Control info is mandatory to pass message
-        //to Mgmt layer and then to MAC
-        msg->setControlInfo(Utilities::Ieee802CtrlInfo(name));
-    }
+    } else
+        throw cRuntimeError(string("Unknown protocol name '" + networkTypeName + "'").c_str());
+
+}
+
+string DecisionMaker::getNetworkProtocolName(int networkIndex){
+
+    cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+    CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+    return stats->interfaceToProtocolMap[networkIndex];
 }
 
 void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 {
 
-    ctrlInfoWithRespectToNetType(msg, networkIndex);
+    setCtrlInfoWithRespectToNetType(msg, networkIndex);
     if(networkIndex<gateSize("toRadio"))
     {
         int gateId=gate("toRadio",networkIndex)->getId();

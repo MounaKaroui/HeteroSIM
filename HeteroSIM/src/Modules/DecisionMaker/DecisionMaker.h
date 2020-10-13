@@ -44,9 +44,6 @@ class DecisionMaker : public cSimpleModule, public cListener
 public:
 
     ~DecisionMaker();
-    int takeDecision(cMessage*  msg);
-    void ctrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
-    bool isMode4InterfaceAvailable(int& interfaceId);
 
   protected:
 
@@ -56,6 +53,11 @@ public:
     void sendToUpper(cMessage*  msg);
     void registerNodeToBinder();
     void handleLteLowerMsg(cMessage* msg);
+
+    string getNetworkProtocolName(int networkIndex);
+    int takeDecision(cMessage*  msg);
+    void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
+
 
     bool mode4;
     bool isDeciderActive;
