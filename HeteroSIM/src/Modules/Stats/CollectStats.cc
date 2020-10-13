@@ -43,7 +43,7 @@ void CollectStats::initialize()
 
 void CollectStats::setInterfaceToProtocolMap()
 {
-    cStringTokenizer tokenizer(interfaceToProtocolMapping.c_str(),string(";").c_str());
+    cStringTokenizer tokenizer(interfaceToProtocolMapping.c_str(),string(",").c_str());
       while (tokenizer.hasMoreTokens()){
 
           std::string mappingEntry= tokenizer.nextToken();
