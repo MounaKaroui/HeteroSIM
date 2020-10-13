@@ -41,26 +41,21 @@ namespace physicallayer { class Ieee80211Radio; }
 class DecisionMaker : public cSimpleModule, public cListener
 {
 
-
 public:
-    ~DecisionMaker();
 
+    ~DecisionMaker();
     int takeDecision(cMessage*  msg);
     void ctrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
-    bool isMode4InterfaceAvailable();
+    bool isMode4InterfaceAvailable(int& interfaceId);
 
   protected:
 
     void initialize() override;
-
     virtual void handleMessage(cMessage *msg)  override;
     void sendToLower(cMessage* msg,int networkIndex);
     void sendToUpper(cMessage*  msg);
-
     void registerNodeToBinder();
     void handleLteLowerMsg(cMessage* msg);
-
-
 
     bool mode4;
     bool isDeciderActive;

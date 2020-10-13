@@ -55,19 +55,30 @@ void DecisionMaker::registerNodeToBinder()
 }
 
 
-bool  DecisionMaker::isMode4InterfaceAvailable()
+bool  DecisionMaker::isMode4InterfaceAvailable(int& interfaceId)
 {
     cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
     CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
     std::vector<int> result;
     bool searchResult=Utilities::findKeyByValue(result, stats->interfaceToProtocolMap, string("mode4"));
+
+    if(searchResult)
+    {
+        interfaceId=result[0];
+    }else
+    {
+        interfaceId=NULL;
+    }
+
     return searchResult;
 }
 
 void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
 {
 
-    if(isMode4InterfaceAvailable())
+    int interfaceId;
+
+    if(isMode4InterfaceAvailable(interfaceId)&& interfaceId==networkType)
     {
         msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
 
@@ -80,8 +91,8 @@ void DecisionMaker::ctrlInfoWithRespectToNetType(cMessage* msg, int networkType)
         //to Mgmt layer and then to MAC
         msg->setControlInfo(Utilities::Ieee802CtrlInfo(name));
     }
-
 }
+
 void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 {
 
