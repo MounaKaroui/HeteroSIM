@@ -32,12 +32,15 @@ class VanetApp : public BaseAppl
 {
    std::string trafficType;
 
+   simsignal_t rcvdPacket;
+   simsignal_t sentPacket;
+
+
   protected:
 
 
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
-
     virtual BasicMsg* BuildMsg(std::string namePrefix) override;
 
 

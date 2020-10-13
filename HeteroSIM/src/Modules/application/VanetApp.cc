@@ -29,24 +29,25 @@ void VanetApp::initialize()
 {
     BaseAppl::initialize();
     trafficType=par("trafficType").stringValue();
+    rcvdPacket=registerSignal("rcvdPk");
 
 
 }
 void VanetApp::handleMessage(cMessage *msg)
 {
+
     if(msg->isSelfMessage()){
        BaseAppl::handleMessage(msg);
         }
     else
     {
-        int arrivalGate=msg->getArrivalGateId();
-        if(arrivalGate==fromDecisionMaker)
-        {
-            // received from decider
-            // TODO add stats
-        }
+
+        if((string(msg->getName())).find("hetNets-data")==0)
+            emit(rcvdPacket,dynamic_cast<HeterogeneousMessage*>(msg));
+
 
     }
+
 }
 
 BasicMsg* VanetApp::BuildMsg(std::string namePrefix)

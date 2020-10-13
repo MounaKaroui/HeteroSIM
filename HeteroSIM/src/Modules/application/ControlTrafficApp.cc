@@ -31,11 +31,8 @@ void ControlTrafficApp::handleMessage(cMessage *msg)
          BaseAppl::handleMessage(msg);
      else
      {
-//         int arrivalGate=msg->getArrivalGateId();
-//         if(arrivalGate==fromDecisionMaker)
-//         {
-             // received from decider
-             // TODO add stats
+
+
          }
 
      }
@@ -48,6 +45,7 @@ BasicMsg* ControlTrafficApp::BuildMsg(std::string namePrefix)
     ControlMsg*  ctrlMsg=new ControlMsg();
     ctrlMsg->setName((namePrefix+string("-controlTraffic-")+std::to_string(ctrlMsg->getTreeId())).c_str());
     ctrlMsg->setNetworkId(interfaceId);
+    ctrlMsg->setApplId(appID);
     ctrlMsg->setByteLength(msgLength);
     return  ctrlMsg;
 }

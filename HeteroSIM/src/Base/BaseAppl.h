@@ -36,7 +36,7 @@ protected:
     int appID;
 
     cMessage* msgSentTrigger;
-
+    simsignal_t sentPacket;
 protected:
     BaseAppl();
 
