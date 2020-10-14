@@ -38,3 +38,4 @@ out/
 .cmdenv-log
 netanim-trace.txt
 *.out
+*.anf
