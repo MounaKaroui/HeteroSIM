@@ -24,16 +24,10 @@ void ControlTrafficApp::initialize()
     interfaceId=par("interfaceId").intValue();
 }
 
-void ControlTrafficApp::handleMessage(cMessage *msg)
+void ControlTrafficApp::handleAppMessage(cMessage *msg)
 {
 
-    if(msg->isSelfMessage())
-         BaseAppl::handleMessage(msg);
-     else
-     {
-
-     }
-     }
+}
 
 
 

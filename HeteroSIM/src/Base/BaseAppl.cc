@@ -53,11 +53,11 @@ void BaseAppl::handleMessage(cMessage *msg)
         BasicMsg* basicMsg = BuildMsg("hetNets");
         send(basicMsg, toDecisionMaker);
         // to record sent data
-        if(string(basicMsg->getName()).find("hetNets-data")==0)
-            emit(sentPacket,basicMsg);
+        emit(sentPacket,basicMsg);
         if (stopTime >= simTime() || stopTime < 0)
             scheduleAt(simTime() + sendInterval, msgSentTrigger);
-    }
+    }else
+        handleAppMessage(msg);
 
 }
 

@@ -36,7 +36,8 @@ class VanetApp : public BaseAppl
 
 
     virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+
+    virtual void handleAppMessage(cMessage *msg) override;
 
     virtual BasicMsg* BuildMsg(std::string namePrefix) override;
 

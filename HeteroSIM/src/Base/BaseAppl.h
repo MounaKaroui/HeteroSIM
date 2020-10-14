@@ -46,6 +46,7 @@ protected:
     void finish();
 
     virtual BasicMsg* BuildMsg(std::string namePrefix)=0;
+    virtual void handleAppMessage(cMessage *msg)=0;
 
 
     void setNodeId();

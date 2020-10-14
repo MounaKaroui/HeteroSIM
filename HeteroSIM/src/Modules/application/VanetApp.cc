@@ -32,17 +32,9 @@ void VanetApp::initialize()
     rcvdPacket=registerSignal("rcvdPk");
 
 }
-void VanetApp::handleMessage(cMessage *msg)
+void VanetApp::handleAppMessage(cMessage *msg)
 {
-    if(msg->isSelfMessage())
-        BaseAppl::handleMessage(msg);
-    else
-    {
-
-        if (string(msg->getName()).find("hetNets-data") == 0)
-            emit(rcvdPacket, msg);
-
-    }
+    emit(rcvdPacket, msg);
 }
 
 BasicMsg* VanetApp::BuildMsg(std::string namePrefix)
