@@ -27,7 +27,7 @@ simple ControlTrafficApp  extends BaseAppl
     parameters:
         int interfaceId;
         msgLength=default(10B);
-        startTime=default(0s);
+        startTime=default(uniform(0s, sendInterval));
         stopTime=default(10s);
         @class(ControlTrafficApp);  
      
