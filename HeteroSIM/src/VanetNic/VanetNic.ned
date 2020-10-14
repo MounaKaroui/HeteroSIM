@@ -23,13 +23,14 @@ module VanetNic extends Ieee80211Nic
         bitrate = default(6 Mbps);
         mgmtType=default("Ieee80211MgmtAdhoc");
         mac.modeSet = opMode;
-        mac.qosStation = false;
+        mac.qosStation = default(false);
         radio.bandName = "5 GHz";
         radio.bandwidth = 10 MHz;
         radio.channelNumber = default(180);
         radio.carrierFrequency = default(5.9 GHz);
         mac.rx.typename = default("heterosim.src.Modules.CBRMeasurement.ChannelLoadRx");		
-		
+		radio.transmitter.power = 200 mW;
+		mac.address = default("auto");
 //        mac.hcf.rateSelection.dataFrameBitrate = bitrate;
 //        mac.hcf.rateSelection.mgmtFrameBitrate = bitrate;
 //        mac.hcf.rateSelection.multicastFrameBitrate = bitrate;

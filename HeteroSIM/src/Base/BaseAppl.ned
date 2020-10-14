@@ -30,6 +30,9 @@ simple BaseAppl like IBaseAppl
          double stopTime=default(-1 s) @unit(s);
          double sendInterval=default(0.1 s) @unit(s);
          
+         @signal[sentPk](type=cPacket);
+         @statistic[sentPk](title="packets sent"; source=sentPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
+         
     gates:
         input  fromDecisionMaker;
         output toDecisionMaker;
