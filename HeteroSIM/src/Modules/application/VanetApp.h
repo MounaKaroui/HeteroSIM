@@ -31,7 +31,7 @@ using namespace omnetpp;
 class VanetApp : public BaseAppl
 {
    std::string trafficType;
-
+   simsignal_t rcvdPacket;
   protected:
 
 
