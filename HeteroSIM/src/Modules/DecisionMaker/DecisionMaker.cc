@@ -102,10 +102,12 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 
 void DecisionMaker::sendToUpper(cMessage*  msg)
 {
-    BasicMsg* hetNetsMsg=dynamic_cast<BasicMsg*>(msg);
-    int id=hetNetsMsg->getApplId();
-    int gateId=gate("toApplication",id)->getId(); // To get Id
-    send(msg, gateId);
+    if (string(msg->getName()).find("hetNets") == 0) {
+        BasicMsg* hetNetsMsg = dynamic_cast<BasicMsg*>(msg);
+        int id = hetNetsMsg->getApplId();
+        int gateId = gate("toApplication", id)->getId(); // To get Id
+        send(msg, gateId);
+    }
 }
 
 
@@ -158,14 +160,9 @@ int DecisionMaker::takeDecision(cMessage* msg)
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
-    BasicMsg* hetMsg = dynamic_cast<BasicMsg*>(msg);
+    if (msg != nullptr) {
 
-    if (hetMsg != nullptr) {
-
-        cGate* gate = msg->getArrivalGate();
-        std::string gateName = gate->getName();
-
-        if (gateName.find("fromApplication")==0) {
+        if (msg->getArrivalGate()->getName()==string("fromApplication")) {
             int networkIndex = takeDecision(msg);
             sendToLower(msg, networkIndex);
 
