@@ -28,7 +28,7 @@ simple BaseAppl like IBaseAppl
          
          double startTime=default(0.0s) @unit(s); // application start time (start of the first packet)
          double stopTime=default(-1 s) @unit(s);
-         double sendInterval=default(0.1 s) @unit(s);
+         volatile double sendInterval=default(exponential(1 s)) @unit(s);
          
          @signal[sentPk](type=cPacket);
          @statistic[sentPk](title="packets sent"; source=sentPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
