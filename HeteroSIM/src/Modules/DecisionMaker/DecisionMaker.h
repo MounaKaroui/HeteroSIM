@@ -45,6 +45,7 @@ public:
 
     ~DecisionMaker();
 
+
   protected:
 
     void initialize() override;
@@ -58,13 +59,14 @@ public:
     int takeDecision(cMessage*  msg);
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
 
+    simsignal_t decisionSignal;
+
 
     bool mode4;
     bool isDeciderActive;
     int dummyNetworkChoice;
 
     std::string simpleWeights;
-
     std::string criteriaType;
 
     LteBinder* binder_;
