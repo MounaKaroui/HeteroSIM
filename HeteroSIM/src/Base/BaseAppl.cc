@@ -54,8 +54,10 @@ void BaseAppl::handleMessage(cMessage *msg)
         send(basicMsg, toDecisionMaker);
         // to record sent data
         emit(sentPacket,basicMsg);
-        if (stopTime >= simTime() || stopTime < 0)
+        if (stopTime >= simTime() || stopTime < 0){
+            sendInterval= SimTime(par("sendInterval").doubleValue());
             scheduleAt(simTime() + sendInterval, msgSentTrigger);
+        }
     }else
         handleAppMessage(msg);
 
