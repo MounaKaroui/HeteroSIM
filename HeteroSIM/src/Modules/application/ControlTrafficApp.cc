@@ -26,14 +26,12 @@ void ControlTrafficApp::initialize()
 
 void ControlTrafficApp::handleAppMessage(cMessage *msg)
 {
-
+     delete msg;
 }
-
 
 
 BasicMsg* ControlTrafficApp::BuildMsg(std::string namePrefix)
 {
-
     ControlMsg*  ctrlMsg=new ControlMsg();
     ctrlMsg->setName((namePrefix+string("-controlTraffic-")+std::to_string(ctrlMsg->getTreeId())).c_str());
     ctrlMsg->setNetworkId(interfaceId);
