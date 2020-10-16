@@ -18,6 +18,8 @@
 
 Register_Abstract_Class(BaseAppl);
 
+simsignal_t BaseAppl::sentPacket = registerSignal("sentPk");
+
 
 void BaseAppl::initialize()
 {

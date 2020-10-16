@@ -23,6 +23,8 @@
 
 class BaseAppl: public cSimpleModule {
 
+public :
+    static simsignal_t sentPacket ;
 
 protected:
 
@@ -35,8 +37,6 @@ protected:
     int  msgLength;
     int appID;
     cMessage* msgSentTrigger;
-
-    simsignal_t sentPacket;
 
 protected:
 
