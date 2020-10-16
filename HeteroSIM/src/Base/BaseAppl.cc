@@ -18,10 +18,6 @@
 
 Register_Abstract_Class(BaseAppl);
 
-BaseAppl::BaseAppl()
-{
-}
-
 
 void BaseAppl::initialize()
 {

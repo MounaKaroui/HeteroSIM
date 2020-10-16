@@ -39,7 +39,6 @@ protected:
     simsignal_t sentPacket;
 
 protected:
-    BaseAppl();
 
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
