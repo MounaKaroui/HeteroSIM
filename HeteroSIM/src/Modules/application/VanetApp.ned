@@ -45,5 +45,8 @@ simple VanetApp extends BaseAppl
        @statistic[throughput](title="throughput"; unit=bps; source="throughput(rcvdPk)"; record=vector); 
                 @statistic[delay](title="delay"; source="messageAge(rcvdPk)"; unit=s; record=stats,vector; interpolationmode=none);
        
+<<<<<<< HEAD
+>>>>>>> 19333dabfa6018888c3d4f28c9c859373622418e
+=======
 >>>>>>> 19333dabfa6018888c3d4f28c9c859373622418e
 }

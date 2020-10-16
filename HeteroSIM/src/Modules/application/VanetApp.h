@@ -32,12 +32,7 @@ class VanetApp : public BaseAppl
 {
    std::string trafficType;
 
-   simsignal_t sentPacket;
-
-
-
    simsignal_t rcvdPacket;
-
   protected:
 
 

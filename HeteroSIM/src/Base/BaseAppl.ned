@@ -33,10 +33,6 @@ simple BaseAppl like IBaseAppl
          @signal[sentPk](type=cPacket);
          @statistic[sentPk](title="packets sent"; source=sentPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
          
-         @signal[sentPk];
-         @statistic[sentPk](title="packets sent"; source=sentPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
-        
-         
     gates:
         input  fromDecisionMaker;
         output toDecisionMaker;
