@@ -32,6 +32,8 @@ void DecisionMaker::initialize()
     pathToConfigFiles=par("pathToConfigFiles").stringValue();
     simpleWeights=par("simpleWeights").stringValue();
     criteriaType=par("criteriaType").stringValue();
+    decisionSignal=registerSignal("decision");
+
     if(mode4)
     {
         registerNodeToBinder();
@@ -102,10 +104,19 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 
 void DecisionMaker::sendToUpper(cMessage*  msg)
 {
-    BasicMsg* hetNetsMsg=dynamic_cast<BasicMsg*>(msg);
-    int id=hetNetsMsg->getApplId();
-    int gateId=gate("toApplication",id)->getId(); // To get Id
-    send(msg, gateId);
+    if (string(msg->getName()).find("hetNets") == 0) {
+        BasicMsg* hetNetsMsg = dynamic_cast<BasicMsg*>(msg);
+        int id = hetNetsMsg->getApplId();
+        if(id<gateSize("toApplication"))
+        {
+        int gateId = gate("toApplication", id)->getId(); // To get Id
+        send(msg, gateId);
+        }
+        else
+        {
+            delete msg;
+        }
+    }
 }
 
 
@@ -141,6 +152,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
                         criteriaType, trafficType, "VIKOR");
 
                     std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
+                    emit(decisionSignal,networkIndex);
                 }
             }
             else
@@ -158,14 +170,8 @@ int DecisionMaker::takeDecision(cMessage* msg)
 void DecisionMaker::handleMessage(cMessage *msg)
 {
 
-    BasicMsg* hetMsg = dynamic_cast<BasicMsg*>(msg);
-
-    if (hetMsg != nullptr) {
-
-        cGate* gate = msg->getArrivalGate();
-        std::string gateName = gate->getName();
-
-        if (gateName.find("fromApplication")==0) {
+    if (msg != nullptr) {
+        if (msg->getArrivalGate()->getName()==string("fromApplication")) {
             int networkIndex = takeDecision(msg);
             sendToLower(msg, networkIndex);
 

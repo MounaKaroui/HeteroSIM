@@ -31,23 +31,11 @@ void VanetApp::initialize()
     trafficType=par("trafficType").stringValue();
     rcvdPacket=registerSignal("rcvdPk");
 
-
 }
-void VanetApp::handleMessage(cMessage *msg)
+void VanetApp::handleAppMessage(cMessage *msg)
 {
 
-    if(msg->isSelfMessage()){
-       BaseAppl::handleMessage(msg);
-        }
-    else
-    {
-
-        if((string(msg->getName())).find("hetNets-data")==0)
-            emit(rcvdPacket,dynamic_cast<HeterogeneousMessage*>(msg));
-
-
-    }
-
+    emit(rcvdPacket, msg);
 }
 
 BasicMsg* VanetApp::BuildMsg(std::string namePrefix)
@@ -55,10 +43,8 @@ BasicMsg* VanetApp::BuildMsg(std::string namePrefix)
 
     HeterogeneousMessage*  heteroMsg=new HeterogeneousMessage();
     heteroMsg->setName((namePrefix+string("-data-")+std::to_string(heteroMsg->getTreeId())).c_str());
-
     heteroMsg->setByteLength(msgLength);
     heteroMsg->setTimestamp(simTime());
-
     heteroMsg->setTrafficType(trafficType.c_str());
     heteroMsg->setApplId(appID);
     heteroMsg->setNodeId(nodeId);

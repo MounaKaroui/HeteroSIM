@@ -194,7 +194,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //so check the following assertion
                 ASSERT(comingSignal == NF_PACKET_DROP  || comingSignal == LayeredProtocolBase::packetFromUpperDroppedSignal);
                 //TODO add delay penalties to consider in case of packet drop
-                throw cRuntimeError("Packet drop due to queue overflow not supported yet");
+//                throw cRuntimeError("Packet drop due to queue overflow not supported yet");
 
             }else { //case of packet drop due failing CSMA process
 

@@ -28,19 +28,23 @@ simple DecisionMaker
         
         bool mode4IsActive = default(false);
         //weights in this order TransmissionRate,Delay,Cbr,QueueVacancy
-        string simpleWeights=default("0.3,0.5,0.1,0.1");
+        string simpleWeights=default("0.5,0.3,0.1,0.1");
         // criteria type for normalization 1--> "the larger the better", 0--> "the smaller the better" 
         string criteriaType=default("1,0,0,1");
         // pathToConfigFiles only used to read pair wise matrix
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
  		bool isDeciderActive=default(true); 
  		int dummyNetworkChoice=default(0);     
- 		
+ 		@signal[decision];
+ 		@statistic[decision](title="decision";source="decision"; record=vector); 
+ 		     
         gates:
         input fromApplication[];
         output toApplication[];
         input fromRadio[] @labels(Ieee802Ctrl/up);
         output toRadio[] @labels(Ieee802Ctrl/down);
+   
+        
        
 }
 

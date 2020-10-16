@@ -18,9 +18,7 @@
 
 Register_Abstract_Class(BaseAppl);
 
-BaseAppl::BaseAppl()
-{
-}
+simsignal_t BaseAppl::sentPacket = registerSignal("sentPk");
 
 
 void BaseAppl::initialize()
@@ -38,7 +36,6 @@ void BaseAppl::initialize()
     setNodeId();
 
     sentPacket=registerSignal("sentPk");
-
     msgSentTrigger=new cMessage("Send trigger");
 
     if(startTime>=0)
@@ -53,13 +50,14 @@ void BaseAppl::handleMessage(cMessage *msg)
     if (msg->isSelfMessage()) {
         BasicMsg* basicMsg = BuildMsg("hetNets");
         send(basicMsg, toDecisionMaker);
-        // To record sent packets
-        if((string(basicMsg->getName())).find("hetNets-data")==0)
-            emit(sentPacket,basicMsg);
-
-        if (stopTime >= simTime() || stopTime < 0)
+        // to record sent data
+        emit(sentPacket,basicMsg);
+        if (stopTime >= simTime() || stopTime < 0){
+            sendInterval= SimTime(par("sendInterval").doubleValue());
             scheduleAt(simTime() + sendInterval, msgSentTrigger);
-    }
+        }
+    }else
+        handleAppMessage(msg);
 
 }
 

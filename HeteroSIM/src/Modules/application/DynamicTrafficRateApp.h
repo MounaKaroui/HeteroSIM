@@ -13,43 +13,39 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#ifndef BASE_BASEAPPL_H_
-#define BASE_BASEAPPL_H_
+#ifndef MODULES_APPLICATION_DYNAMICTRAFFICRATEAPP_H_
+#define MODULES_APPLICATION_DYNAMICTRAFFICRATEAPP_H_
 
 #include <omnetpp.h>
-#include "Modules/messages/Messages_m.h"
-#include "Utilities.h"
+#include "Base/BaseAppl.h"
 
+class DynamicTrafficRateApp : public BaseAppl {
 
-class BaseAppl: public cSimpleModule {
+public:
+    virtual ~DynamicTrafficRateApp();
 
-public :
-    static simsignal_t sentPacket ;
 
 protected:
 
-    int toDecisionMaker ;
-    int fromDecisionMaker;
-    simtime_t sendInterval;
-    simtime_t startTime;
-    simtime_t stopTime;
-    int nodeId;
-    int  msgLength;
-    int appID;
-    cMessage* msgSentTrigger;
+    int interfaceId;
 
-protected:
+    int pcktToSendForOfferedLoadRate=0;
+
+    simtime_t offeredLoadRateSentInterval;
+    simtime_t offeredLoadRefreshInterval;
+
+    cMessage* msgOfferedLoadRateSentTrigger;
+
 
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);
-    void finish();
 
-    virtual BasicMsg* BuildMsg(std::string namePrefix)=0;
-    virtual void handleAppMessage(cMessage *msg)=0;
+    virtual void handleAppMessage(cMessage *msg) override;
+    virtual BasicMsg* BuildMsg(std::string namePrefix) override;
 
-
-    void setNodeId();
+    void sendData ();
+    void setOfferedLoadRefreshInterval();
 
 };
 
-#endif /* BASE_BASEAPPL_H_ */
+#endif /* MODULES_APPLICATION_DYNAMICTRAFFICRATEAPP_H_ */

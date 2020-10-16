@@ -15,20 +15,15 @@
 
 package heterosim.src.Modules.application;
 
-//
-// TODO auto-generated module
-//
 
 import heterosim.src.Base.BaseAppl;
 
 
-simple ControlTrafficApp  extends BaseAppl
+simple DynamicTrafficRateApp extends BaseAppl
 {
     parameters:
-        int interfaceId;
-        msgLength=default(10B);
-        startTime=default(uniform(0s, sendInterval));
-        stopTime=default(10s);
-        @class(ControlTrafficApp);  
-     
+   	int interfaceId;
+   	volatile double offeredLoadRate=default(exponential(1 s)) @unit(s); //TODO 
+   	double offeredLoadRefreshInterval = default(10 s) @unit(s);
+   	@class(DynamicTrafficRateApp);  
 }
