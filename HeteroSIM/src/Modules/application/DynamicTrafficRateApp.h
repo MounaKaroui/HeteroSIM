@@ -36,6 +36,7 @@ protected:
 
     cMessage* msgOfferedLoadRateSentTrigger;
 
+    simsignal_t pcktToSendSignal;
 
     virtual void initialize();
     virtual void handleMessage(cMessage *msg);

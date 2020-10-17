@@ -26,4 +26,8 @@ simple DynamicTrafficRateApp extends BaseAppl
    	volatile double offeredLoadRate=default(exponential(1 s)) @unit(s); //TODO 
    	double offeredLoadRefreshInterval = default(10 s) @unit(s);
    	@class(DynamicTrafficRateApp);  
+ 	@signal[pcktToSendSignal];
+   	@statistic[pcktToSend](title="pcktToSend"; source=pcktToSendSignal; record=vector);
+   	
+   	
 }
