@@ -20,21 +20,28 @@ package heterosim.src.Base;
 //
 simple BaseAppl like IBaseAppl
 {
-     parameters:
-     
-         int appID=default(0);
-         string trafficType=default("Interactive");
-         int msgLength=default(50B) @unit(B);  // 
-         
-         double startTime=default(0.0s) @unit(s); // application start time (start of the first packet)
-         double stopTime=default(-1 s) @unit(s);
-         volatile double sendInterval=default(exponential(1 s)) @unit(s);
-         
-         @signal[sentPk](type=cPacket);
-         @statistic[sentPk](title="packets sent"; source=sentPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
-         
+    parameters:
+
+        int appID = default(0);
+        string trafficType = default("Interactive");
+        int msgLength @unit(B) = default(50B);  // 
+
+        double startTime @unit(s) = default(0.0s); // application start time (start of the first packet)
+        double stopTime @unit(s) = default(-1 s);
+        volatile double sendInterval @unit(s) = default(exponential(1 s));
+
+		// sent stats
+        @signal[sentPk](type=cPacket);
+        @statistic[sentPk](title="packets sent"; source=sentPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
+        // rcvd stats
+        @signal[rcvdPk](type=cPacket);
+        @statistic[rcvdPk](title="packets received"; source=rcvdPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
+        @statistic[throughput](title="throughput"; unit=bps; source="throughput(rcvdPk)"; record=vector,mean);
+        @statistic[delay](title="delay"; source="messageAge(rcvdPk)"; unit=s; record=stats,vector,mean; interpolationmode=none);
+
+
     gates:
-        input  fromDecisionMaker;
+        input fromDecisionMaker;
         output toDecisionMaker;
 
 }

@@ -19,6 +19,7 @@
 Register_Abstract_Class(BaseAppl);
 
 simsignal_t BaseAppl::sentPacket = registerSignal("sentPk");
+simsignal_t BaseAppl::rcvdPacket = registerSignal("rcvdPk");
 
 
 void BaseAppl::initialize()
@@ -36,6 +37,8 @@ void BaseAppl::initialize()
     setNodeId();
 
     sentPacket=registerSignal("sentPk");
+    rcvdPacket=registerSignal("rcvdPk");
+
     msgSentTrigger=new cMessage("Send trigger");
 
     if(startTime>=0)

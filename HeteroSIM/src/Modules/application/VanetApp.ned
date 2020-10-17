@@ -22,31 +22,8 @@ import heterosim.src.Base.BaseAppl;
 
 simple VanetApp extends BaseAppl
 {
-<<<<<<< HEAD
-    parameters:
-        startTime=default(10s) ; // application start time (start of the first packet)
-        stopTime=default(-1s) ;
-        @class(VanetApp);  
-        
-        //stats:
-        @signal[rcvdPk];
-        @statistic[rcvdPk](title="packets received"; source=rcvdPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
-        @statistic[throughput](title="throughput"; unit=bps; source="throughput(rcvdPk)"; record=vector);
-        @statistic[delay](title="delay"; source="messageAge(rcvdPk)"; unit=s; record=vector; interpolationmode=none);
-        
-=======
      parameters:
        startTime=default(10s+uniform(0s, sendInterval)) ; // application start time (start of the first packet)
        stopTime=default(-1s) ;
        @class(VanetApp); 
-       
-       @signal[rcvdPk](type=cPacket);
-       @statistic[rcvdPk](title="packets received"; source=rcvdPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
-       @statistic[throughput](title="throughput"; unit=bps; source="throughput(rcvdPk)"; record=vector); 
-                @statistic[delay](title="delay"; source="messageAge(rcvdPk)"; unit=s; record=stats,vector; interpolationmode=none);
-       
-<<<<<<< HEAD
->>>>>>> 19333dabfa6018888c3d4f28c9c859373622418e
-=======
->>>>>>> 19333dabfa6018888c3d4f28c9c859373622418e
 }
