@@ -35,6 +35,7 @@ void VanetApp::initialize()
 void VanetApp::handleAppMessage(cMessage *msg)
 {
     emit(rcvdPacket, msg);
+    delete msg;
 }
 
 BasicMsg* VanetApp::BuildMsg(std::string namePrefix)
