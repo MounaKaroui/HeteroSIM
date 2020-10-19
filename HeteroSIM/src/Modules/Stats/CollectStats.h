@@ -94,6 +94,9 @@ public:
     double extractLteBufferVacancy();
     double getLteCBR();
 
+    simsignal_t signalCritereNet1;
+    simsignal_t signalCritereNet2;
+
 protected:
 
     virtual void initialize();
@@ -107,6 +110,7 @@ protected:
 
     listOfCriteria* getSublistByDLT(int interfaceID);
 
+    void recordDecisionData(listAlternativeAttributes a);
 };
 
 #endif

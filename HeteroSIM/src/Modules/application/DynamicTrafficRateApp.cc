@@ -27,7 +27,7 @@ void DynamicTrafficRateApp::initialize()
 }
 
 DynamicTrafficRateApp::~DynamicTrafficRateApp() {
-    //cancelAndDelete(msgSentTrigger); TODO debug
+//    cancelAndDelete(msgSentTrigger); TODO debug
     cancelAndDelete(msgOfferedLoadRateSentTrigger);
 }
 

@@ -39,6 +39,9 @@ void CollectStats::initialize()
     setInterfaceToProtocolMap();
     registerSignals();
     initializeDLT();
+
+    signalCritereNet1 =registerSignal("CritereNet1");
+    signalCritereNet2 =registerSignal("CritereNet2");
 }
 
 void CollectStats::setInterfaceToProtocolMap()
@@ -151,7 +154,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
     if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac")){ //when packet enter to MAC layer
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
-        //printMsg("Inserting",msg);
+//        printMsg("Inserting",msg);
         return ;
     }
 
@@ -164,7 +167,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
         //Delay
         ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-        //printMsg("Reading",msg);
+//        printMsg("Reading",msg);
         simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
         packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
         delay = SIMTIME_DBL(macAndRadioDelay);
@@ -184,7 +187,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
         {
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-            //printMsg("Reading",msg);
+//            printMsg("Reading",msg);
             simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
 
@@ -193,6 +196,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //In case of full queue 802.11 interface sends "NF_PACKET_DROP" signal
                 //so check the following assertion
                 ASSERT(comingSignal == NF_PACKET_DROP  || comingSignal == LayeredProtocolBase::packetFromUpperDroppedSignal);
+                ASSERT(false);
                 //TODO add delay penalties to consider in case of packet drop
 //                throw cRuntimeError("Packet drop due to queue overflow not supported yet");
 
@@ -358,6 +362,7 @@ std::string CollectStats::prepareNetAttributes()
     map<int,listOfCriteria*> dataSet= getSublistByDLT();
     // 2- Apply average method
     listAlternativeAttributes a=applyAverageMethod(dataSet);
+    recordDecisionData(a);
     // 3- convert to string
     return convertListOfCriteriaToString(a);
 }
@@ -423,4 +428,9 @@ void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, do
 
 }
 
+
+void CollectStats::recordDecisionData(listAlternativeAttributes a){
+    emit(signalCritereNet1,a.data[0]->delay);
+    emit(signalCritereNet2,a.data[1]->delay);
+}
 
