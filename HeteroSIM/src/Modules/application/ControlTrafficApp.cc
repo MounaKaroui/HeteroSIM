@@ -35,6 +35,7 @@ BasicMsg* ControlTrafficApp::BuildMsg(std::string namePrefix)
     ControlMsg*  ctrlMsg=new ControlMsg();
     ctrlMsg->setName((namePrefix+string("-controlTraffic-")+std::to_string(ctrlMsg->getTreeId())).c_str());
     ctrlMsg->setNetworkId(interfaceId);
+    ctrlMsg->setApplId(appID);
     ctrlMsg->setByteLength(msgLength);
     ctrlMsg->setApplId(appID);
     return  ctrlMsg;

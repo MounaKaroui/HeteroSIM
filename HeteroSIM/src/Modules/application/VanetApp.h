@@ -31,18 +31,12 @@ using namespace omnetpp;
 class VanetApp : public BaseAppl
 {
    std::string trafficType;
-   simsignal_t rcvdPacket;
+
   protected:
 
-
     virtual void initialize();
-
     virtual void handleAppMessage(cMessage *msg) override;
-
     virtual BasicMsg* BuildMsg(std::string namePrefix) override;
-
-
-
 };
 
 #endif

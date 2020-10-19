@@ -22,11 +22,12 @@ void DynamicTrafficRateApp::initialize()
     BaseAppl::initialize();
     interfaceId=par("interfaceId").intValue();
     msgOfferedLoadRateSentTrigger=new cMessage("Offered Load trigger");
+    pcktToSendSignal=registerSignal("pcktToSendSignal");
     setOfferedLoadRefreshInterval();
 }
 
 DynamicTrafficRateApp::~DynamicTrafficRateApp() {
-    cancelAndDelete(msgSentTrigger);
+    //cancelAndDelete(msgSentTrigger); TODO debug
     cancelAndDelete(msgOfferedLoadRateSentTrigger);
 }
 
@@ -38,6 +39,7 @@ void DynamicTrafficRateApp::handleMessage(cMessage *msg)
 
             offeredLoadRateSentInterval= SimTime(par("offeredLoadRate").doubleValue());
             pcktToSendForOfferedLoadRate = SimTime(1) / offeredLoadRateSentInterval;
+            emit(pcktToSendSignal,pcktToSendForOfferedLoadRate);
 
             if(pcktToSendForOfferedLoadRate > 0)
                 scheduleAt(simTime() + offeredLoadRateSentInterval, msgOfferedLoadRateSentTrigger);
@@ -79,7 +81,7 @@ void DynamicTrafficRateApp::sendData(){
 
 void DynamicTrafficRateApp::handleAppMessage(cMessage *msg)
 {
-    delete msg;
+    emit(BaseAppl::rcvdPacket, msg);
 }
 
 BasicMsg* DynamicTrafficRateApp::BuildMsg(std::string namePrefix)

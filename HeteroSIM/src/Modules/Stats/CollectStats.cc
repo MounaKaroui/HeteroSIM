@@ -151,7 +151,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
     if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac")){ //when packet enter to MAC layer
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
-        printMsg("Inserting",msg);
+        //printMsg("Inserting",msg);
         return ;
     }
 
@@ -164,7 +164,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
         //Delay
         ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-        printMsg("Reading",msg);
+        //printMsg("Reading",msg);
         simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
         packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
         delay = SIMTIME_DBL(macAndRadioDelay);
@@ -184,7 +184,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
         {
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-            printMsg("Reading",msg);
+            //printMsg("Reading",msg);
             simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
 

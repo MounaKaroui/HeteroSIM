@@ -25,6 +25,8 @@ class BaseAppl: public cSimpleModule {
 
 public :
     static simsignal_t sentPacket ;
+    static simsignal_t rcvdPacket ;
+
 
 protected:
 

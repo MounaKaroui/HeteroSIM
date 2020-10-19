@@ -29,13 +29,13 @@ void VanetApp::initialize()
 {
     BaseAppl::initialize();
     trafficType=par("trafficType").stringValue();
-    rcvdPacket=registerSignal("rcvdPk");
 
 }
 void VanetApp::handleAppMessage(cMessage *msg)
 {
-    emit(rcvdPacket, msg);
-    delete msg;
+    if(string(msg->getName()).find("hetNets-data")==0)
+        emit(BaseAppl::rcvdPacket, msg);
+   delete msg;
 }
 
 BasicMsg* VanetApp::BuildMsg(std::string namePrefix)

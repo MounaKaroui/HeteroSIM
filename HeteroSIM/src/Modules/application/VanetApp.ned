@@ -26,10 +26,4 @@ simple VanetApp extends BaseAppl
        startTime=default(10s+uniform(0s, sendInterval)) ; // application start time (start of the first packet)
        stopTime=default(-1s) ;
        @class(VanetApp); 
-       
-       @signal[rcvdPk](type=cPacket);
-       @statistic[rcvdPk](title="packets received"; source=rcvdPk; record=count,"sum(packetBytes)","vector(packetBytes)"; interpolationmode=none);
-       @statistic[throughput](title="throughput"; unit=bps; source="throughput(rcvdPk)"; record=vector); 
-                @statistic[delay](title="delay"; source="messageAge(rcvdPk)"; unit=s; record=stats,vector; interpolationmode=none);
-       
 }
