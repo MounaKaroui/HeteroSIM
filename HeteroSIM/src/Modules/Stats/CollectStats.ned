@@ -30,8 +30,8 @@ simple CollectStats like IStatistics
        	  string averageMethod=default("simple"); // simple average or with ema
        	  
       @signal[CritereNet1];
-      @statistic[CritereNet1](title="CritereNet1";source="CritereNet1"; record=vector); 
+      @statistic[tr0](title="CritereNet1";source="CritereNet1"; record=vector); 
       @signal[CritereNet2];
-      @statistic[CritereNet2](title="CritereNet2";source="CritereNet2"; record=vector); 
+      @statistic[tr1](title="CritereNet2";source="CritereNet2"; record=vector); 
 }
 

@@ -149,7 +149,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
                     std::cout<< "decision Data "<< decisionData <<"\n" << endl;
                 networkIndex = McdaAlg::decisionProcess(decisionData,
                         pathToConfigFiles, "simple", simpleWeights,
-                        criteriaType, trafficType, "VIKOR");
+                        criteriaType, trafficType, "TOPSIS");
 
                     std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
                     emit(decisionSignal,networkIndex);

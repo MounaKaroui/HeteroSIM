@@ -44,7 +44,6 @@ public:
         vector<simtime_t> timeStamp;
         vector<double>  delay;
         vector<double>  transmissionRate;
-        vector<double> cbr;  // TODO compute cbr
         vector<double> queueVacancy; // TODO compute queueVacancy
     };
 
@@ -52,7 +51,6 @@ public:
     {
         double delay ;
         double transmissionRate;
-        double cbr;
         double queueVacancy;
     };
 
@@ -78,7 +76,7 @@ public:
     }
 
     void printMsg(std::string type, cMessage*  msg);
-    double getTransmissionRate(int64_t dataLength, double sendInterval);
+    double getAvailableBandwidth(int64_t dataLength, double sendInterval, double cbr);
     void setInterfaceToProtocolMap();
     void updateDLT(listOfCriteria* list,int interfaceId);
     void initializeDLT();
@@ -105,12 +103,11 @@ protected:
 
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
-    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double cbr, double queueVacancy);
-    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double cbr, double queueVacancy);
+    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);
+    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy);
 
     listOfCriteria* getSublistByDLT(int interfaceID);
 
-    void recordDecisionData(listAlternativeAttributes a);
 };
 
 #endif
