@@ -27,11 +27,17 @@ simple CollectStats like IStatistics
     parameters:
          
           string interfaceToProtocolMapping=default("0:80211,1:80211,2:mode4");
-       	  string averageMethod=default("simple"); // simple average or with ema
+       	  string averageMethod=default("ema"); // simple average or with ema
        	  
-      @signal[CritereNet1];
-      @statistic[tr0](title="CritereNet1";source="CritereNet1"; record=vector); 
-      @signal[CritereNet2];
-      @statistic[tr1](title="CritereNet2";source="CritereNet2"; record=vector); 
+      @signal[tr0];
+      @statistic[tr0](title="tr0";source="tr0"; record=vector); 
+      @signal[tr1];
+      @statistic[tr1](title="tr1";source="tr1"; record=vector); 
+      
+      @signal[delay0];
+      @statistic[delay0](title="delay0";source="delay0"; record=vector); 
+      @signal[delay1];
+      @statistic[delay1](title="delay1";source="delay1"; record=vector); 
+      
 }
 

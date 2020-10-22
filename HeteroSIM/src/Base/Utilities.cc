@@ -10,22 +10,28 @@ using namespace inet;
 namespace Utilities{
 
 
-double calculateEMA(vector<double> vData, vector<double>& vEMA)
+
+void calculateEMA(vector<double> vData, vector<double>& vEMA)
 {
-    double beta = calculateBeta(vData.size());
-    if (vEMA.size() == 0) {
-        vEMA.push_back(vData.back());
-    } else {
-        vEMA.push_back(beta * vData.back() + (1 - beta) * vEMA.back());
+    double beta = 2.0 / (1.0 + vData.size());
+    if (vData.size() > 0)
+    {
+    if (vEMA.size() == 0)
+    {
+     vEMA.resize(vData.size());
+     vEMA.at(0) = vData.at(0);
     }
 
-    return vEMA.back();
+    for (unsigned int i = 1; i < vData.size(); i++)
+    {
+       vEMA.at(i) = beta * vData.at(i) + (1 - beta) * vEMA.at(i - 1);
+    }
+    }else{
+        vEMA.push_back(vData.back());
+    }
+
 }
 
-double calculateBeta(double n)
-{
-    return 2/(n+1);
-}
 
 double calculateCofficientOfVariation(vector<double> v) {
 

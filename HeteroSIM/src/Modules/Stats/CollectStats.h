@@ -92,8 +92,10 @@ public:
     double extractLteBufferVacancy();
     double getLteCBR();
 
-    simsignal_t signalCritereNet1;
-    simsignal_t signalCritereNet2;
+    simsignal_t tr0;
+    simsignal_t tr1;
+    simsignal_t delay0;
+    simsignal_t delay1;
 
 protected:
 

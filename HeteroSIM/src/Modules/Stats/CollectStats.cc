@@ -40,8 +40,11 @@ void CollectStats::initialize()
     registerSignals();
     initializeDLT();
 
-    signalCritereNet1 =registerSignal("CritereNet1");
-    signalCritereNet2 =registerSignal("CritereNet2");
+    tr0 =registerSignal("tr0");
+    tr1 =registerSignal("tr1");
+
+    delay0 =registerSignal("delay0");
+    delay1 =registerSignal("delay1");
 }
 
 void CollectStats::setInterfaceToProtocolMap()
@@ -321,6 +324,16 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
     updateDLT(rList, interfaceId);
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
+    if (getFullPath()=="SimpleNetwork.car[20].collectStatistics") {
+        bool b1 = 1.5 < simTime().dbl() ; bool b2= simTime().dbl() < 2.5;
+        if (b1 && b2) {
+            statIndex++;
+        }
+        if (7.5 < simTime().dbl() && simTime().dbl() < 8.5) {
+            statIndex++;
+        }
+    }
+
     return rList ;
 }
 
@@ -343,14 +356,18 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
         for (auto& x : dataSet)
         {
             std::vector<double> vEMADelay;
+            Utilities::calculateEMA(x.second->delay,vEMADelay);
             std::vector<double> vEMATransmissionRate;
-            std::vector<double> vEMACBR;
+            Utilities::calculateEMA(x.second->transmissionRate,vEMATransmissionRate);
             std::vector<double> vEMAQueueVacancy;
+            Utilities::calculateEMA(x.second->queueVacancy,vEMAQueueVacancy);
             alternativeAttributes* listAttr=new alternativeAttributes();
-            listAttr->delay=Utilities::calculateEMA(x.second->delay,vEMADelay);
-            listAttr->transmissionRate=Utilities::calculateEMA(x.second->transmissionRate,vEMATransmissionRate);
-            listAttr->queueVacancy=Utilities::calculateEMA(x.second->queueVacancy,vEMAQueueVacancy);
+
+            listAttr->delay= vEMADelay.back() ;
+            listAttr->transmissionRate=vEMATransmissionRate.back();
+            listAttr->queueVacancy=vEMAQueueVacancy.back();
             myList.data.insert({x.first,listAttr});
+
         }
     }
     return myList;
@@ -416,10 +433,16 @@ double CollectStats::getAvailableBandwidth(int64_t dataLength, double sendInterv
 void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy){
 
     insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, queueVacancy) ;
-    if(interfaceId==0)
-         emit(signalCritereNet1,transmissionRate);
-    else
-         emit(signalCritereNet2,transmissionRate);
+    if(interfaceId==0){
+        emit(tr0,transmissionRate);
+        emit(delay0,delay);
+    }
+
+    else{
+        emit(tr1,transmissionRate);
+        emit(delay1,delay);
+    }
+
 }
 
 void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy){
