@@ -45,6 +45,10 @@ void CollectStats::initialize()
 
     delay0 =registerSignal("delay0");
     delay1 =registerSignal("delay1");
+    hysteresisFactor=par("hysteresisFactor").intValue();
+    freshnessFactor=par("freshnessFactor").intValue();
+    sendInterval=0.0053;
+
 }
 
 void CollectStats::setInterfaceToProtocolMap()
@@ -62,7 +66,7 @@ void CollectStats::setInterfaceToProtocolMap()
 void CollectStats::initializeDLT()
 {
     for(auto const & x: interfaceToProtocolMap)
-        dltByInterfaceId[x.first]=0;
+        dltByInterfaceId[x.first]=sendInterval;
 }
 
 void CollectStats::registerSignals()
@@ -302,39 +306,33 @@ map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
     return rMap;
 }
 
-CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId){
+CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 
     listOfCriteria* rList = new listOfCriteria();
     listOfCriteria* tmp = listOfCriteriaByInterfaceId[interfaceId];
     simtime_t historyBound = NOW - SimTime(dltByInterfaceId[interfaceId]);
-
     int statIndex;
-    int recentStatIndex=tmp->timeStamp.size()-1;
-    for(statIndex=recentStatIndex; statIndex>=0; statIndex--){
+    int recentStatIndex = tmp->timeStamp.size() - 1;
 
-        if(tmp->timeStamp[statIndex]>= historyBound)
-            insertStatTuple(rList,tmp->timeStamp[statIndex], tmp->delay[statIndex], tmp->transmissionRate[statIndex],tmp->queueVacancy[statIndex]) ;
+    for (statIndex = recentStatIndex; statIndex >= 0; statIndex--) {
+        if (tmp->timeStamp[statIndex] >= historyBound)
+            insertStatTuple(rList, tmp->timeStamp[statIndex],
+                    tmp->delay[statIndex], tmp->transmissionRate[statIndex],
+                    tmp->queueVacancy[statIndex]);
         else
-            break ;
+            break;
     }
-    if (statIndex==recentStatIndex)
-        insertStatTuple(rList,tmp->timeStamp[recentStatIndex], tmp->delay[recentStatIndex], tmp->transmissionRate[recentStatIndex],tmp->queueVacancy[recentStatIndex]) ;
+    if (statIndex == recentStatIndex)
+        insertStatTuple(rList, tmp->timeStamp[recentStatIndex],
+                tmp->delay[recentStatIndex],
+                tmp->transmissionRate[recentStatIndex],
+                tmp->queueVacancy[recentStatIndex]);
 
     //update DLT
     updateDLT(rList, interfaceId);
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
-    if (getFullPath()=="SimpleNetwork.car[20].collectStatistics") {
-        bool b1 = 1.5 < simTime().dbl() ; bool b2= simTime().dbl() < 2.5;
-        if (b1 && b2) {
-            statIndex++;
-        }
-        if (7.5 < simTime().dbl() && simTime().dbl() < 8.5) {
-            statIndex++;
-        }
-    }
-
-    return rList ;
+    return rList;
 }
 
 

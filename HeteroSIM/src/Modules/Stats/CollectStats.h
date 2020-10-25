@@ -65,7 +65,6 @@ public:
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
     map<int,double> dltByInterfaceId;
-    std::string averageMethod;
 
     template<typename T>
     void subscribeToSignal(std::string moduleName, simsignal_t sigName)
@@ -75,41 +74,58 @@ public:
         mLinkLayer->subscribe(sigName, this);
     }
 
-    void printMsg(std::string type, cMessage*  msg);
-    double getAvailableBandwidth(int64_t dataLength, double sendInterval, double cbr);
-    void setInterfaceToProtocolMap();
-    void updateDLT(listOfCriteria* list,int interfaceId);
-    void initializeDLT();
-
-    //TODO change to protected or private
-    map<int,listOfCriteria*> getSublistByDLT();
-    listAlternativeAttributes applyAverageMethod(map<int,listOfCriteria*> dataSet);
-    std::string convertListOfCriteriaToString(listAlternativeAttributes a);
+    //Final decision data to be used as an input for decider
     std::string prepareNetAttributes();
+
+    double sendInterval;
+
+protected:
+    //NED parameters:
+    std::string averageMethod;
+    int hysteresisFactor;
+    int freshnessFactor;
+
+    // Initialization and signal registration
+    virtual void initialize();
+    void registerSignals();
+    void initializeDLT();
+    void setInterfaceToProtocolMap();
+
+    //Network attributes collection
     double extractQueueVacancy(int interfaceId);
     double extractBufferOccupancy();
     double getWlanCBR(int interfaceId);
     double extractLteBufferVacancy();
     double getLteCBR();
+    double getAvailableBandwidth(int64_t dataLength, double sendInterval, double cbr);
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
+    void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
+    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
 
+    // Data Life Time calculation
+    void updateDLT(listOfCriteria* list,int interfaceId);
+    double getsendIntervalParam();
+
+    //Network attributes processing
+    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);
+    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy);
+    listOfCriteria* getSublistByDLT(int interfaceID);
+    map<int,listOfCriteria*> getSublistByDLT();
+    listAlternativeAttributes applyAverageMethod(map<int,listOfCriteria*> dataSet);
+    std::string convertListOfCriteriaToString(listAlternativeAttributes a);
+
+    //Ping pong effects
+    double updateHysteresisTh(double v);
+    double reducePingPongEffects(double newValue, double oldValue, bool theSmallerTheBetter);
+
+    //Print msg content
+    void printMsg(std::string type, cMessage*  msg);
+
+    //Signals for stats
     simsignal_t tr0;
     simsignal_t tr1;
     simsignal_t delay0;
     simsignal_t delay1;
-
-protected:
-
-    virtual void initialize();
-    void registerSignals();
-    virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
-
-    void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
-    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
-    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);
-    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy);
-
-    listOfCriteria* getSublistByDLT(int interfaceID);
-
 };
 
 #endif
