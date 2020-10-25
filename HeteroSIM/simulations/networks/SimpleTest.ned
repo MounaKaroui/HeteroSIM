@@ -16,7 +16,7 @@
 package heterosim.simulations.networks;
 
 import inet.environment.common.PhysicalEnvironment;
-import heterosim.src.Modules.nodes.car;
+import heterosim.src.modules.nodes.car;
 import inet.physicallayer.common.packetlevel.RadioMedium;
 import inet.networklayer.configurator.ipv4.IPv4NetworkConfigurator;
 import inet.physicallayer.contract.packetlevel.IRadioMedium;
