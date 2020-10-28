@@ -45,14 +45,14 @@ public:
 
         vector<simtime_t> timeStamp;
         vector<double>  delay;
-        vector<double>  transmissionRate;
+        vector<double>  availableBandwidth;
         vector<double> queueVacancy; // TODO compute queueVacancy
     };
 
     struct alternativeAttributes
     {
         double delay ;
-        double transmissionRate;
+        double availableBandwidth;
         double queueVacancy;
     };
 
@@ -61,6 +61,7 @@ public:
         map<int,alternativeAttributes*> data;
     };
 
+    map<int,listOfCriteria*> dataHistory;
 
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
@@ -119,6 +120,8 @@ protected:
     //Ping pong effects
     double updateHysteresisTh(double v);
     double reducePingPongEffects(double newValue, double oldValue, bool theSmallerTheBetter);
+    listAlternativeAttributes applyPingPongReduction();
+    double calculateAplha(std::vector<double> v);
 
     //Print msg content
     void printMsg(std::string type, cMessage*  msg);

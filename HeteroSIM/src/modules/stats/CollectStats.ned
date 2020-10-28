@@ -28,13 +28,16 @@ simple CollectStats like IStatistics
         string interfaceToProtocolMapping = default("0:80211,1:80211,2:mode4");
         string averageMethod = default("ema"); // simple average or with ema
         
+        
         @signal[tr0];
         @statistic[tr0](title="tr0"; source="tr0"; record=vector);
+        
         @signal[tr1];
         @statistic[tr1](title="tr1"; source="tr1"; record=vector);
         
         @signal[delay0];
         @statistic[delay0](title="delay0"; source="delay0"; record=vector);
+        
         @signal[delay1];
         @statistic[delay1](title="delay1"; source="delay1"; record=vector);
         

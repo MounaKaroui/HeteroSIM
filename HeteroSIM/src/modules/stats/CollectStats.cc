@@ -47,6 +47,7 @@ void CollectStats::initialize()
 
     delay0 =registerSignal("delay0");
     delay1 =registerSignal("delay1");
+
     hysteresisFactor=par("hysteresisFactor").intValue();
     freshnessFactor=par("freshnessFactor").intValue();
     sendInterval=0.0053;
@@ -68,7 +69,7 @@ void CollectStats::setInterfaceToProtocolMap()
 void CollectStats::initializeDLT()
 {
     for(auto const & x: interfaceToProtocolMap)
-        dltByInterfaceId[x.first]=sendInterval;
+        dltByInterfaceId[x.first]=0;
 }
 
 void CollectStats::registerSignals()
@@ -170,7 +171,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delay, transmissionRate, cbr, queueVacancy;
+    double delay, availableBandwidth, cbr, queueVacancy;
 
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
 
@@ -187,12 +188,12 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         //CBR
         cbr = getWlanCBR(interfaceId);
 
-        transmissionRate = getAvailableBandwidth((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl(),cbr);
+        availableBandwidth = getAvailableBandwidth((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl(),cbr);
         // Queue vacancy
         queueVacancy=extractQueueVacancy(interfaceId);
 
 
-        recordStatTuple(interfaceId, delay, transmissionRate, queueVacancy) ;
+        recordStatTuple(interfaceId, delay, availableBandwidth, queueVacancy) ;
 
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
@@ -219,11 +220,11 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //CBR
                  cbr = getWlanCBR(interfaceId);
                  //Transmission rate
-                transmissionRate = getAvailableBandwidth(0,delay,cbr); //consider 0 bits are transmitted
+                availableBandwidth = getAvailableBandwidth(0,delay,cbr); //consider 0 bits are transmitted
                 // Queue vacancy
                 queueVacancy=extractQueueVacancy(interfaceId);
 
-               recordStatTuple(interfaceId, delay, transmissionRate, queueVacancy) ;
+               recordStatTuple(interfaceId, delay, availableBandwidth, queueVacancy) ;
             }
         }
 }
@@ -233,7 +234,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
-    double delay, transmissionRate,cbr, queueVacancy;
+    double delay, availableBandwidth,cbr, queueVacancy;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
@@ -260,11 +261,11 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             // cbr
             cbr=getLteCBR();
             //Transmission rate
-            transmissionRate = getAvailableBandwidth((PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl(),cbr);
+            availableBandwidth = getAvailableBandwidth((PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl(),cbr);
             // buffer vacancy
             queueVacancy=extractLteBufferVacancy();
 
-            recordStatTuple(interfaceId,delay,transmissionRate,queueVacancy) ;
+            recordStatTuple(interfaceId,delay,availableBandwidth,queueVacancy) ;
         }
     }
 }
@@ -275,7 +276,7 @@ std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttribute
 
     for (auto& x : listOfAlternativeAttributes.data)
     {
-        rStr+=to_string(x.second->transmissionRate);
+        rStr+=to_string(x.second->availableBandwidth);
         rStr+=","+to_string(x.second->delay);
         rStr+=","+to_string(x.second->queueVacancy)+",";
     }
@@ -301,7 +302,7 @@ void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
     std::vector<double> cv;
 
     cv.push_back(Utilities::calculateCofficientOfVariation(list->delay));
-    cv.push_back(Utilities::calculateCofficientOfVariation(list->transmissionRate));
+    cv.push_back(Utilities::calculateCofficientOfVariation(list->availableBandwidth));
     cv.push_back(Utilities::calculateCofficientOfVariation(list->queueVacancy));
 
     dltByInterfaceId[interfaceId]=exp(-1*Utilities::calculateMeanVec(cv)+log(freshnessFactor*sendInterval));
@@ -335,7 +336,7 @@ map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
     map<int,CollectStats::listOfCriteria*> rMap;
 
     for (const auto &pair : listOfCriteriaByInterfaceId){
-        int interfaceId = pair.first;
+       int interfaceId = pair.first;
        rMap.insert({interfaceId, getSublistByDLT(interfaceId)}) ;
     }
 
@@ -353,7 +354,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
     for (statIndex = recentStatIndex; statIndex >= 0; statIndex--) {
         if (tmp->timeStamp[statIndex] >= historyBound)
             insertStatTuple(rList, tmp->timeStamp[statIndex],
-                    tmp->delay[statIndex], tmp->transmissionRate[statIndex],
+                    tmp->delay[statIndex], tmp->availableBandwidth[statIndex],
                     tmp->queueVacancy[statIndex]);
         else
             break;
@@ -361,7 +362,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
     if (statIndex == recentStatIndex)
         insertStatTuple(rList, tmp->timeStamp[recentStatIndex],
                 tmp->delay[recentStatIndex],
-                tmp->transmissionRate[recentStatIndex],
+                tmp->availableBandwidth[recentStatIndex],
                 tmp->queueVacancy[recentStatIndex]);
 
     //update DLT
@@ -372,18 +373,32 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 }
 
 
+double CollectStats::calculateAplha(std::vector<double> v)
+{
+
+
+
+
+}
+
 CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int,listOfCriteria*> dataSet)
 {
     listAlternativeAttributes myList;
+
+
     if(averageMethod==string("simple"))
     {
         for (auto& x : dataSet)
         {
             alternativeAttributes* listAttr=new alternativeAttributes();
             listAttr->delay=Utilities::calculateMeanVec(x.second->delay);
-            listAttr->transmissionRate=Utilities::calculateMeanVec(x.second->transmissionRate);
+            listAttr->availableBandwidth=Utilities::calculateMeanVec(x.second->availableBandwidth);
             listAttr->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
             myList.data.insert({x.first,listAttr});
+            // For history storage
+            if(dataHistory.find(x.first)== dataHistory.end())
+                dataHistory.insert({x.first,new listOfCriteria()});
+            insertStatTuple(dataHistory[x.first], NOW, listAttr->delay,   listAttr->availableBandwidth,   listAttr->queueVacancy);
         }
     }else if(averageMethod==string("ema"))
     {
@@ -392,28 +407,64 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             std::vector<double> vEMADelay;
             Utilities::calculateEMA(x.second->delay,vEMADelay);
             std::vector<double> vEMATransmissionRate;
-            Utilities::calculateEMA(x.second->transmissionRate,vEMATransmissionRate);
+            Utilities::calculateEMA(x.second->availableBandwidth,vEMATransmissionRate);
             std::vector<double> vEMAQueueVacancy;
             Utilities::calculateEMA(x.second->queueVacancy,vEMAQueueVacancy);
             alternativeAttributes* listAttr=new alternativeAttributes();
-
             listAttr->delay= vEMADelay.back() ;
-            listAttr->transmissionRate=vEMATransmissionRate.back();
+            listAttr->availableBandwidth=vEMATransmissionRate.back();
             listAttr->queueVacancy=vEMAQueueVacancy.back();
             myList.data.insert({x.first,listAttr});
-
+            // For history storage
+            if(dataHistory.find(x.first)== dataHistory.end())
+                dataHistory.insert({x.first,new listOfCriteria()});
+            insertStatTuple(dataHistory[x.first], NOW, listAttr->delay,listAttr->availableBandwidth,   listAttr->queueVacancy);
         }
     }
     return myList;
 }
 
+CollectStats::listAlternativeAttributes CollectStats::applyPingPongReduction()
+{
+    listAlternativeAttributes myList;
+    alternativeAttributes* listAttr=new alternativeAttributes();
+
+    for(auto& x :dataHistory)
+    {
+        listOfCriteria* tmp=dataHistory[x.first];
+        // delay
+        if (tmp->delay.size() > 1)
+        {
+            double secondToLastDelay = tmp->delay.end()[-2];
+            listAttr->delay=reducePingPongEffects(tmp->delay.back(), secondToLastDelay, true);
+        }
+        // available bandwidth
+        if (tmp->availableBandwidth.size() > 1)
+        {
+            double secondToLastDelay = tmp->availableBandwidth.end()[-2];
+            listAttr->availableBandwidth=reducePingPongEffects(tmp->availableBandwidth.back(), secondToLastDelay, false);
+        }
+        // queue vacancy
+        if (tmp->delay.size() > 1)
+        {
+            double secondToLastDelay = tmp->queueVacancy.end()[-2];
+            listAttr->queueVacancy=reducePingPongEffects(tmp->queueVacancy.back(), secondToLastDelay, false);
+        }
+        myList.data.insert({x.first,listAttr});
+    }
+    return myList;
+}
+
+
 std::string CollectStats::prepareNetAttributes()
 {
+
     // 1- get Data until NOW -DLT
     map<int,listOfCriteria*> dataSet= getSublistByDLT();
     // 2- Apply average method
     listAlternativeAttributes a=applyAverageMethod(dataSet);
-    // 3- convert to string
+    // 3- TODO: apply Ping pong reduction
+    // 4- Convert to string
     return convertListOfCriteriaToString(a);
 }
 
@@ -471,7 +522,6 @@ void CollectStats::recordStatTuple(int interfaceId, double delay, double transmi
         emit(tr0,transmissionRate);
         emit(delay0,delay);
     }
-
     else{
         emit(tr1,transmissionRate);
         emit(delay1,delay);
@@ -485,7 +535,7 @@ void CollectStats::recordStatTuple(int interfaceId, double delay, double transmi
 void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy){
     list->timeStamp.push_back(timestamp);
     list->delay.push_back(delay);
-    list->transmissionRate.push_back(transmissionRate) ;
+    list->availableBandwidth.push_back(transmissionRate) ;
     list->queueVacancy.push_back(queueVacancy) ;
 
 }
