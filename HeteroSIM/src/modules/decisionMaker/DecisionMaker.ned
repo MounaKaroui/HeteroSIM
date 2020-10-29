@@ -35,8 +35,12 @@ simple DecisionMaker
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
  		bool isDeciderActive=default(true); 
  		int dummyNetworkChoice=default(0);     
+ 		// Hysteresis per criteria
+ 		double hysteresisTh=default(0.5);
+ 		
  		@signal[decision];
  		@statistic[decision](title="decision";source="decision"; record=vector); 
+ 		     
  		     
         gates:
         input fromApplication[];

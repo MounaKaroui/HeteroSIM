@@ -20,7 +20,7 @@
 #include "stack/phy/packet/cbr_m.h"
 #include <stdlib.h>     /* srand, rand */
 
-#include "../stats/CollectStats.h"
+
 Define_Module(DecisionMaker);
 
 
@@ -34,7 +34,7 @@ void DecisionMaker::initialize()
     simpleWeights=par("simpleWeights").stringValue();
     criteriaType=par("criteriaType").stringValue();
     decisionSignal=registerSignal("decision");
-
+    hysteresisTh=par("hysteresisTh").doubleValue();
     if(mode4)
     {
         registerNodeToBinder();
@@ -121,6 +121,46 @@ void DecisionMaker::sendToUpper(cMessage*  msg)
 }
 
 
+std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlternativeAttributes* listOfAlternativeAttributes)
+{
+    std::string rStr="";
+
+    for (auto& x : listOfAlternativeAttributes->data)
+    {
+        rStr+=to_string(x.second->availableBandwidth);
+        rStr+=","+to_string(x.second->delay);
+        rStr+=","+to_string(x.second->queueVacancy)+",";
+    }
+
+    return rStr.substr(0, rStr.size()-1);
+}
+
+
+
+
+
+double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData){
+    // TODO
+    return 0;
+}
+
+
+int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData ){
+
+    if(newDecision==lastDecision)
+    {
+        return newDecision;
+    }
+    else
+    {
+        double meanTh =calculateWeightedThresholdAverage(newDecisionData);
+
+        if(meanTh > hysteresisTh)
+            return newDecision;
+       else
+            return lastDecision;
+    }
+}
 
 
 int DecisionMaker::takeDecision(cMessage* msg)
@@ -142,16 +182,21 @@ int DecisionMaker::takeDecision(cMessage* msg)
             {
                 cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
                 CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-                std::string decisionData= stats->prepareNetAttributes();
+                CollectStats::listAlternativeAttributes* decisionData= stats->prepareNetAttributes();
 
-                if(decisionData!="")
+                std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
+                if(decisionDataStr!="")
                 {
                     // MCDM here
-                    std::cout<< "decision Data "<< decisionData <<"\n" << endl;
-                networkIndex = McdaAlg::decisionProcess(decisionData,
+                    std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
+                networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                         pathToConfigFiles, "simple", simpleWeights,
                         criteriaType, trafficType, "TOPSIS");
 
+                networkIndex=reducePingPongEffects(networkIndex,decisionData);
+
+                lastDecisionData=decisionData;
+                lastDecision=networkIndex;
                     std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
                     emit(decisionSignal,networkIndex);
                 }

@@ -41,7 +41,7 @@ simple CollectStats like IStatistics
         @signal[delay1];
         @statistic[delay1](title="delay1"; source="delay1"; record=vector);
         
-        int hysteresisFactor=default(10);
-        int freshnessFactor=default(3);
+        //string freshnessFactor=default("");
+        
 }
 

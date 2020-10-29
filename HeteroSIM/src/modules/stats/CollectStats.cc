@@ -48,7 +48,6 @@ void CollectStats::initialize()
     delay0 =registerSignal("delay0");
     delay1 =registerSignal("delay1");
 
-    hysteresisFactor=par("hysteresisFactor").intValue();
     freshnessFactor=par("freshnessFactor").intValue();
     sendInterval=0.0053;
 
@@ -270,19 +269,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     }
 }
 
-std::string CollectStats::convertListOfCriteriaToString(listAlternativeAttributes listOfAlternativeAttributes)
-{
-    std::string rStr="";
 
-    for (auto& x : listOfAlternativeAttributes.data)
-    {
-        rStr+=to_string(x.second->availableBandwidth);
-        rStr+=","+to_string(x.second->delay);
-        rStr+=","+to_string(x.second->queueVacancy)+",";
-    }
-
-    return rStr.substr(0, rStr.size()-1);
-}
 
 double CollectStats::getsendIntervalParam()
 {
@@ -309,27 +296,7 @@ void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 
 }
 
-double CollectStats::updateHysteresisTh(double v)
-{
 
-    if (hysteresisFactor == 0)
-            return 0;
-        else
-            return v / hysteresisFactor;
-
-}
-
-
-double CollectStats::reducePingPongEffects(double newValue, double oldValue,bool theSmallerTheBetter) {
-    double hyteresisTh = updateHysteresisTh(newValue);
-    if (theSmallerTheBetter) {
-        if (newValue >= oldValue + hyteresisTh)
-            return oldValue;
-    } else {
-        if (newValue <= oldValue + hyteresisTh)
-            return oldValue;
-    }
-}
 
 map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
 {
@@ -373,13 +340,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 }
 
 
-double CollectStats::calculateAplha(std::vector<double> v)
-{
 
-
-
-
-}
 
 CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int,listOfCriteria*> dataSet)
 {
@@ -395,10 +356,6 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             listAttr->availableBandwidth=Utilities::calculateMeanVec(x.second->availableBandwidth);
             listAttr->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
             myList.data.insert({x.first,listAttr});
-            // For history storage
-            if(dataHistory.find(x.first)== dataHistory.end())
-                dataHistory.insert({x.first,new listOfCriteria()});
-            insertStatTuple(dataHistory[x.first], NOW, listAttr->delay,   listAttr->availableBandwidth,   listAttr->queueVacancy);
         }
     }else if(averageMethod==string("ema"))
     {
@@ -415,57 +372,20 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             listAttr->availableBandwidth=vEMATransmissionRate.back();
             listAttr->queueVacancy=vEMAQueueVacancy.back();
             myList.data.insert({x.first,listAttr});
-            // For history storage
-            if(dataHistory.find(x.first)== dataHistory.end())
-                dataHistory.insert({x.first,new listOfCriteria()});
-            insertStatTuple(dataHistory[x.first], NOW, listAttr->delay,listAttr->availableBandwidth,   listAttr->queueVacancy);
         }
     }
     return myList;
 }
 
-CollectStats::listAlternativeAttributes CollectStats::applyPingPongReduction()
+
+CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 {
-    listAlternativeAttributes myList;
-    alternativeAttributes* listAttr=new alternativeAttributes();
-
-    for(auto& x :dataHistory)
-    {
-        listOfCriteria* tmp=dataHistory[x.first];
-        // delay
-        if (tmp->delay.size() > 1)
-        {
-            double secondToLastDelay = tmp->delay.end()[-2];
-            listAttr->delay=reducePingPongEffects(tmp->delay.back(), secondToLastDelay, true);
-        }
-        // available bandwidth
-        if (tmp->availableBandwidth.size() > 1)
-        {
-            double secondToLastDelay = tmp->availableBandwidth.end()[-2];
-            listAttr->availableBandwidth=reducePingPongEffects(tmp->availableBandwidth.back(), secondToLastDelay, false);
-        }
-        // queue vacancy
-        if (tmp->delay.size() > 1)
-        {
-            double secondToLastDelay = tmp->queueVacancy.end()[-2];
-            listAttr->queueVacancy=reducePingPongEffects(tmp->queueVacancy.back(), secondToLastDelay, false);
-        }
-        myList.data.insert({x.first,listAttr});
-    }
-    return myList;
-}
-
-
-std::string CollectStats::prepareNetAttributes()
-{
-
     // 1- get Data until NOW -DLT
     map<int,listOfCriteria*> dataSet= getSublistByDLT();
     // 2- Apply average method
     listAlternativeAttributes a=applyAverageMethod(dataSet);
-    // 3- TODO: apply Ping pong reduction
-    // 4- Convert to string
-    return convertListOfCriteriaToString(a);
+    return &a;
+
 }
 
 

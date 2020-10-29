@@ -23,6 +23,7 @@
 #include "../../base/mcda/MCDM.h"
 #include "../../base/Utilities.h"
 #include "../../modules/messages/Messages_m.h"
+#include "../stats/CollectStats.h"
 
 using namespace omnetpp;
 using namespace inet;
@@ -56,12 +57,17 @@ public:
     void handleLteLowerMsg(cMessage* msg);
 
     string getNetworkProtocolName(int networkIndex);
+    std::string convertListOfCriteriaToString(CollectStats::listAlternativeAttributes* listOfAlternativeAttributes);
+    // Ping pong methods
+    int reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData);
+    double calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData);
+    //Decision method
     int takeDecision(cMessage*  msg);
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
 
     simsignal_t decisionSignal;
 
-
+    double hysteresisTh;
     bool mode4;
     bool isDeciderActive;
     int dummyNetworkChoice;
@@ -74,6 +80,8 @@ public:
     int critNumb;
     std::string pathToConfigFiles;
 
+    CollectStats::listAlternativeAttributes* lastDecisionData;
+    int lastDecision;
 
   private:
     cMessage* selfMsg;

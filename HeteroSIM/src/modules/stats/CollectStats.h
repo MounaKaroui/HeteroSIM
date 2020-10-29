@@ -61,7 +61,6 @@ public:
         map<int,alternativeAttributes*> data;
     };
 
-    map<int,listOfCriteria*> dataHistory;
 
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
@@ -78,14 +77,13 @@ public:
     }
 
     //Final decision data to be used as an input for decider
-    std::string prepareNetAttributes();
+    CollectStats::listAlternativeAttributes* prepareNetAttributes();
 
     double sendInterval;
 
 protected:
     //NED parameters:
     std::string averageMethod;
-    int hysteresisFactor;
     int freshnessFactor;
 
     // Initialization and signal registration
@@ -115,13 +113,6 @@ protected:
     listOfCriteria* getSublistByDLT(int interfaceID);
     map<int,listOfCriteria*> getSublistByDLT();
     listAlternativeAttributes applyAverageMethod(map<int,listOfCriteria*> dataSet);
-    std::string convertListOfCriteriaToString(listAlternativeAttributes a);
-
-    //Ping pong effects
-    double updateHysteresisTh(double v);
-    double reducePingPongEffects(double newValue, double oldValue, bool theSmallerTheBetter);
-    listAlternativeAttributes applyPingPongReduction();
-    double calculateAplha(std::vector<double> v);
 
     //Print msg content
     void printMsg(std::string type, cMessage*  msg);
