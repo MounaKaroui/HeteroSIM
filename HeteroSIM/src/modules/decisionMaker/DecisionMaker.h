@@ -58,8 +58,10 @@ public:
 
     string getNetworkProtocolName(int networkIndex);
     std::string convertListOfCriteriaToString(CollectStats::listAlternativeAttributes* listOfAlternativeAttributes);
-    // Ping pong methods
+
+    // Ping-pong methods
     int reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData);
+    double normalizeTh(double x1, double x2);
     double calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData);
     //Decision method
     int takeDecision(cMessage*  msg);

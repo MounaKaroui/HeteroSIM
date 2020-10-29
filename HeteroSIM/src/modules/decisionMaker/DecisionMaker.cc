@@ -131,17 +131,29 @@ std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlter
         rStr+=","+to_string(x.second->delay);
         rStr+=","+to_string(x.second->queueVacancy)+",";
     }
-
     return rStr.substr(0, rStr.size()-1);
 }
 
 
+double DecisionMaker::normalizeTh(double x1, double x2)
+{
+    return (x1-x2)/(x1+x2);
+}
 
+double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData)
+{
+    // Weight matrix [AB,Delay,Qv]
+    McdaAlg::Matrix weight=McdaAlg::simple_weighting(simpleWeights);
+    double sumTh=0;
 
+    for (auto& newData : newDecisionData->data)
+    {
+        sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->availableBandwidth)*weight.at(0,0);
+        sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->delay)*weight.at(1,0);
+        sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->queueVacancy)*weight.at(2,0);
+    }
 
-double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData){
-    // TODO
-    return 0;
+    return sumTh/weight.size(1);
 }
 
 
@@ -167,47 +179,45 @@ int DecisionMaker::takeDecision(cMessage* msg)
 {
 
     int networkIndex;
-
     ControlMsg * controlMsg =dynamic_cast<ControlMsg*>(msg);
 
     if(controlMsg){
         networkIndex=controlMsg->getNetworkId();
     }else{
 
-            // MCDM_procedure
-            HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
-            std::string trafficType=hetMsg->getTrafficType();
+        // MCDM_procedure
+        HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
+        std::string trafficType=hetMsg->getTrafficType();
 
-            if(isDeciderActive)
+        if(isDeciderActive)
+        {
+            cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+            CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+            CollectStats::listAlternativeAttributes* decisionData= stats->prepareNetAttributes();
+
+            std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
+            if(decisionDataStr!="")
             {
-                cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
-                CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-                CollectStats::listAlternativeAttributes* decisionData= stats->prepareNetAttributes();
-
-                std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
-                if(decisionDataStr!="")
-                {
-                    // MCDM here
-                    std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
+                // MCDM decision
+                std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
                 networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                         pathToConfigFiles, "simple", simpleWeights,
                         criteriaType, trafficType, "TOPSIS");
-
+                // Ping pong effects
                 networkIndex=reducePingPongEffects(networkIndex,decisionData);
-
+                // Store last decision data
                 lastDecisionData=decisionData;
+                // Store last decision
                 lastDecision=networkIndex;
-                    std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
-                    emit(decisionSignal,networkIndex);
-                }
+                std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
+                emit(decisionSignal,networkIndex);
             }
-            else
-            {
-                networkIndex=dummyNetworkChoice;
-            }
-
+        }
+        else
+        {
+            networkIndex=dummyNetworkChoice;
+        }
     }
-
 
     return networkIndex;
 }
