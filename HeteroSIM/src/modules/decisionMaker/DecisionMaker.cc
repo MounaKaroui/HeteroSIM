@@ -242,9 +242,6 @@ void DecisionMaker::handleMessage(cMessage *msg)
 
         }
     }
-
-   // handleLteLowerMsg(msg);
-
 }
 
 
@@ -256,21 +253,6 @@ DecisionMaker::~DecisionMaker()
     }
 
 }
-
-void DecisionMaker::handleLteLowerMsg(cMessage* msg)
-{
-    if(mode4)
-    {
-        if (msg->isName("CBR")) {
-            Cbr* cbrPkt = check_and_cast<Cbr*>(msg);
-            //double channel_load = cbrPkt->getCbr();
-            //emit(cbr_, channel_load);
-            delete cbrPkt;
-        }
-    }
-
-}
-
 
 
 

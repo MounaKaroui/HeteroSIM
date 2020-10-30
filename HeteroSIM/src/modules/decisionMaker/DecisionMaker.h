@@ -54,7 +54,6 @@ public:
     void sendToLower(cMessage* msg,int networkIndex);
     void sendToUpper(cMessage*  msg);
     void registerNodeToBinder();
-    void handleLteLowerMsg(cMessage* msg);
 
     string getNetworkProtocolName(int networkIndex);
     std::string convertListOfCriteriaToString(CollectStats::listAlternativeAttributes* listOfAlternativeAttributes);
