@@ -48,7 +48,7 @@ void CollectStats::initialize()
     delay0 =registerSignal("delay0");
     delay1 =registerSignal("delay1");
 
-    freshnessFactor=par("freshnessFactor").intValue();
+    gamma=par("gamma").intValue();
     sendInterval=0.0053;
 
 }
@@ -292,7 +292,7 @@ void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
     cv.push_back(Utilities::calculateCofficientOfVariation(list->availableBandwidth));
     cv.push_back(Utilities::calculateCofficientOfVariation(list->queueVacancy));
 
-    dltByInterfaceId[interfaceId]=exp(-1*Utilities::calculateMeanVec(cv)+log(freshnessFactor*sendInterval));
+    dltByInterfaceId[interfaceId]=exp(-1*Utilities::calculateMeanVec(cv)+log(gamma*sendInterval));
 
 }
 

@@ -84,7 +84,7 @@ public:
 protected:
     //NED parameters:
     std::string averageMethod;
-    int freshnessFactor;
+    int gamma;
 
     // Initialization and signal registration
     virtual void initialize();

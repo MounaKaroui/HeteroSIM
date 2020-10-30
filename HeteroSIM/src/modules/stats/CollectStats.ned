@@ -41,7 +41,7 @@ simple CollectStats like IStatistics
         @signal[delay1];
         @statistic[delay1](title="delay1"; source="delay1"; record=vector);
         
-        //string freshnessFactor=default("");
+        int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time 
         
 }
 
