@@ -44,6 +44,7 @@ void DecisionMaker::initialize()
     {
        dummyNetworkChoice=par("dummyNetworkChoice").intValue();
     }
+    lastDecision=-1;
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -159,7 +160,7 @@ double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAltern
 
 int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData ){
 
-    if(newDecision==lastDecision)
+    if( lastDecision==-1 ||  newDecision==lastDecision)
     {
         return newDecision;
     }
