@@ -112,7 +112,7 @@ protected:
     void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy);
     listOfCriteria* getSublistByDLT(int interfaceID);
     map<int,listOfCriteria*> getSublistByDLT();
-    listAlternativeAttributes applyAverageMethod(map<int,listOfCriteria*> dataSet);
+    listAlternativeAttributes* applyAverageMethod(map<int,listOfCriteria*> dataSet);
 
     //Print msg content
     void printMsg(std::string type, cMessage*  msg);

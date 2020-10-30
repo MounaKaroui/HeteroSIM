@@ -342,9 +342,9 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 
 
 
-CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int,listOfCriteria*> dataSet)
+CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<int,listOfCriteria*> dataSet)
 {
-    listAlternativeAttributes myList;
+    listAlternativeAttributes * myList = new listAlternativeAttributes();
 
 
     if(averageMethod==string("simple"))
@@ -355,7 +355,7 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             listAttr->delay=Utilities::calculateMeanVec(x.second->delay);
             listAttr->availableBandwidth=Utilities::calculateMeanVec(x.second->availableBandwidth);
             listAttr->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
-            myList.data.insert({x.first,listAttr});
+            myList->data.insert({x.first,listAttr});
         }
     }else if(averageMethod==string("ema"))
     {
@@ -371,7 +371,7 @@ CollectStats::listAlternativeAttributes CollectStats::applyAverageMethod(map<int
             listAttr->delay= vEMADelay.back() ;
             listAttr->availableBandwidth=vEMATransmissionRate.back();
             listAttr->queueVacancy=vEMAQueueVacancy.back();
-            myList.data.insert({x.first,listAttr});
+            myList->data.insert({x.first,listAttr});
         }
     }
     return myList;
@@ -383,8 +383,8 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
     // 1- get Data until NOW -DLT
     map<int,listOfCriteria*> dataSet= getSublistByDLT();
     // 2- Apply average method
-    listAlternativeAttributes a=applyAverageMethod(dataSet);
-    return &a;
+    listAlternativeAttributes* a=applyAverageMethod(dataSet);
+    return a;
 
 }
 
