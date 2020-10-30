@@ -138,7 +138,7 @@ std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlter
 
 double DecisionMaker::normalizeTh(double x1, double x2)
 {
-    return (x1-x2)/(x1+x2);
+    return abs(x1-x2)/(x1+x2);
 }
 
 double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData)
