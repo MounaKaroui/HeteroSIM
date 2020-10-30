@@ -84,6 +84,7 @@ public:
 
     CollectStats::listAlternativeAttributes* lastDecisionData;
     int lastDecision;
+    bool isPingPongReductionActive;
 
   private:
     cMessage* selfMsg;

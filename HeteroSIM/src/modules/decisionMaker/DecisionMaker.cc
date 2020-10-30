@@ -45,6 +45,7 @@ void DecisionMaker::initialize()
        dummyNetworkChoice=par("dummyNetworkChoice").intValue();
     }
     lastDecision=-1;
+    isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -204,12 +205,15 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                         pathToConfigFiles, "simple", simpleWeights,
                         criteriaType, trafficType, "TOPSIS");
+                if(isPingPongReductionActive)
+                {
                 // Ping pong effects
                 networkIndex=reducePingPongEffects(networkIndex,decisionData);
                 // Store last decision data
                 lastDecisionData=decisionData;
                 // Store last decision
                 lastDecision=networkIndex;
+                }
                 std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
                 emit(decisionSignal,networkIndex);
             }
