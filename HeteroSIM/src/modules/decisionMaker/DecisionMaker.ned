@@ -38,6 +38,8 @@ simple DecisionMaker
  		// Hysteresis per criteria
  		double hysteresisTh=default(0.5);
  		
+ 		bool isPingPongReductionActive=default(false);
+ 		
  		@signal[decision];
  		@statistic[decision](title="decision";source="decision"; record=vector); 
  		     

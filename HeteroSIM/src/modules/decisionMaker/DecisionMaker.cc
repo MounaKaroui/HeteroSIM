@@ -45,6 +45,7 @@ void DecisionMaker::initialize()
        dummyNetworkChoice=par("dummyNetworkChoice").intValue();
     }
     lastDecision=-1;
+    isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -138,7 +139,7 @@ std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlter
 
 double DecisionMaker::normalizeTh(double x1, double x2)
 {
-    return (x1-x2)/(x1+x2);
+    return abs(x1-x2)/(x1+x2);
 }
 
 double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData)
@@ -204,12 +205,15 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                         pathToConfigFiles, "simple", simpleWeights,
                         criteriaType, trafficType, "TOPSIS");
+                if(isPingPongReductionActive)
+                {
                 // Ping pong effects
                 networkIndex=reducePingPongEffects(networkIndex,decisionData);
                 // Store last decision data
                 lastDecisionData=decisionData;
                 // Store last decision
                 lastDecision=networkIndex;
+                }
                 std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
                 emit(decisionSignal,networkIndex);
             }
@@ -238,9 +242,6 @@ void DecisionMaker::handleMessage(cMessage *msg)
 
         }
     }
-
-   // handleLteLowerMsg(msg);
-
 }
 
 
@@ -252,21 +253,6 @@ DecisionMaker::~DecisionMaker()
     }
 
 }
-
-void DecisionMaker::handleLteLowerMsg(cMessage* msg)
-{
-    if(mode4)
-    {
-        if (msg->isName("CBR")) {
-            Cbr* cbrPkt = check_and_cast<Cbr*>(msg);
-            //double channel_load = cbrPkt->getCbr();
-            //emit(cbr_, channel_load);
-            delete cbrPkt;
-        }
-    }
-
-}
-
 
 
 
