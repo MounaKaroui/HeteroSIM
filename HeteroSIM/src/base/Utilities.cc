@@ -11,31 +11,31 @@ namespace Utilities{
 
 
 
-void calculateEMA(vector<double> vData, vector<double>& vEMA)
+void calculateEMA(const vector<double> *vData, vector<double>& vEMA)
 {
-    double beta = 2.0 / (1.0 + vData.size());
-    if (vData.size() > 0)
+    double beta = 2.0 / (1.0 + vData->size());
+    if (vData->size() > 0)
     {
     if (vEMA.size() == 0)
     {
-     vEMA.resize(vData.size());
-     vEMA.at(0) = vData.at(0);
+     vEMA.resize(vData->size());
+     vEMA.at(0) = vData->at(0);
     }
 
-    for (unsigned int i = 1; i < vData.size(); i++)
+    for (unsigned int i = 1; i < vData->size(); i++)
     {
-       vEMA.at(i) = beta * vData.at(i) + (1 - beta) * vEMA.at(i - 1);
+       vEMA.at(i) = beta * vData->at(i) + (1 - beta) * vEMA.at(i - 1);
     }
     }else{
-        vEMA.push_back(vData.back());
+        vEMA.push_back(vData->back());
     }
 
 }
 
 
-double calculateCofficientOfVariation(vector<double> v) {
+double calculateCofficientOfVariation(const vector<double> *v) {
 
-    if (v.size() != 0)
+    if (v->size() != 0)
         if(calculateMeanVec(v)!=0)
             return calculateStdVec(v) / calculateMeanVec(v);
         else
@@ -95,17 +95,17 @@ bool checkLteCtrlInfo(UserControlInfo* lteInfo)
                 && lteInfo->getFrameType() != GRANTPKT
                 && lteInfo->getFrameType() != HARQPKT);
 }
-double calculateStdVec(std::vector<double> v)
+double calculateStdVec(const std::vector<double> *v)
 {
     accumulator_set<double, stats<tag::variance> > acc;
-    for_each(v.begin(), v.end(), boost::bind<void>(boost::ref(acc), _1));
+    for_each(v->begin(), v->end(), boost::bind<void>(boost::ref(acc), _1));
     return std::sqrt(variance(acc));
 }
 
-double calculateMeanVec(std::vector<double> v)
+double calculateMeanVec(const std::vector<double> *v)
 {
     accumulator_set<double, stats<tag::mean> > acc;
-    for_each(v.begin(), v.end(), boost::bind<void>(boost::ref(acc), _1));
+    for_each(v->begin(), v->end(), boost::bind<void>(boost::ref(acc), _1));
     return mean(acc);
 }
 

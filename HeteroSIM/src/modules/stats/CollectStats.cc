@@ -67,8 +67,11 @@ void CollectStats::setInterfaceToProtocolMap()
 
 void CollectStats::initializeDLT()
 {
-    for(auto const & x: interfaceToProtocolMap)
-        dltByInterfaceId[x.first]=0;
+    for(auto const & x: interfaceToProtocolMap){
+        dltByInterfaceIdByCriterion[x.first]["delay"]=0;
+        dltByInterfaceIdByCriterion[x.first]["availableBandwidth"]=0;
+        dltByInterfaceIdByCriterion[x.first]["queueVacancy"]=0;
+    }
 }
 
 void CollectStats::registerSignals()
@@ -286,17 +289,14 @@ double CollectStats::getsendIntervalParam()
 void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {
     // update dtl according to coefficient of variation
-    std::vector<double> cv;
-
-    cv.push_back(Utilities::calculateCofficientOfVariation(list->delay));
-    cv.push_back(Utilities::calculateCofficientOfVariation(list->availableBandwidth));
-    cv.push_back(Utilities::calculateCofficientOfVariation(list->queueVacancy));
-
-    dltByInterfaceId[interfaceId]=exp(-1*Utilities::calculateMeanVec(cv)+log(gamma*sendInterval));
-
+    dltByInterfaceIdByCriterion[interfaceId]["delay"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delay)));
+    dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->availableBandwidth)));
+    dltByInterfaceIdByCriterion[interfaceId]["queueVacancy"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->queueVacancy)));
 }
 
-
+double CollectStats::getDLT(double CofficientOfVariation) {
+    return exp(-1 * CofficientOfVariation + log(gamma * sendInterval));
+}
 
 map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
 {
@@ -313,33 +313,48 @@ map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
 CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 
     listOfCriteria* rList = new listOfCriteria();
-    listOfCriteria* tmp = listOfCriteriaByInterfaceId[interfaceId];
-    simtime_t historyBound = NOW - SimTime(dltByInterfaceId[interfaceId]);
-    int statIndex;
-    int recentStatIndex = tmp->timeStamp.size() - 1;
 
-    for (statIndex = recentStatIndex; statIndex >= 0; statIndex--) {
-        if (tmp->timeStamp[statIndex] >= historyBound)
-            insertStatTuple(rList, tmp->timeStamp[statIndex],
-                    tmp->delay[statIndex], tmp->availableBandwidth[statIndex],
-                    tmp->queueVacancy[statIndex]);
-        else
-            break;
-    }
-    if (statIndex == recentStatIndex)
-        insertStatTuple(rList, tmp->timeStamp[recentStatIndex],
-                tmp->delay[recentStatIndex],
-                tmp->availableBandwidth[recentStatIndex],
-                tmp->queueVacancy[recentStatIndex]);
+    rList->delay= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->delay,dltByInterfaceIdByCriterion[interfaceId]["delay"] );
+    rList->availableBandwidth= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->availableBandwidth,dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"] );
+    rList->queueVacancy= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->queueVacancy,dltByInterfaceIdByCriterion[interfaceId]["queueVacancy"] );
 
     //update DLT
     updateDLT(rList, interfaceId);
+
+    //purge stats history
+    delete listOfCriteriaByInterfaceId[interfaceId]->delay;
+    delete listOfCriteriaByInterfaceId[interfaceId]->availableBandwidth;
+    delete listOfCriteriaByInterfaceId[interfaceId]->queueVacancy;
+    delete listOfCriteriaByInterfaceId[interfaceId];
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
     return rList;
 }
 
+map<simtime_t,double>* CollectStats::getSublistByDLTOfCriterion(map<simtime_t,double>* pCriterion,double pDlt){
 
+    map<simtime_t,double>* rMap = new map<simtime_t,double>();
+
+    vector <simtime_t>* timeStamps = Utilities::retrieveKeys(pCriterion);
+    int statIndex;
+    int recentStatIndex = timeStamps->size() - 1;
+    simtime_t historyBound = NOW - SimTime(pDlt);
+
+    for (statIndex = recentStatIndex; statIndex >= 0; statIndex--) {
+        simtime_t statRecordDate = (*timeStamps)[statIndex] ;
+        if (statRecordDate >= historyBound)
+           rMap->insert({statRecordDate,(*pCriterion)[statRecordDate]});
+        else
+            break;
+    }
+
+    if (statIndex == recentStatIndex){// no available stat in interval [Now-pHistoryBound, Now[
+        simtime_t recentOfOldStatsDate = (*timeStamps)[recentStatIndex] ;
+        rMap->insert({recentOfOldStatsDate,(*pCriterion)[recentOfOldStatsDate]});
+    }
+
+    return rMap ;
+}
 
 
 CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<int,listOfCriteria*> dataSet)
@@ -352,9 +367,9 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
         for (auto& x : dataSet)
         {
             alternativeAttributes* listAttr=new alternativeAttributes();
-            listAttr->delay=Utilities::calculateMeanVec(x.second->delay);
-            listAttr->availableBandwidth=Utilities::calculateMeanVec(x.second->availableBandwidth);
-            listAttr->queueVacancy=Utilities::calculateMeanVec(x.second->queueVacancy);
+            listAttr->delay=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->delay));
+            listAttr->availableBandwidth=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->availableBandwidth));
+            listAttr->queueVacancy=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->queueVacancy));
             myList->data.insert({x.first,listAttr});
         }
     }else if(averageMethod==string("ema"))
@@ -362,11 +377,11 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
         for (auto& x : dataSet)
         {
             std::vector<double> vEMADelay;
-            Utilities::calculateEMA(x.second->delay,vEMADelay);
+            Utilities::calculateEMA(Utilities::retrieveValues(x.second->delay),vEMADelay);
             std::vector<double> vEMATransmissionRate;
-            Utilities::calculateEMA(x.second->availableBandwidth,vEMATransmissionRate);
+            Utilities::calculateEMA(Utilities::retrieveValues(x.second->availableBandwidth),vEMATransmissionRate);
             std::vector<double> vEMAQueueVacancy;
-            Utilities::calculateEMA(x.second->queueVacancy,vEMAQueueVacancy);
+            Utilities::calculateEMA(Utilities::retrieveValues(x.second->queueVacancy),vEMAQueueVacancy);
             alternativeAttributes* listAttr=new alternativeAttributes();
             listAttr->delay= vEMADelay.back() ;
             listAttr->availableBandwidth=vEMATransmissionRate.back();
@@ -452,12 +467,20 @@ void CollectStats::recordStatTuple(int interfaceId, double delay, double transmi
 
 
 
-void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy){
-    list->timeStamp.push_back(timestamp);
-    list->delay.push_back(delay);
-    list->availableBandwidth.push_back(transmissionRate) ;
-    list->queueVacancy.push_back(queueVacancy) ;
+void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double queueVacancy){
 
+    // check and initialize list if necessary
+    if(!list->delay)
+        list->delay= new map<simtime_t,double>();
+    if(!list->availableBandwidth)
+        list->availableBandwidth = new  map<simtime_t,double>();
+    if(!list->queueVacancy)
+        list->queueVacancy= new  map<simtime_t,double>();
+
+
+    list->delay->insert({timestamp,delay});
+    list->availableBandwidth->insert({timestamp,availableBandwitdth});
+    list->queueVacancy->insert({timestamp,queueVacancy});
 }
 
 

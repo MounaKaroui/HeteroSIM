@@ -43,10 +43,9 @@ public:
 
     struct listOfCriteria{
 
-        vector<simtime_t> timeStamp;
-        vector<double>  delay;
-        vector<double>  availableBandwidth;
-        vector<double> queueVacancy; // TODO compute queueVacancy
+        map<simtime_t,double>*  delay;
+        map<simtime_t,double>*  availableBandwidth;
+        map<simtime_t,double>* queueVacancy; // TODO compute queueVacancy
     };
 
     struct alternativeAttributes
@@ -66,7 +65,7 @@ public:
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
-    map<int,double> dltByInterfaceId;
+    map<int,map<string,double>> dltByInterfaceIdByCriterion;
 
     template<typename T>
     void subscribeToSignal(std::string moduleName, simsignal_t sigName)
@@ -105,12 +104,14 @@ protected:
 
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);
+    double getDLT(double CofficientOfVariation);
     double getsendIntervalParam();
 
     //Network attributes processing
     void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);
-    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double transmissionRate, double queueVacancy);
+    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double queueVacancy);
     listOfCriteria* getSublistByDLT(int interfaceID);
+    map<simtime_t,double>* getSublistByDLTOfCriterion(map<simtime_t,double>* pCriterion,double pDlt);
     map<int,listOfCriteria*> getSublistByDLT();
     listAlternativeAttributes* applyAverageMethod(map<int,listOfCriteria*> dataSet);
 
