@@ -35,7 +35,7 @@ void DecisionMaker::initialize()
     criteriaType=par("criteriaType").stringValue();
     decisionSignal=registerSignal("decision");
     hysteresisTh=par("hysteresisTh").doubleValue();
-    index=1;
+
     if(mode4)
     {
         registerNodeToBinder();
@@ -46,7 +46,6 @@ void DecisionMaker::initialize()
        dummyNetworkChoice=par("dummyNetworkChoice").intValue();
     }
     isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
-    hysteresis.setName("hysteresis");
     lastDecision=-1;
 }
 
@@ -176,7 +175,7 @@ int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlt
     {
         double meanTh =calculateWeightedThresholdAverage(newDecisionData);
 
-        if(meanTh <= hysteresisTh)
+        if(meanTh > hysteresisTh)
             return newDecision;
        else
             return lastDecision;
