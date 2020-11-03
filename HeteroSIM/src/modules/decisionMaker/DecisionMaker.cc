@@ -35,6 +35,7 @@ void DecisionMaker::initialize()
     criteriaType=par("criteriaType").stringValue();
     decisionSignal=registerSignal("decision");
     hysteresisTh=par("hysteresisTh").doubleValue();
+    index=1;
     if(mode4)
     {
         registerNodeToBinder();
@@ -44,8 +45,9 @@ void DecisionMaker::initialize()
     {
        dummyNetworkChoice=par("dummyNetworkChoice").intValue();
     }
-    lastDecision=-1;
     isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
+    hysteresis.setName("hysteresis");
+    lastDecision=-1;
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -150,18 +152,23 @@ double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAltern
 
     for (auto& newData : newDecisionData->data)
     {
-        sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->availableBandwidth)*weight.at(0,0);
+        sumTh+=normalizeTh(newData.second->availableBandwidth,lastDecisionData->data[newData.first]->availableBandwidth)*weight.at(0,0);
         sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->delay)*weight.at(1,0);
-        sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->queueVacancy)*weight.at(2,0);
+        sumTh+=normalizeTh(newData.second->queueVacancy,lastDecisionData->data[newData.first]->queueVacancy)*weight.at(2,0);
     }
 
     return sumTh/weight.size(1);
 }
 
 
+
+
 int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData ){
 
-    if( lastDecision==-1 ||  newDecision==lastDecision)
+
+
+
+    if(lastDecision==-1 ||newDecision==lastDecision)
     {
         return newDecision;
     }
@@ -169,11 +176,15 @@ int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlt
     {
         double meanTh =calculateWeightedThresholdAverage(newDecisionData);
 
-        if(meanTh > hysteresisTh)
+        if(meanTh <= hysteresisTh)
             return newDecision;
        else
             return lastDecision;
     }
+
+
+
+
 }
 
 
