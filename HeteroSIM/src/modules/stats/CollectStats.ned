@@ -23,25 +23,25 @@ import inet.linklayer.ieee80211.mac.contract.IStatistics;
 
 simple CollectStats like IStatistics
 {
-    parameters:
-        
+    
+    parameters:    
         string interfaceToProtocolMapping = default("0:80211,1:80211,2:mode4");
         string averageMethod = default("ema"); // simple average or with ema
+        double sendPeriod=default(0.1);
+        int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time  
         
-        
+        // Statistics
         @signal[tr0];
-        @statistic[tr0](title="tr0"; source="tr0"; record=vector);
+        @statistic[tr0](title="tr0"; source="tr0"; record=vector,mean);
         
         @signal[tr1];
-        @statistic[tr1](title="tr1"; source="tr1"; record=vector);
+        @statistic[tr1](title="tr1"; source="tr1"; record=vector,mean);
         
         @signal[delay0];
-        @statistic[delay0](title="delay0"; source="delay0"; record=vector);
+        @statistic[delay0](title="delay0"; source="delay0"; record=vector,mean);
         
         @signal[delay1];
-        @statistic[delay1](title="delay1"; source="delay1"; record=vector);
-        
-        int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time 
-        
+        @statistic[delay1](title="delay1"; source="delay1"; record=vector,mean);
+       
 }
 

@@ -101,6 +101,7 @@ protected:
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
+    int getNumberOfTbFramesForTTI();
 
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);
@@ -121,8 +122,10 @@ protected:
     //Signals for stats
     simsignal_t tr0;
     simsignal_t tr1;
+
     simsignal_t delay0;
     simsignal_t delay1;
+
 };
 
 #endif

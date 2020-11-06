@@ -48,9 +48,9 @@ void CollectStats::initialize()
     delay0 =registerSignal("delay0");
     delay1 =registerSignal("delay1");
 
-    gamma=par("gamma").intValue();
-    sendInterval=0.0053;
 
+    gamma=par("gamma").intValue();
+    sendInterval=par("sendPeriod").doubleValue();
 }
 
 void CollectStats::setInterfaceToProtocolMap()
@@ -221,6 +221,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
                 //CBR
                  cbr = getWlanCBR(interfaceId);
+
                  //Transmission rate
                 availableBandwidth = getAvailableBandwidth(0,delay,cbr); //consider 0 bits are transmitted
                 // Queue vacancy
@@ -233,6 +234,13 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 
 
+int CollectStats::getNumberOfTbFramesForTTI()
+{
+    std::string phyModuleName = "^.lteNic.phy";
+    cModule* module = getModuleByPath(phyModuleName.c_str());
+    LtePhyVUeMode4* mPhyLayer=dynamic_cast<LtePhyVUeMode4*>(module);
+    return mPhyLayer->numberofTBFrames;
+}
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
@@ -262,8 +270,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             delay = SIMTIME_DBL(lteInterLayerDelay);
             // cbr
             cbr=getLteCBR();
+
             //Transmission rate
-            availableBandwidth = getAvailableBandwidth((PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl(),cbr);
+            availableBandwidth = getAvailableBandwidth(getNumberOfTbFramesForTTI()*(PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl(),cbr);
             // buffer vacancy
             queueVacancy=extractLteBufferVacancy();
 
