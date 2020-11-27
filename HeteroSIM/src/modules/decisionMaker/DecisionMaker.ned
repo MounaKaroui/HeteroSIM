@@ -34,14 +34,16 @@ simple DecisionMaker
         // pathToConfigFiles only used to read pair wise matrix
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
  		bool isDeciderActive=default(true); 
- 		int dummyNetworkChoice=default(0);     
+ 		volatile int dummyNetworkChoice=default(0);     
  		// Hysteresis per criteria
  		double hysteresisTh=default(0.5);
  		
  		bool isPingPongReductionActive=default(false);
+ 		bool withMovingDLT=default(true);
  		
+ 		double bernoulliProbability=default(0.5);
  		@signal[decision];
- 		@statistic[decision](title="decision";source="decision"; record=vector); 
+ 		@statistic[decision](title="decision";source="decision"; record=vector,stats); 
  		     
  		     
         gates:

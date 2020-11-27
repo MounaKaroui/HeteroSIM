@@ -67,7 +67,7 @@ public:
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
 
     simsignal_t decisionSignal;
-
+    bool withMovingDLT;
     double hysteresisTh;
     bool mode4;
     bool isDeciderActive;
@@ -85,6 +85,8 @@ public:
     int lastDecision;
     bool isPingPongReductionActive;
 
+    bool randomDecision;
+    double bernoulliProbability; // for Bernoulli random selection
   private:
     cMessage* selfMsg;
 

@@ -35,7 +35,7 @@ void DecisionMaker::initialize()
     criteriaType=par("criteriaType").stringValue();
     decisionSignal=registerSignal("decision");
     hysteresisTh=par("hysteresisTh").doubleValue();
-
+    withMovingDLT=par("withMovingDLT").boolValue();
     if(mode4)
     {
         registerNodeToBinder();
@@ -47,6 +47,7 @@ void DecisionMaker::initialize()
     }
     isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
     lastDecision=-1;
+    bernoulliProbability=par("bernoulliProbability");
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -165,8 +166,6 @@ double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAltern
 int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData ){
 
 
-
-
     if(lastDecision==-1 ||newDecision==lastDecision)
     {
         return newDecision;
@@ -180,9 +179,6 @@ int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlt
        else
             return lastDecision;
     }
-
-
-
 
 }
 
@@ -205,8 +201,13 @@ int DecisionMaker::takeDecision(cMessage* msg)
         {
             cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
             CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-            CollectStats::listAlternativeAttributes* decisionData= stats->prepareNetAttributes();
+            CollectStats::listAlternativeAttributes* decisionData;
+            if (!withMovingDLT) {
+                decisionData = stats->prepareDummyNetAttributes();
 
+            } else {
+                decisionData = stats->prepareNetAttributes();
+            }
             std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
             if(decisionDataStr!="")
             {
@@ -230,7 +231,8 @@ int DecisionMaker::takeDecision(cMessage* msg)
         }
         else
         {
-            networkIndex=dummyNetworkChoice;
+            networkIndex=bernoulli(bernoulliProbability) ;
+            emit(decisionSignal,networkIndex);
         }
     }
 
