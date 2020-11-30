@@ -77,6 +77,7 @@ public:
 
     //Final decision data to be used as an input for decider
     CollectStats::listAlternativeAttributes* prepareNetAttributes();
+    CollectStats::listAlternativeAttributes* prepareDummyNetAttributes();
 
     double sendInterval;
 
@@ -125,6 +126,9 @@ protected:
 
     simsignal_t delay0;
     simsignal_t delay1;
+
+    simsignal_t cbr0;
+    simsignal_t cbr1;
 
 };
 

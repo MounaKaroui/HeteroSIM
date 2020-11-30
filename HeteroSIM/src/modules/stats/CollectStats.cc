@@ -48,6 +48,9 @@ void CollectStats::initialize()
     delay0 =registerSignal("delay0");
     delay1 =registerSignal("delay1");
 
+    cbr0 =registerSignal("cbr0");
+    cbr1 =registerSignal("cbr1");
+
 
     gamma=par("gamma").intValue();
     sendInterval=par("sendPeriod").doubleValue();
@@ -189,6 +192,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
         //CBR
         cbr = getWlanCBR(interfaceId);
+        emit(cbr0,cbr);
 
         availableBandwidth = getAvailableBandwidth((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl(),cbr);
         // Queue vacancy
@@ -221,6 +225,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
                 //CBR
                  cbr = getWlanCBR(interfaceId);
+                 emit(cbr0,cbr);
 
                  //Transmission rate
                 availableBandwidth = getAvailableBandwidth(0,delay,cbr); //consider 0 bits are transmitted
@@ -270,7 +275,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             delay = SIMTIME_DBL(lteInterLayerDelay);
             // cbr
             cbr=getLteCBR();
-
+            emit(cbr1,cbr);
             //Transmission rate
             availableBandwidth = getAvailableBandwidth(getNumberOfTbFramesForTTI()*(PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl(),cbr);
             // buffer vacancy
@@ -401,6 +406,22 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
     return myList;
 }
 
+CollectStats::listAlternativeAttributes* CollectStats::prepareDummyNetAttributes()
+{
+    listAlternativeAttributes * myList = new listAlternativeAttributes();
+    for (auto& x : listOfCriteriaByInterfaceId)
+    {
+        alternativeAttributes* listAttr=new alternativeAttributes();
+        vector<double>* d=Utilities::retrieveValues(x.second->delay);
+        vector<double>* avb=Utilities::retrieveValues(x.second->availableBandwidth);
+        vector<double>* qc=Utilities::retrieveValues(x.second->queueVacancy);
+        listAttr->delay=d->back();
+        listAttr->availableBandwidth=avb->back();
+        listAttr->queueVacancy=qc->back();
+        myList->data.insert({x.first,listAttr});
+    }
+    return myList;
+}
 
 CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 {

@@ -42,6 +42,11 @@ simple CollectStats like IStatistics
         
         @signal[delay1];
         @statistic[delay1](title="delay1"; source="delay1"; record=vector,mean);
-       
+              
+        @signal[cbr0];
+        @statistic[cbr0](title="cbr0"; source="cbr0"; record=vector,mean);
+        
+        @signal[cbr1];
+        @statistic[cbr1](title="cbr1"; source="cbr1"; record=vector,mean);
 }
 
