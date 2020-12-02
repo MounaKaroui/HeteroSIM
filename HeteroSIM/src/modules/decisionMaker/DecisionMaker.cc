@@ -47,6 +47,12 @@ void DecisionMaker::initialize()
     }
     isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
     lastDecision=-1;
+
+    cModule* host = inet::getContainingNode(this);
+    std::string name=host->getFullName();
+    int nodeId=Utilities::extractNumber(name.c_str());
+    generator.seed(nodeId);
+    distribution.param(std::bernoulli_distribution::param_type(0.8));
 }
 
 void DecisionMaker::registerNodeToBinder()
