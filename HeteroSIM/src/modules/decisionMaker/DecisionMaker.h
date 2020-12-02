@@ -87,6 +87,8 @@ public:
     int lastDecision;
     bool isPingPongReductionActive;
 
+    std::default_random_engine generator;
+    std::bernoulli_distribution distribution;
   private:
     cMessage* selfMsg;
 

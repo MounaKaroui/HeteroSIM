@@ -232,23 +232,11 @@ int DecisionMaker::takeDecision(cMessage* msg)
         {
             if(isRandomDecision)
             {
-                const int temp=500;
+                if (distribution(generator))
+                    networkIndex=1;
+                else
+                    networkIndex=0;
 
-                //The random number generator
-                default_random_engine generator(1000);
-
-                //Initialising the bernoulli distribution
-                bernoulli_distribution distribution(0.7);
-
-                for (int i = 0; i < temp; ++i)
-                {
-                    // checking for true condition
-                    if (distribution(generator))
-                        networkIndex=1;
-                    else
-                        networkIndex=0;
-                    std::cout<< networkIndex << endl;
-                }
                 emit(decisionSignal,networkIndex);
             }else{
                 networkIndex=dummyNetworkChoice;
