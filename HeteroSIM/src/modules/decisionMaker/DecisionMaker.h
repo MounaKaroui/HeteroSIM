@@ -72,6 +72,7 @@ public:
     bool mode4;
     bool isDeciderActive;
     int dummyNetworkChoice;
+    bool isRandomDecision;
 
     std::string simpleWeights;
     std::string criteriaType;
@@ -85,8 +86,6 @@ public:
     int lastDecision;
     bool isPingPongReductionActive;
 
-    bool randomDecision;
-    double bernoulliProbability; // for Bernoulli random selection
   private:
     cMessage* selfMsg;
 

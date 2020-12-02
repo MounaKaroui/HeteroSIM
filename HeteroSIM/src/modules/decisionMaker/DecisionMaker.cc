@@ -41,13 +41,12 @@ void DecisionMaker::initialize()
         registerNodeToBinder();
     }
     isDeciderActive=par("isDeciderActive").boolValue();
-    if(!isDeciderActive)
+    isRandomDecision=par("isRandomDecision").boolValue();
     {
        dummyNetworkChoice=par("dummyNetworkChoice").intValue();
     }
     isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
     lastDecision=-1;
-    bernoulliProbability=par("bernoulliProbability");
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -231,8 +230,15 @@ int DecisionMaker::takeDecision(cMessage* msg)
         }
         else
         {
-            networkIndex=bernoulli(bernoulliProbability) ;
+            if(isRandomDecision)
+            {
+            networkIndex=rand()%2;
+            std::cout<<networkIndex<<endl;
             emit(decisionSignal,networkIndex);
+            }else{
+                networkIndex=dummyNetworkChoice;
+                std::cout<<networkIndex<<endl;
+            }
         }
     }
 
