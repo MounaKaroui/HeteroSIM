@@ -24,6 +24,7 @@
 #include "../../base/Utilities.h"
 #include "../../modules/messages/Messages_m.h"
 #include "../stats/CollectStats.h"
+#include <random>
 
 using namespace omnetpp;
 using namespace inet;
