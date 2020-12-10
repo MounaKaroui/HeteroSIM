@@ -1,6 +1,6 @@
 # HeteroSIM
 
-A framework to simulate heterogenuous networks
+An OMNeT++ project to simulate heterogenuous networks
 
 
 ## Installation commands:
