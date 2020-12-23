@@ -27,8 +27,12 @@ simple CollectStats like IStatistics
     parameters:    
         string interfaceToProtocolMapping = default("0:80211,1:80211,2:mode4");
         string averageMethod = default("ema"); // simple average or with ema
-        double sendPeriod=default(0.1);
+        double sendPeriod @unit(s) =default(0.1s) ;
         int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time  
+        
+        // Mode 4 params, for MCS=7, Msg size =190 B
+        double numAvailableRb=default(13) ;
+        double codeRate=default(0.58);
         
         // Statistics
         @signal[tr0];

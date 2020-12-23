@@ -54,6 +54,8 @@ void CollectStats::initialize()
 
     gamma=par("gamma").intValue();
     sendInterval=par("sendPeriod").doubleValue();
+    numAvailableRb=par("numAvailableRb").doubleValue();
+    codeRate=par("codeRate").doubleValue();
 }
 
 void CollectStats::setInterfaceToProtocolMap()
@@ -155,14 +157,15 @@ double CollectStats::extractQueueVacancy(int interfaceId)
     return queueVacancy;
 }
 
-double CollectStats::getLteCBR()
+
+
+double CollectStats::getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr)
 {
-    cModule* host=getContainingNode(this);
-    std::string moduleName=string(host->getFullName())+".lteNic.phy";
-    cModule* phyModule=getModuleByPath(moduleName.c_str());
-    LtePhyVUeMode4* lteMac=dynamic_cast<LtePhyVUeMode4*>(phyModule);
-    return lteMac->mCBR;
+
+    return (1-cbr)*(dataLength/radioFrameTime);
 }
+
+
 
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
@@ -193,7 +196,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         //CBR
         cbr = getWlanCBR(interfaceId);
         emit(cbr0,cbr);
-
         availableBandwidth = getAvailableBandwidth((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl(),cbr);
         // Queue vacancy
         queueVacancy=extractQueueVacancy(interfaceId);
@@ -226,7 +228,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //CBR
                  cbr = getWlanCBR(interfaceId);
                  emit(cbr0,cbr);
-
                  //Transmission rate
                 availableBandwidth = getAvailableBandwidth(0,delay,cbr); //consider 0 bits are transmitted
                 // Queue vacancy
@@ -238,6 +239,14 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 }
 
 
+double CollectStats::getLteCBR()
+{
+    cModule* host=getContainingNode(this);
+    std::string moduleName=string(host->getFullName())+".lteNic.phy";
+    cModule* phyModule=getModuleByPath(moduleName.c_str());
+    LtePhyVUeMode4* lteMac=dynamic_cast<LtePhyVUeMode4*>(phyModule);
+    return lteMac->mCBR;
+}
 
 int CollectStats::getNumberOfTbFramesForTTI()
 {
@@ -246,6 +255,15 @@ int CollectStats::getNumberOfTbFramesForTTI()
     LtePhyVUeMode4* mPhyLayer=dynamic_cast<LtePhyVUeMode4*>(module);
     return mPhyLayer->numberofTBFrames;
 }
+
+double CollectStats::getLteAvailableBandwidth(cMessage* msg, double cbr)
+{
+    LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
+    double numRbTot=816; // for 10 Mhz
+    double datarate=(PK(msg)->getBitLength()*numRbTot/20)/(numAvailableRb*lteAirFrame->getDuration().dbl());
+    return  (1-cbr)*datarate*codeRate;
+}
+
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
@@ -277,7 +295,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             cbr=getLteCBR();
             emit(cbr1,cbr);
             //Transmission rate
-            availableBandwidth = getAvailableBandwidth(getNumberOfTbFramesForTTI()*(PK(msg)->getBitLength()),  (lteAirFrame->getDuration()).dbl(),cbr);
+            availableBandwidth = getLteAvailableBandwidth(lteAirFrame,cbr);
             // buffer vacancy
             queueVacancy=extractLteBufferVacancy();
 
@@ -472,11 +490,6 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
     std::cout<< simTime()<< ", "<< type  <<" id=" << msg->getTreeId()  << " ,tree id= " << msg->getTreeId()<<", Msg name=" << msg->getName()
                   << ", Class Name=" << msg->getClassName()
                   << ", Owner=" << msg->getOwner()->getName() << endl;
-}
-
-double CollectStats::getAvailableBandwidth(int64_t dataLength, double sendInterval, double cbr)
-{
-    return (1-cbr)*(dataLength/sendInterval); // bps
 }
 
 
