@@ -256,18 +256,27 @@ int CollectStats::getNumberOfTbFramesForTTI()
     return mPhyLayer->numberofTBFrames;
 }
 
-double CollectStats::getLteAvailableBandwidth(cMessage* msg, double cbr)
+double CollectStats::getLteDataRate(cMessage* msg)
 {
     LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
-    double numRbTot=816; // for 10 Mhz
-    double datarate=(PK(msg)->getBitLength()*numRbTot/20)/(numAvailableRb*lteAirFrame->getDuration().dbl());
-    return  (1-cbr)*datarate*codeRate;
+    UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+    RbMap grantedBlocks=lteInfo->getGrantedBlocks();
+
+    double totalRb=check_and_cast<UserControlInfo_Base*>(lteInfo)->getTotalGrantedBlocks();
+    double datarate,sumAvailableRB=0;
+    for (const auto &pair : grantedBlocks[MACRO]){
+        Band b=pair.first;
+        sumAvailableRB+=pair.second;
+    }
+    double msgLength=check_and_cast<cPacket*>(msg)->getBitLength();
+    datarate=(msgLength*totalRb)/(sumAvailableRB*lteAirFrame->getDuration().dbl());
+    return  datarate;
 }
 
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
-    double delay, availableBandwidth,cbr, queueVacancy;
+    double delay, availableBandwidth,cbr, queueVacancy, datarate;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
@@ -280,6 +289,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
         }
     }
+
 
     if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) { // when the  packet comes to the Phy layer for transmission
         LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
@@ -295,7 +305,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             cbr=getLteCBR();
             emit(cbr1,cbr);
             //Transmission rate
-            availableBandwidth = getLteAvailableBandwidth(lteAirFrame,cbr);
+            availableBandwidth =(1-cbr)*getLteDataRate(msg);
             // buffer vacancy
             queueVacancy=extractLteBufferVacancy();
 
