@@ -256,21 +256,29 @@ int CollectStats::getNumberOfTbFramesForTTI()
     return mPhyLayer->numberofTBFrames;
 }
 
-double CollectStats::getLteDataRate(cMessage* msg)
+double CollectStats::getAllocatedBlocks(std::map<Band, unsigned int>  RbPerLogicalBand)
+{
+       double allocatedRbs=0;
+       for (const auto &pair : RbPerLogicalBand) // for each logical band
+       {
+           allocatedRbs+=RbPerLogicalBand[pair.first]; //required Rbs for packet transmission
+       }
+       return allocatedRbs;
+}
+
+double CollectStats::getLteAvailableBandwidth(cMessage* msg, double cbr)
 {
     LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
     UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
     RbMap grantedBlocks=lteInfo->getGrantedBlocks();
-
-    double totalRb=check_and_cast<UserControlInfo_Base*>(lteInfo)->getTotalGrantedBlocks();
-    double datarate,sumAvailableRB=0;
-    for (const auto &pair : grantedBlocks[MACRO]){
-        Band b=pair.first;
-        sumAvailableRB+=pair.second;
-    }
-    double msgLength=check_and_cast<cPacket*>(msg)->getBitLength();
-    datarate=(msgLength*totalRb)/(sumAvailableRB*lteAirFrame->getDuration().dbl());
-    return  datarate;
+    // Determine allocated blocks
+      double allocatedRbs=getAllocatedBlocks(grantedBlocks[MACRO]);
+    // Get available blocks
+    double availableRbs=check_and_cast<UserControlInfo_Base*>(lteInfo)->getTotalGrantedBlocks();
+    // data rate
+    double datarate=(PK(msg)->getBitLength()*availableRbs)/(allocatedRbs*lteAirFrame->getDuration().dbl());
+    // Available bandwidth
+    return  (1-cbr)*datarate;
 }
 
 
@@ -305,10 +313,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             cbr=getLteCBR();
             emit(cbr1,cbr);
             //Transmission rate
-            availableBandwidth =(1-cbr)*getLteDataRate(msg);
+            availableBandwidth =getLteAvailableBandwidth(msg,cbr);
             // buffer vacancy
             queueVacancy=extractLteBufferVacancy();
-
             recordStatTuple(interfaceId,delay,availableBandwidth,queueVacancy) ;
         }
     }
