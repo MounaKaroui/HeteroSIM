@@ -10,7 +10,7 @@
 		
 	<RestrictResourceReservationPeriodList>
 		<RestrictResourceReservationPeriod>
-			<parameter name="rri" type="double" value="0.02"/>
+			<parameter name="rri" type="double" value="0.2"/>
 		</RestrictResourceReservationPeriod>
 	</RestrictResourceReservationPeriodList>	
 				
