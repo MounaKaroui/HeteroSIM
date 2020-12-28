@@ -41,6 +41,7 @@ class CollectStats : public cListener, public cSimpleModule
 
 public:
 
+    LteAmc *amc_;
     struct listOfCriteria{
 
         map<simtime_t,double>*  delay;
@@ -80,8 +81,6 @@ public:
     CollectStats::listAlternativeAttributes* prepareDummyNetAttributes();
 
     double sendInterval;
-    double numAvailableRb;
-    double codeRate;
 
 protected:
     //NED parameters:
@@ -101,13 +100,13 @@ protected:
     double extractLteBufferVacancy();
     double getLteCBR();
     double getAllocatedBlocks(std::map<Band, unsigned int>  RbPerLogicalBand);
+    double  getLteDataRate(cMessage* msg);
+    int getNumberOfTbFramesForTTI();
     double getLteAvailableBandwidth(cMessage* msg, double cbr);
-
     double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
-    int getNumberOfTbFramesForTTI();
 
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);

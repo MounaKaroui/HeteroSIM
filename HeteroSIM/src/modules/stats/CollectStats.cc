@@ -54,8 +54,6 @@ void CollectStats::initialize()
 
     gamma=par("gamma").intValue();
     sendInterval=par("sendPeriod").doubleValue();
-    numAvailableRb=par("numAvailableRb").doubleValue();
-    codeRate=par("codeRate").doubleValue();
 }
 
 void CollectStats::setInterfaceToProtocolMap()
@@ -158,7 +156,6 @@ double CollectStats::extractQueueVacancy(int interfaceId)
 }
 
 
-
 double CollectStats::getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr)
 {
 
@@ -248,13 +245,6 @@ double CollectStats::getLteCBR()
     return lteMac->mCBR;
 }
 
-int CollectStats::getNumberOfTbFramesForTTI()
-{
-    std::string phyModuleName = "^.lteNic.phy";
-    cModule* module = getModuleByPath(phyModuleName.c_str());
-    LtePhyVUeMode4* mPhyLayer=dynamic_cast<LtePhyVUeMode4*>(module);
-    return mPhyLayer->numberofTBFrames;
-}
 
 double CollectStats::getAllocatedBlocks(std::map<Band, unsigned int>  RbPerLogicalBand)
 {
@@ -266,19 +256,37 @@ double CollectStats::getAllocatedBlocks(std::map<Band, unsigned int>  RbPerLogic
        return allocatedRbs;
 }
 
-double CollectStats::getLteAvailableBandwidth(cMessage* msg, double cbr)
+int CollectStats::getNumberOfTbFramesForTTI()
+{
+    std::string phyModuleName = "^.lteNic.phy";
+    cModule* module = getModuleByPath(phyModuleName.c_str());
+    LtePhyVUeMode4* mPhyLayer=dynamic_cast<LtePhyVUeMode4*>(module);
+    return mPhyLayer->numberofTBFrames;
+}
+
+
+double CollectStats::getLteDataRate(cMessage* msg)
 {
     LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
     UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
     RbMap grantedBlocks=lteInfo->getGrantedBlocks();
     // Determine allocated blocks
-      double allocatedRbs=getAllocatedBlocks(grantedBlocks[MACRO]);
+    double allocatedRbs=getAllocatedBlocks(grantedBlocks[MACRO]);
     // Get available blocks
-    double availableRbs=check_and_cast<UserControlInfo_Base*>(lteInfo)->getTotalGrantedBlocks();
+    int availableRbs=check_and_cast<UserControlInfo_Base*>(lteInfo)->getTotalGrantedBlocks();
     // data rate
-    double datarate=(PK(msg)->getBitLength()*availableRbs)/(allocatedRbs*lteAirFrame->getDuration().dbl());
+   return (PK(msg)->getBitLength()*availableRbs)/(allocatedRbs*lteAirFrame->getDuration().dbl());
+}
+
+double CollectStats::getLteAvailableBandwidth(cMessage* msg, double cbr)
+{
+    LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
+    LteDeployer* deployer=getDeployer();
+    int totalRb=deployer->getNumRbUl();
+    int symbols=deployer->getRbxUl();
+    int subcarriers=deployer->getRbyUl();
     // Available bandwidth
-    return  (1-cbr)*datarate;
+    return (1-cbr)*(totalRb*subcarriers*symbols)/(lteAirFrame->getDuration().dbl());
 }
 
 
