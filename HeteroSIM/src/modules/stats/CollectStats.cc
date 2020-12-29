@@ -246,53 +246,12 @@ double CollectStats::getLteCBR()
 }
 
 
-double CollectStats::getAllocatedBlocks(std::map<Band, unsigned int>  RbPerLogicalBand)
-{
-       double allocatedRbs=0;
-       for (const auto &pair : RbPerLogicalBand) // for each logical band
-       {
-           allocatedRbs+=RbPerLogicalBand[pair.first]; //required Rbs for packet transmission
-       }
-       return allocatedRbs;
-}
 
-int CollectStats::getNumberOfTbFramesForTTI()
-{
-    std::string phyModuleName = "^.lteNic.phy";
-    cModule* module = getModuleByPath(phyModuleName.c_str());
-    LtePhyVUeMode4* mPhyLayer=dynamic_cast<LtePhyVUeMode4*>(module);
-    return mPhyLayer->numberofTBFrames;
-}
-
-
-double CollectStats::getLteDataRate(cMessage* msg)
-{
-    LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
-    UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-    RbMap grantedBlocks=lteInfo->getGrantedBlocks();
-    // Determine allocated blocks
-    double allocatedRbs=getAllocatedBlocks(grantedBlocks[MACRO]);
-    // Get available blocks
-    int availableRbs=check_and_cast<UserControlInfo_Base*>(lteInfo)->getTotalGrantedBlocks();
-    // data rate
-   return (PK(msg)->getBitLength()*availableRbs)/(allocatedRbs*lteAirFrame->getDuration().dbl());
-}
-
-double CollectStats::getLteAvailableBandwidth(cMessage* msg, double cbr)
-{
-    LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
-    LteDeployer* deployer=getDeployer();
-    int totalRb=deployer->getNumRbUl();
-    int symbols=deployer->getRbxUl();
-    int subcarriers=deployer->getRbyUl();
-    // Available bandwidth
-    return (1-cbr)*(totalRb*subcarriers*symbols)/(lteAirFrame->getDuration().dbl());
-}
 
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
-    double delay, availableBandwidth,cbr, queueVacancy, datarate;
+    double delay, availableBandwidth,cbr, queueVacancy;
 
     if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
         listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
@@ -321,7 +280,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             cbr=getLteCBR();
             emit(cbr1,cbr);
             //Transmission rate
-            availableBandwidth =getLteAvailableBandwidth(msg,cbr);
+            availableBandwidth =getAvailableBandwidth((PK(msg)->getBitLength()+24),lteAirFrame->getDuration().dbl(), cbr);
             // buffer vacancy
             queueVacancy=extractLteBufferVacancy();
             recordStatTuple(interfaceId,delay,availableBandwidth,queueVacancy) ;

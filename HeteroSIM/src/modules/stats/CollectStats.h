@@ -99,10 +99,7 @@ protected:
     double getWlanCBR(int interfaceId);
     double extractLteBufferVacancy();
     double getLteCBR();
-    double getAllocatedBlocks(std::map<Band, unsigned int>  RbPerLogicalBand);
-    double  getLteDataRate(cMessage* msg);
-    int getNumberOfTbFramesForTTI();
-    double getLteAvailableBandwidth(cMessage* msg, double cbr);
+
     double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
