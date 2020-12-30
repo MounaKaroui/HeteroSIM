@@ -241,12 +241,33 @@ double CollectStats::getLteCBR()
     cModule* host=getContainingNode(this);
     std::string moduleName=string(host->getFullName())+".lteNic.phy";
     cModule* phyModule=getModuleByPath(moduleName.c_str());
-    LtePhyVUeMode4* lteMac=dynamic_cast<LtePhyVUeMode4*>(phyModule);
-    return lteMac->mCBR;
+    LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
+    return ltePhy->mCBR;
 }
 
+int CollectStats::getLteMcs()
+{
+     cModule* host=getContainingNode(this);
+     std::string moduleName=string(host->getFullName())+".lteNic.phy";
+     cModule* phyModule=getModuleByPath(moduleName.c_str());
+     LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
+     return ltePhy->getSciGrant()->getMcs();
 
+}
+int CollectStats::getNumberBitsPerSymbol(int mcs)
+{
+    if(mcs>=0 && mcs<11)
+        return 2;
+    else
+        return 4; /// (mcs>=11 && mcs<=20)
+}
 
+double CollectStats::getLteAvailableBandwidth(double cbr)
+{
+    LteDeployer* deployer=getDeployer();
+    int totalRb=deployer->getNumRbUl();
+    return (1-cbr)*totalRb*9*14*getNumberBitsPerSymbol(getLteMcs())*1000;
+}
 
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
@@ -280,7 +301,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             cbr=getLteCBR();
             emit(cbr1,cbr);
             //Transmission rate
-            availableBandwidth =getAvailableBandwidth((PK(msg)->getBitLength()+24),lteAirFrame->getDuration().dbl(), cbr);
+            availableBandwidth =getLteAvailableBandwidth(cbr);
             // buffer vacancy
             queueVacancy=extractLteBufferVacancy();
             recordStatTuple(interfaceId,delay,availableBandwidth,queueVacancy) ;

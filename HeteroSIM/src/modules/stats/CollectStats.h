@@ -100,6 +100,10 @@ protected:
     double extractLteBufferVacancy();
     double getLteCBR();
 
+    int getNumberBitsPerSymbol(int mcs);
+    int getLteMcs();
+    double getLteAvailableBandwidth(double cbr);
+
     double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
