@@ -100,7 +100,8 @@ protected:
     double extractLteBufferVacancy();
     double getLteCBR();
 
-    double getMaximumCapacity();
+    int getLteMcs();
+    double getCapacity();
 
     double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);

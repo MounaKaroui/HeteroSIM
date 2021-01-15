@@ -245,14 +245,36 @@ double CollectStats::getLteCBR()
     return ltePhy->mCBR;
 }
 
-
-double CollectStats::getMaximumCapacity()
+int CollectStats::getLteMcs()
 {
-    cModule* host=getContainingNode(this);
-    std::string moduleName=string(host->getFullName())+".lteNic.mac";
-    cModule* macModule=getModuleByPath(moduleName.c_str());
-    LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
-    return lteMac->maximumCapacity_;
+     cModule* host=getContainingNode(this);
+     std::string moduleName=string(host->getFullName())+".lteNic.phy";
+     cModule* phyModule=getModuleByPath(moduleName.c_str());
+     LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
+     return ltePhy->getSciGrant()->getMcs();
+}
+
+double CollectStats::getCapacity()
+{
+        cModule* host=getContainingNode(this);
+        std::string moduleName=string(host->getFullName())+".lteNic.mac";
+        cModule* macModule=getModuleByPath(moduleName.c_str());
+        LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
+
+        LteMod mod = _QPSK;
+        if (lteMac->maxMCSPSSCH_ > 9 && lteMac->maxMCSPSSCH_ < 17)
+        {
+           mod = _16QAM;
+        }
+        else if (lteMac->maxMCSPSSCH_ > 16 && lteMac->maxMCSPSSCH_ < 29 )
+        {
+           mod = _64QAM;
+        }
+
+        unsigned int i = (mod == _QPSK ? 0 : (mod == _16QAM ? 9 : (mod == _64QAM ? 15 : 0)));
+
+        const unsigned int* tbsVect = itbs2tbs(mod, SINGLE_ANTENNA_PORT0, 1, getLteMcs()-i);
+        return tbsVect[(lteMac->numSubchannels_*lteMac->subchannelSize_)-1];
 }
 
 
@@ -288,7 +310,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             cbr=getLteCBR();
             emit(cbr1,cbr);
             availableBandwidth = getAvailableBandwidth(
-                getMaximumCapacity(),
+                    getCapacity(),
                 lteAirFrame->getDuration().dbl(), cbr);
 
             // buffer vacancy
