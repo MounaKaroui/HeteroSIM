@@ -262,18 +262,19 @@ double CollectStats::getCapacity()
         LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
 
         LteMod mod = _QPSK;
-        if (lteMac->maxMCSPSSCH_ > 9 && lteMac->maxMCSPSSCH_ < 17)
+        int mcs=getLteMcs();
+        if (mcs > 9 && mcs < 17)
         {
            mod = _16QAM;
         }
-        else if (lteMac->maxMCSPSSCH_ > 16 && lteMac->maxMCSPSSCH_ < 29 )
+        else if (mcs> 16 && mcs < 29 )
         {
            mod = _64QAM;
         }
 
         unsigned int i = (mod == _QPSK ? 0 : (mod == _16QAM ? 9 : (mod == _64QAM ? 15 : 0)));
 
-        const unsigned int* tbsVect = itbs2tbs(mod, SINGLE_ANTENNA_PORT0, 1, getLteMcs()-i);
+        const unsigned int* tbsVect = itbs2tbs(mod, SINGLE_ANTENNA_PORT0, 1, mcs-i);
         return tbsVect[(lteMac->numSubchannels_*lteMac->subchannelSize_)-1];
 }
 
