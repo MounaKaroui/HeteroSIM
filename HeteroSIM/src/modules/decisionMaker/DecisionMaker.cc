@@ -52,7 +52,8 @@ void DecisionMaker::initialize()
     std::string name=host->getFullName();
     int nodeId=Utilities::extractNumber(name.c_str());
     generator.seed(nodeId);
-    distribution.param(std::bernoulli_distribution::param_type(0.8));
+    distribution.param(std::bernoulli_distribution::param_type(0.5));
+
 }
 
 void DecisionMaker::registerNodeToBinder()
@@ -75,13 +76,10 @@ void DecisionMaker::setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIn
     string networkTypeName=getNetworkProtocolName(networkIndex);
 
     if (networkTypeName.find("802") == 0)  { // IEEE 802 protocol family have common ctrlInfo
-
         cModule* host = inet::getContainingNode(this);
         msg->setControlInfo(Utilities::Ieee802CtrlInfo(host->getFullName()));
-
     } else if (networkTypeName == "mode4") {
         msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
-
     } else
         throw cRuntimeError(string("Unknown protocol name '" + networkTypeName + "'").c_str());
 
@@ -217,7 +215,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
             if(decisionDataStr!="")
             {
                 // MCDM decision
-                std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
+                //std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
                 networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                         pathToConfigFiles, "simple", simpleWeights,
                         criteriaType, trafficType, "TOPSIS");
@@ -230,6 +228,11 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 // Store last decision
                 lastDecision=networkIndex;
                 }
+                cModule* host = inet::getContainingNode(this);
+                std::string name=host->getFullName();
+                int nodeId=Utilities::extractNumber(name.c_str());
+                std::cout<< "Node Id= " << nodeId << "\n"<< endl;
+
                 std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
                 emit(decisionSignal,networkIndex);
             }
@@ -243,16 +246,24 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 else
                     networkIndex=0;
 
+                cModule* host = inet::getContainingNode(this);
+                std::string name=host->getFullName();
+                int nodeId=Utilities::extractNumber(name.c_str());
+                std::cout<< "Node Id= " << nodeId << "\n"<< endl;
+                std::cout<< "The random network is "<< networkIndex <<"\n" << endl;
                 emit(decisionSignal,networkIndex);
             }else{
                 networkIndex=dummyNetworkChoice;
-                std::cout<<networkIndex<<endl;
+                std::cout<< "The dummy choice is "<< networkIndex <<"\n" << endl;
             }
         }
     }
 
     return networkIndex;
 }
+
+
+
 
 
 void DecisionMaker::handleMessage(cMessage *msg)
