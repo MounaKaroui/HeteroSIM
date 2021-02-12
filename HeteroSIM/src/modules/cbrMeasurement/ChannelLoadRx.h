@@ -14,9 +14,13 @@ public:
 
 protected:
     void initialize(int stage) override;
+    void handleMessage(omnetpp::cMessage*) override;
     void recomputeMediumFree() override;
 
 private:
+    omnetpp::simtime_t mChannelReportInterval;
+    omnetpp::cMessage* mChannelReportTrigger;
+    artery::ChannelLoadSampler mAsyncChannelLoadSampler;
     bool mCbrWithTx = false;
 };
 

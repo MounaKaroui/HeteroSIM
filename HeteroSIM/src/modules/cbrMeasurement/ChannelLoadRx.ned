@@ -8,6 +8,9 @@ simple ChannelLoadRx extends Rx
         @class(ChannelLoadRx);
         @signal[ChannelLoad](type=double);
         @statistic[ChannelLoad](record=timeavg,vector?);
-
+        
+        
+        bool asyncChannelReport = default(false);
+        double asyncChannelReportInterval @unit(s) = default(100ms);
         bool cbrWithTx = default(false);
 }
