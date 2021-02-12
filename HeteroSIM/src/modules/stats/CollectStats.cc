@@ -27,6 +27,7 @@
 #include "../decisionMaker/DecisionMaker.h"
 #include "common/LteCommon.h"
 #include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
+#include "../cbrMeasurement/ChannelLoadRx.h"
 
 
 Define_Module(CollectStats);
@@ -50,6 +51,8 @@ void CollectStats::initialize()
 
     cbr0 =registerSignal("cbr0");
     cbr1 =registerSignal("cbr1");
+
+    channelLoad0=registerSignal("channelLoad0");
 
 
     gamma=par("gamma").intValue();
@@ -94,7 +97,7 @@ void CollectStats::registerSignals()
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_PACKET_DROP);
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_LINK_BREAK);
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal); //TODO seek into replacing this signal by NF_PACKET_DROP --> modification of CSMA.cc
-
+            subscribeToSignal<ChannelLoadRx>(macModuleName+".rx", ChannelLoadRx::ChannelLoadSignal);
         }
         else if(x.second=="mode4")
         {
@@ -468,6 +471,12 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 
 }
 
+void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, double value, cObject*)
+{
+    if (signal == ChannelLoadRx::ChannelLoadSignal) {
+        emit(channelLoad0, value);
+    }
+}
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
