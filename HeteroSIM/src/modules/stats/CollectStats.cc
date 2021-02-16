@@ -326,17 +326,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
 
 
-double CollectStats::getsendIntervalParam()
-{
-    cModule* host=getContainingNode(this);
-    std::string hostName=host->getFullName();
-    if(hostName=="car[20]")
-    {
-        std::string moduleName=hostName+".applLayer[0]"; // TODO: generalize this in case of many data applications
-        cModule* module=getModuleByPath(moduleName.c_str());
-        return module->par("sendInterval").doubleValue();
-    }
-}
+
 
 void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {
