@@ -23,7 +23,7 @@ module VanetNic extends Ieee80211Nic
         bitrate = default(6 Mbps);
         mgmtType=default("Ieee80211MgmtAdhoc");
         mac.modeSet = opMode;
-        mac.qosStation = default(true);
+        mac.qosStation = default(false);
         radio.bandName = "5 GHz";
         radio.bandwidth = 10 MHz;
         

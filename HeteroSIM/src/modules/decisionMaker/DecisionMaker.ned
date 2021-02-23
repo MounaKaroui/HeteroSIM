@@ -27,8 +27,8 @@ simple DecisionMaker
         @display("i=old/telnet");
         
         bool mode4IsActive = default(false);
-        //weights in this order TransmissionRate,Delay,Cbr,QueueVacancy
-        string simpleWeights=default("0.4,0.4,0.2");
+        //weights in this order Available bandwidth,access delai
+        string simpleWeights=default("0.5,0.5");
         // criteria type for normalization 1--> "the larger the better", 0--> "the smaller the better" 
         string criteriaType=default("1,0,1");
         // pathToConfigFiles only used to read pair wise matrix
