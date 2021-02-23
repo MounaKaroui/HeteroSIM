@@ -74,6 +74,7 @@ public:
     bool isDeciderActive;
     int dummyNetworkChoice;
     bool isRandomDecision;
+    string decisionPolicy;
 
     std::string simpleWeights;
     std::string criteriaType;

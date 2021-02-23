@@ -36,6 +36,7 @@ void DecisionMaker::initialize()
     decisionSignal=registerSignal("decision");
     hysteresisTh=par("hysteresisTh").doubleValue();
     withMovingDLT=par("withMovingDLT").boolValue();
+    decisionPolicy=par("decisionPolicy").stringValue();
     if(mode4)
     {
         registerNodeToBinder();
@@ -218,7 +219,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 //std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
                 networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                         pathToConfigFiles, "simple", simpleWeights,
-                        criteriaType, trafficType, "TOPSIS");
+                        criteriaType, trafficType, decisionPolicy);
                 if(isPingPongReductionActive)
                 {
                 // Ping pong effects

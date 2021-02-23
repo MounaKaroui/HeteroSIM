@@ -35,7 +35,7 @@ simple DecisionMaker
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
  		bool isDeciderActive=default(true); 
  		bool isRandomDecision=default(true);
- 		
+ 		string decisionPolicy=default("TOPSIS");
  		volatile int dummyNetworkChoice=default(0);     
  		// Hysteresis per criteria
  		double hysteresisTh=default(0.5);
