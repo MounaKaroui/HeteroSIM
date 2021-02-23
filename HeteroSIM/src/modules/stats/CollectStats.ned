@@ -52,5 +52,11 @@ simple CollectStats like IStatistics
         
         @signal[cbr1];
         @statistic[cbr1](title="cbr1"; source="cbr1"; record=vector,mean);
+        
+        
+        @signal[channelLoad0];
+        @statistic[channelLoad0](title="cl0"; source="channelLoad0"; record=vector,mean);
+        
+       
 }
 

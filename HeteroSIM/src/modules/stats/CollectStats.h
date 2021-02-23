@@ -41,7 +41,6 @@ class CollectStats : public cListener, public cSimpleModule
 
 public:
 
-    LteAmc *amc_;
     struct listOfCriteria{
 
         map<simtime_t,double>*  delay;
@@ -105,13 +104,14 @@ protected:
 
     double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
+    virtual void receiveSignal(cComponent* source, simsignal_t signal, double value, cObject*);
+
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
 
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);
     double getDLT(double CofficientOfVariation);
-    double getsendIntervalParam();
 
     //Network attributes processing
     void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);
@@ -133,6 +133,7 @@ protected:
 
     simsignal_t cbr0;
     simsignal_t cbr1;
+    simsignal_t channelLoad0;
 
 };
 
