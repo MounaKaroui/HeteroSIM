@@ -1,0 +1,8 @@
+[submodule "lib/inet"]
+	path = lib/inet
+	url = https://github.com/ababila/inet
+	branch = v3.6.6-HeteroSim
+[submodule "lib/simulte"]
+	path = lib/simulte
+	url = https://github.com/ababila/simulte
+	branch = v1.1.0-HeteroSim
