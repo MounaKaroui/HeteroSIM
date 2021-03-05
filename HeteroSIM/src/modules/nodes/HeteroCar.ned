@@ -36,8 +36,8 @@ import inet.networklayer.ipv4.IPv4;
 import inet.networklayer.ipv4.IPv4RoutingTable;
 import inet.transportlayer.udp.UDP;
 import inet.node.inet.INetworkNode;
-import lte.apps.mode4App.Mode4BaseApp;
-import lte.stack.phy.ILteNic;
+//import lte.apps.mode4App.Mode4BaseApp;
+//import lte.stack.phy.ILteNic;
 import inet.linklayer.ieee80211.mac.contract.IStatistics;
 
 
@@ -55,7 +55,7 @@ module car
 
         *.interfaceTableModule = default(absPath(".interfaceTable"));
 
-        bool withMode4 = default(false);
+        //bool withMode4 = default(false);
         /// LTE params
         int masterId = default(0); // Not yet removed from SimuLTE for Mode 4 simulations
         int macNodeId = default(0); // TODO: this is not a real parameter
@@ -65,7 +65,7 @@ module car
       
 		*.macModule80211 = absPath(".wlan[0].mac");
 		*.macModule80215 = absPath(".wlan[1].mac") ;		
-        *.radioModuleLte=absPath(".lteNic.phy");
+        //*.radioModuleLte=absPath(".lteNic.phy");
         
 
     gates:
@@ -97,11 +97,11 @@ module car
         }
 
 
-        lteNic: <default("LteNicVUeMode4")> like ILteNic if withMode4 {
-            @display("p=615.37,402.3");
+        //lteNic: <default("LteNicVUeMode4")> like ILteNic if withMode4 {
+          //  @display("p=615.37,402.3");
             //d2dCapable = true;
-            nodeType = "UE";  // DO NOT CHANGE
-        }
+           // nodeType = "UE";  // DO NOT CHANGE
+        //}
 
         collectStatistics: <default("CollectStats")> like IStatistics {
             parameters:
@@ -127,12 +127,12 @@ module car
         }
 
 
-        if (withMode4) {
+        //if (withMode4) {
             
-            lteNic.radioIn <-- lteRadioIn;
-            decisionMaker.toRadio++ --> lteNic.upperLayerIn;
-            lteNic.upperLayerOut --> decisionMaker.fromRadio++;
-        }
+          //  lteNic.radioIn <-- lteRadioIn;
+            //decisionMaker.toRadio++ --> lteNic.upperLayerIn;
+            //lteNic.upperLayerOut --> decisionMaker.fromRadio++;
+        //}
 
 
 

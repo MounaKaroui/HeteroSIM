@@ -16,7 +16,7 @@
 #include "../stats/CollectStats.h"
 
 #include <inet/common/ModuleAccess.h>
-#include "stack/phy/packet/cbr_m.h"
+//#include "stack/phy/packet/cbr_m.h"
 #include <numeric>
 #include<boost/lexical_cast.hpp>
 #include "stack/pdcp_rrc/layer/LtePdcpRrcUeD2D.h"
@@ -96,41 +96,41 @@ void CollectStats::registerSignals()
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal); //TODO seek into replacing this signal by NF_PACKET_DROP --> modification of CSMA.cc
 
         }
-        else if(x.second=="mode4")
-        {
-            std::string pdcpRrcModuleName = "^.lteNic.pdcpRrc";
-            std::string phyModuleName = "^.lteNic.phy";
-            std::string macModuleName = "^.lteNic.mac";
-
-            bool mode4 = getAncestorPar("withMode4");
-            if (mode4)
-            {
-                    subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
-                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-            }
-        }
+//        else if(x.second=="mode4")
+//        {
+//            std::string pdcpRrcModuleName = "^.lteNic.pdcpRrc";
+//            std::string phyModuleName = "^.lteNic.phy";
+//            std::string macModuleName = "^.lteNic.mac";
+//
+//            bool mode4 = getAncestorPar("withMode4");
+//            if (mode4)
+//            {
+//                    subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
+//                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
+//            }
+//        }
 
     }
 }
 
-double CollectStats::extractLteBufferVacancy()
-{
-    double queueVacancy=0;
-    cModule* host=getContainingNode(this);
-    std::string moduleName=string(host->getFullName())+".lteNic.mac";
-    cModule* macModule=getModuleByPath(moduleName.c_str());
-    LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
-    double count=0;
-    for(auto& buf: lteMac->macBuffers_)
-    {
-
-        if(buf.second->getQueueLength()!=0)
-            queueVacancy+=(buf.second->getQueueLength()-buf.second->getQueueOccupancy())/buf.second->getQueueLength();
-        count++;
-    }
-
-    return (queueVacancy/count)*100;
-}
+//double CollectStats::extractLteBufferVacancy()
+//{
+//    double queueVacancy=0;
+//    cModule* host=getContainingNode(this);
+//    std::string moduleName=string(host->getFullName())+".lteNic.mac";
+//    cModule* macModule=getModuleByPath(moduleName.c_str());
+//    LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
+//    double count=0;
+//    for(auto& buf: lteMac->macBuffers_)
+//    {
+//
+//        if(buf.second->getQueueLength()!=0)
+//            queueVacancy+=(buf.second->getQueueLength()-buf.second->getQueueOccupancy())/buf.second->getQueueLength();
+//        count++;
+//    }
+//
+//    return (queueVacancy/count)*100;
+//}
 
 double CollectStats::getWlanCBR(int interfaceId){
 
@@ -141,19 +141,19 @@ double CollectStats::getWlanCBR(int interfaceId){
     return channelLoadRx->getCBR();
 }
 
-double CollectStats::extractQueueVacancy(int interfaceId)
-{
-    double queueVacancy=0;
-    cModule* host=getContainingNode(this);
-    std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.dcf";
-    cModule* dcfModule=getModuleByPath(moduleName.c_str());
-    using namespace inet::ieee80211;
-    Dcf* dcf= dynamic_cast<Dcf*>(dcfModule);
-    queueVacancy = ((dcf->pendingQueue->getMaxQueueSize()
-            - dcf->pendingQueue->getLength())
-            / dcf->pendingQueue->getMaxQueueSize()) * 100;
-    return queueVacancy;
-}
+//double CollectStats::extractQueueVacancy(int interfaceId)
+//{
+//    double queueVacancy=0;
+//    cModule* host=getContainingNode(this);
+//    std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.dcf";
+//    cModule* dcfModule=getModuleByPath(moduleName.c_str());
+//    using namespace inet::ieee80211;
+//    Dcf* dcf= dynamic_cast<Dcf*>(dcfModule);
+//    queueVacancy = ((dcf->pendingQueue->getMaxQueueSize()
+//            - dcf->pendingQueue->getLength())
+//            / dcf->pendingQueue->getMaxQueueSize()) * 100;
+//    return queueVacancy;
+//}
 
 
 double CollectStats::getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr)
@@ -195,7 +195,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         emit(cbr0,cbr);
         availableBandwidth = getAvailableBandwidth((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl(),cbr);
         // Queue vacancy
-        queueVacancy=extractQueueVacancy(interfaceId);
+//        queueVacancy=extractQueueVacancy(interfaceId);
 
 
         recordStatTuple(interfaceId, delay, availableBandwidth, queueVacancy) ;
@@ -228,7 +228,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                  //Transmission rate
                 availableBandwidth = getAvailableBandwidth(0,delay,cbr); //consider 0 bits are transmitted
                 // Queue vacancy
-                queueVacancy=extractQueueVacancy(interfaceId);
+//                queueVacancy=extractQueueVacancy(interfaceId);
 
                recordStatTuple(interfaceId, delay, availableBandwidth, queueVacancy) ;
             }
@@ -236,90 +236,90 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 }
 
 
-double CollectStats::getLteCBR()
-{
-    cModule* host=getContainingNode(this);
-    std::string moduleName=string(host->getFullName())+".lteNic.phy";
-    cModule* phyModule=getModuleByPath(moduleName.c_str());
-    LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
-    return ltePhy->mCBR;
-}
+//double CollectStats::getLteCBR()
+//{
+//    cModule* host=getContainingNode(this);
+//    std::string moduleName=string(host->getFullName())+".lteNic.phy";
+//    cModule* phyModule=getModuleByPath(moduleName.c_str());
+//    LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
+//    return ltePhy->mCBR;
+//}
 
-int CollectStats::getLteMcs()
-{
-     cModule* host=getContainingNode(this);
-     std::string moduleName=string(host->getFullName())+".lteNic.phy";
-     cModule* phyModule=getModuleByPath(moduleName.c_str());
-     LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
-     return ltePhy->getSciGrant()->getMcs();
-}
-
-double CollectStats::getCapacity()
-{
-        cModule* host=getContainingNode(this);
-        std::string moduleName=string(host->getFullName())+".lteNic.mac";
-        cModule* macModule=getModuleByPath(moduleName.c_str());
-        LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
-
-        LteMod mod = _QPSK;
-        int mcs=getLteMcs();
-        if (mcs > 9 && mcs < 17)
-        {
-           mod = _16QAM;
-        }
-        else if (mcs> 16 && mcs < 29 )
-        {
-           mod = _64QAM;
-        }
-
-        unsigned int i = (mod == _QPSK ? 0 : (mod == _16QAM ? 9 : (mod == _64QAM ? 15 : 0)));
-
-        const unsigned int* tbsVect = itbs2tbs(mod, SINGLE_ANTENNA_PORT0, 1, mcs-i);
-        return tbsVect[(lteMac->numSubchannels_*lteMac->subchannelSize_)-1];
-}
-
-
-
-void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
-{
-    double delay, availableBandwidth,cbr, queueVacancy;
-
-    if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
-        listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
-
-    if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){ // When a packet enter to PDCP_RRC layer
-        std::string msgName=PK(msg)->getName();
-        if((msgName.find("hetNets")==0))
-        {
-            FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
-            packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
-        }
-    }
+//int CollectStats::getLteMcs()
+//{
+//     cModule* host=getContainingNode(this);
+//     std::string moduleName=string(host->getFullName())+".lteNic.phy";
+//     cModule* phyModule=getModuleByPath(moduleName.c_str());
+//     LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
+//     return ltePhy->getSciGrant()->getMcs();
+//}
+//
+//double CollectStats::getCapacity()
+//{
+//        cModule* host=getContainingNode(this);
+//        std::string moduleName=string(host->getFullName())+".lteNic.mac";
+//        cModule* macModule=getModuleByPath(moduleName.c_str());
+//        LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
+//
+//        LteMod mod = _QPSK;
+//        int mcs=getLteMcs();
+//        if (mcs > 9 && mcs < 17)
+//        {
+//           mod = _16QAM;
+//        }
+//        else if (mcs> 16 && mcs < 29 )
+//        {
+//           mod = _64QAM;
+//        }
+//
+//        unsigned int i = (mod == _QPSK ? 0 : (mod == _16QAM ? 9 : (mod == _64QAM ? 15 : 0)));
+//
+//        const unsigned int* tbsVect = itbs2tbs(mod, SINGLE_ANTENNA_PORT0, 1, mcs-i);
+//        return tbsVect[(lteMac->numSubchannels_*lteMac->subchannelSize_)-1];
+//}
 
 
-    if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) { // when the  packet comes to the Phy layer for transmission
-        LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
-        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-        if(Utilities::checkLteCtrlInfo(lteInfo)){
-            //delay
-            std::string msgFlag = to_string(lteInfo->getMsgFlag());
-            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag)!= packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-            simtime_t lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
-            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
-            delay = SIMTIME_DBL(lteInterLayerDelay);
-            // cbr
-            cbr=getLteCBR();
-            emit(cbr1,cbr);
-            availableBandwidth = getAvailableBandwidth(
-                    getCapacity(),
-                lteAirFrame->getDuration().dbl(), cbr);
 
-            // buffer vacancy
-            queueVacancy=extractLteBufferVacancy();
-            recordStatTuple(interfaceId,delay,availableBandwidth,queueVacancy) ;
-        }
-    }
-}
+//void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
+//{
+//    double delay, availableBandwidth,cbr, queueVacancy;
+//
+//    if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
+//        listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
+//
+//    if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){ // When a packet enter to PDCP_RRC layer
+//        std::string msgName=PK(msg)->getName();
+//        if((msgName.find("hetNets")==0))
+//        {
+//            FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
+//            packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
+//        }
+//    }
+//
+//
+//    if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) { // when the  packet comes to the Phy layer for transmission
+//        LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
+//        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+//        if(Utilities::checkLteCtrlInfo(lteInfo)){
+//            //delay
+//            std::string msgFlag = to_string(lteInfo->getMsgFlag());
+//            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag)!= packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
+//            simtime_t lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
+//            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
+//            delay = SIMTIME_DBL(lteInterLayerDelay);
+//            // cbr
+//            cbr=getLteCBR();
+//            emit(cbr1,cbr);
+//            availableBandwidth = getAvailableBandwidth(
+//                    getCapacity(),
+//                lteAirFrame->getDuration().dbl(), cbr);
+//
+//            // buffer vacancy
+//            queueVacancy=extractLteBufferVacancy();
+//            recordStatTuple(interfaceId,delay,availableBandwidth,queueVacancy) ;
+//        }
+//    }
+//}
 
 
 
@@ -485,18 +485,21 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
           recordStatsForWlan(signal,source->getName(),packet,interfaceId);
         }
 
-    }else if(interfaceName.find("lteNic")==0)
-    {
-
-        std::vector<int> result;
-        bool searchResult=Utilities::findKeyByValue(result, interfaceToProtocolMap, string("mode4"));
-        if(searchResult)
-        {
-            interfaceId=result.at(0);
-            recordStatsForLte(signal, packet, interfaceId);
-
-        }
-       }
+        return;
+    }
+    ASSERT (false);
+//    else if(interfaceName.find("lteNic")==0)
+//    {
+//
+//        std::vector<int> result;
+//        bool searchResult=Utilities::findKeyByValue(result, interfaceToProtocolMap, string("mode4"));
+//        if(searchResult)
+//        {
+//            interfaceId=result.at(0);
+//            recordStatsForLte(signal, packet, interfaceId);
+//
+//        }
+//       }
 
 
 }

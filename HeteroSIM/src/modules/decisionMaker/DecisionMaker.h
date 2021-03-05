@@ -54,7 +54,7 @@ public:
     virtual void handleMessage(cMessage *msg)  override;
     void sendToLower(cMessage* msg,int networkIndex);
     void sendToUpper(cMessage*  msg);
-    void registerNodeToBinder();
+//    void registerNodeToBinder();
 
     string getNetworkProtocolName(int networkIndex);
     std::string convertListOfCriteriaToString(CollectStats::listAlternativeAttributes* listOfAlternativeAttributes);
@@ -70,7 +70,7 @@ public:
     simsignal_t decisionSignal;
     bool withMovingDLT;
     double hysteresisTh;
-    bool mode4;
+//    bool mode4;
     bool isDeciderActive;
     int dummyNetworkChoice;
     bool isRandomDecision;
@@ -78,7 +78,7 @@ public:
     std::string simpleWeights;
     std::string criteriaType;
 
-    LteBinder* binder_;
+//    LteBinder* binder_;
     MacNodeId nodeId_;
     int critNumb;
     std::string pathToConfigFiles;

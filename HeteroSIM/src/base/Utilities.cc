@@ -74,17 +74,17 @@ Ieee802Ctrl* Ieee802CtrlInfo(std::string ModuleName)
     return controlInfo;
 }
 
-FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_)
-{
-    auto lteControlInfo = new FlowControlInfoNonIp();
-    lteControlInfo->setSrcAddr(nodeId_);
-    lteControlInfo->setDirection(D2D_MULTI);
-    lteControlInfo->setDuration(1000);
-    lteControlInfo->setPriority(3);
-    lteControlInfo->setCreationTime(simTime());
-    lteControlInfo->setMsgFlag(random());
-    return lteControlInfo;
-}
+//FlowControlInfoNonIp* LteCtrlInfo(MacNodeId nodeId_)
+//{
+//    auto lteControlInfo = new FlowControlInfoNonIp();
+//    lteControlInfo->setSrcAddr(nodeId_);
+//    lteControlInfo->setDirection(D2D_MULTI);
+//    lteControlInfo->setDuration(1000);
+//    lteControlInfo->setPriority(3);
+//    lteControlInfo->setCreationTime(simTime());
+//    lteControlInfo->setMsgFlag(random());
+//    return lteControlInfo;
+//}
 
 bool checkLteCtrlInfo(UserControlInfo* lteInfo)
 {

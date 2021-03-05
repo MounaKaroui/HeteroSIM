@@ -27,8 +27,8 @@
 #include "../../base/mcda/MCDM.h"
 #include "../../base/Utilities.h"
 #include "../../modules/messages/Messages_m.h"
-#include "stack/phy/layer/LtePhyVUeMode4.h"
-#include "stack/mac/layer/LteMacVUeMode4.h"
+//#include "stack/phy/layer/LtePhyVUeMode4.h"
+//#include "stack/mac/layer/LteMacVUeMode4.h"
 using namespace omnetpp;
 using namespace inet;
 using namespace inet::physicallayer;
@@ -41,7 +41,7 @@ class CollectStats : public cListener, public cSimpleModule
 
 public:
 
-    LteAmc *amc_;
+//    LteAmc *amc_;
     struct listOfCriteria{
 
         map<simtime_t,double>*  delay;
@@ -94,19 +94,19 @@ protected:
     void setInterfaceToProtocolMap();
 
     //Network attributes collection
-    double extractQueueVacancy(int interfaceId);
+//    double extractQueueVacancy(int interfaceId);
     double extractBufferOccupancy();
     double getWlanCBR(int interfaceId);
-    double extractLteBufferVacancy();
+//    double extractLteBufferVacancy();
     double getLteCBR();
 
-    int getLteMcs();
-    double getCapacity();
+//    int getLteMcs();
+//    double getCapacity();
 
     double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
-    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
+//    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
 
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);

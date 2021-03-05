@@ -17,7 +17,7 @@
 #include "../decisionMaker/DecisionMaker.h"
 
 #include <inet/common/ModuleAccess.h>
-#include "stack/phy/packet/cbr_m.h"
+//#include "stack/phy/packet/cbr_m.h"
 #include <stdlib.h>     /* srand, rand */
 
 
@@ -29,17 +29,17 @@ Define_Module(DecisionMaker);
 void DecisionMaker::initialize()
 {
 
-    mode4=par("mode4IsActive").boolValue();
+//    mode4=par("mode4IsActive").boolValue();
     pathToConfigFiles=par("pathToConfigFiles").stringValue();
     simpleWeights=par("simpleWeights").stringValue();
     criteriaType=par("criteriaType").stringValue();
     decisionSignal=registerSignal("decision");
     hysteresisTh=par("hysteresisTh").doubleValue();
     withMovingDLT=par("withMovingDLT").boolValue();
-    if(mode4)
-    {
-        registerNodeToBinder();
-    }
+//    if(mode4)
+//    {
+//        registerNodeToBinder();
+//    }
     isDeciderActive=par("isDeciderActive").boolValue();
     isRandomDecision=par("isRandomDecision").boolValue();
     {
@@ -56,16 +56,16 @@ void DecisionMaker::initialize()
 
 }
 
-void DecisionMaker::registerNodeToBinder()
-{
-    binder_ = getBinder();
-    // Get our UE
-    cModule *ue = getContainingNode(this);
-    //Register with the binder
-    nodeId_ = binder_->registerNode(ue, UE, 0);
-    // Register the nodeId_ with the binder.
-    binder_->setMacNodeId(nodeId_, nodeId_);
-}
+//void DecisionMaker::registerNodeToBinder()
+//{
+//    binder_ = getBinder();
+//    // Get our UE
+//    cModule *ue = getContainingNode(this);
+//    //Register with the binder
+//    nodeId_ = binder_->registerNode(ue, UE, 0);
+//    // Register the nodeId_ with the binder.
+//    binder_->setMacNodeId(nodeId_, nodeId_);
+//}
 
 /**
  * To create control info, mandatory to pass message lower layer protocol
@@ -78,9 +78,11 @@ void DecisionMaker::setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIn
     if (networkTypeName.find("802") == 0)  { // IEEE 802 protocol family have common ctrlInfo
         cModule* host = inet::getContainingNode(this);
         msg->setControlInfo(Utilities::Ieee802CtrlInfo(host->getFullName()));
-    } else if (networkTypeName == "mode4") {
-        msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
-    } else
+    }
+//        else if (networkTypeName == "mode4") {
+//        msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
+//    }
+    else
         throw cRuntimeError(string("Unknown protocol name '" + networkTypeName + "'").c_str());
 
 }
@@ -285,10 +287,10 @@ void DecisionMaker::handleMessage(cMessage *msg)
 
 DecisionMaker::~DecisionMaker()
 {
-    if(mode4)
-    {
-        binder_->unregisterNode(nodeId_);
-    }
+//    if(mode4)
+//    {
+//        binder_->unregisterNode(nodeId_);
+//    }
 
 }
 
