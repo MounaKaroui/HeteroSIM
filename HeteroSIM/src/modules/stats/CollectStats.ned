@@ -25,7 +25,7 @@ simple CollectStats like IStatistics
 {
     
     parameters:    
-        string interfaceToProtocolMapping = default("0:80211,1:80211,2:mode4");
+        string interfaceToProtocolMapping = default("0:80211,1:80211,2:lte");
         string averageMethod = default("ema"); // simple average or with ema
         double sendPeriod @unit(s) =default(0.1s) ;
         int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time  

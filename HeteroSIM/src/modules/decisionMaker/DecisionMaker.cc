@@ -15,6 +15,7 @@
 // @author Mouna KAROUI
 
 #include "../decisionMaker/DecisionMaker.h"
+#include "../../modules/messages/Messages_m.h"
 
 #include <inet/common/ModuleAccess.h>
 //#include "stack/phy/packet/cbr_m.h"
@@ -54,6 +55,8 @@ void DecisionMaker::initialize()
     generator.seed(nodeId);
     distribution.param(std::bernoulli_distribution::param_type(0.5));
 
+    addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
+
 }
 
 //void DecisionMaker::registerNodeToBinder()
@@ -76,15 +79,37 @@ void DecisionMaker::setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIn
     string networkTypeName=getNetworkProtocolName(networkIndex);
 
     if (networkTypeName.find("802") == 0)  { // IEEE 802 protocol family have common ctrlInfo
-        cModule* host = inet::getContainingNode(this);
-        msg->setControlInfo(Utilities::Ieee802CtrlInfo(host->getFullName()));
+        setIeee802CtrlInfo(msg,networkIndex);
     }
-//        else if (networkTypeName == "mode4") {
-//        msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
+//    else if (networkTypeName == "lte") {
+//
+////        msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
 //    }
     else
         throw cRuntimeError(string("Unknown protocol name '" + networkTypeName + "'").c_str());
 
+}
+
+void DecisionMaker::setIeee802CtrlInfo(cMessage* msg, int networkIndex){
+
+    auto basicMsg =dynamic_cast<BasicMsg*>(msg);
+
+    auto destAddress = basicMsg->getDestinationAddress();
+    MACAddress destMacAddress;
+
+    if(!strcmp(destAddress, "all")){//broadcast
+        destMacAddress.setBroadcast();
+    }else{
+        destMacAddress = addressResolver->resolveIEEE802Address(destAddress, networkIndex);
+    }
+
+    //This means we assume that the receiver is using the same technology settings as the transmitter at its "networkIndex"^th interface
+    MACAddress scrMacAddress = addressResolver->resolveIEEE802Address(basicMsg->getSourceAddress(), networkIndex);
+
+    auto controlInfo = new Ieee802Ctrl();
+    controlInfo->setSourceAddress(scrMacAddress);
+    controlInfo->setDestinationAddress(destMacAddress);
+    msg->setControlInfo(controlInfo) ;
 }
 
 string DecisionMaker::getNetworkProtocolName(int networkIndex){
@@ -190,7 +215,6 @@ int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlt
 
 int DecisionMaker::takeDecision(cMessage* msg)
 {
-
     int networkIndex;
     ControlMsg * controlMsg =dynamic_cast<ControlMsg*>(msg);
 

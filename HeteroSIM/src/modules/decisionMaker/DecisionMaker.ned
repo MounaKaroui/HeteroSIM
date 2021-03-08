@@ -26,6 +26,8 @@ simple DecisionMaker
         @class(DecisionMaker);
         @display("i=old/telnet");
         
+        string addressResolver ;
+                
         bool mode4IsActive = default(false);
         //weights in this order Available bandwidth,access delai
         string simpleWeights=default("0.5,0.5");

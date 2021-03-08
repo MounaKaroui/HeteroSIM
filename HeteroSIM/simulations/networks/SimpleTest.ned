@@ -15,20 +15,23 @@
 
 package heterosim.simulations.networks;
 
-import inet.environment.common.PhysicalEnvironment;
+
 import heterosim.src.modules.nodes.car;
+import heterosim.src.modules.nodes.GenericNode;
+
+import inet.environment.common.PhysicalEnvironment;
+
 import inet.physicallayer.common.packetlevel.RadioMedium;
-import inet.networklayer.configurator.ipv4.IPv4NetworkConfigurator;
 import inet.physicallayer.contract.packetlevel.IRadioMedium;
 import inet.physicallayer.ieee80211.packetlevel.Ieee80211ScalarRadioMedium;
-import inet.physicallayer.ieee802154.packetlevel.Ieee802154NarrowbandScalarRadioMedium;
+
 //import inet.visualizer.integrated.IntegratedVisualizer;
 //import inet.visualizer.integrated.IntegratedCanvasVisualizer;
 
 
-import lte.corenetwork.binder.LteBinder;
-import lte.corenetwork.deployer.LteDeployer;
-import lte.world.radio.LteChannelControl;
+//import lte.corenetwork.binder.LteBinder;
+//import lte.corenetwork.deployer.LteDeployer;
+//import lte.world.radio.LteChannelControl;
 
 network SimpleNetwork
 {
@@ -56,21 +59,43 @@ network SimpleNetwork
 //            @display("p=50,50");
 //        }
 
-        channelControl: LteChannelControl if mode4isActive {
-            @display("p=60,268;is=s");
-        }
+        //channelControl: LteChannelControl if mode4isActive {
+          //  @display("p=60,268;is=s");
+        //}
 
 
-        binder: LteBinder if mode4isActive {
-            @display("p=61,179;is=s");
-        }
+        //binder: LteBinder if mode4isActive {
+          //  @display("p=61,179;is=s");
+        //}
 
 
-        deployer: LteDeployer if mode4isActive {
-            @display("p=53,352;is=s");
-        }
+        //deployer: LteDeployer if mode4isActive {
+          //  @display("p=53,352;is=s");
+        //}
 
 //        narrowbandScalarRadioMedium: Ieee802154NarrowbandScalarRadioMedium {
 //            @display("p=392,328");
 //        }
+}
+
+
+network SimpleNetwork2
+{
+    parameters:
+        int numNodes = default(1);
+        @display("bgb=587,415;i=background/budapest");
+
+    
+    submodules:
+
+
+        radioMedium: <default("Ieee80211ScalarRadioMedium")> like IRadioMedium {
+            parameters:
+                @display("p=60,20");
+               // mediumLimitCache.carrierFrequency = 5.9GHz;
+        }
+
+        node[numNodes]: GenericNode {
+            @display("p=276,202;is=s");
+        }
 }

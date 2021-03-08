@@ -37,7 +37,8 @@ BasicMsg* ControlTrafficApp::BuildMsg(std::string namePrefix)
     ctrlMsg->setNetworkId(interfaceId);
     ctrlMsg->setApplId(appID);
     ctrlMsg->setByteLength(msgLength);
-    ctrlMsg->setApplId(appID);
+    ctrlMsg->setSourceAddress(inet::getContainingNode(this)->getFullName());
+    ctrlMsg->setDestinationAddress("all");//sent control message as broadcast
     return  ctrlMsg;
 }
 

@@ -54,6 +54,10 @@ int extractNumber(std::string input)
     int id = atoi(input.c_str());
     return id;
 }
+int extractNumber(const char * input)
+{
+    return extractNumber(string(input));
+}
 
 string getInterfaceNameFromFullPath(std::string pathName){
     return cStringTokenizer(pathName.c_str(),string(".").c_str()).asVector()[2];

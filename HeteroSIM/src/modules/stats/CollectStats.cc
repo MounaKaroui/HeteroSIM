@@ -279,7 +279,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 //}
 
 
-
 //void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 //{
 //    double delay, availableBandwidth,cbr, queueVacancy;

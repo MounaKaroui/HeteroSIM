@@ -20,10 +20,14 @@
 
 #include "corenetwork/binder/LteBinder.h"
 #include <iostream>
+
+
 #include "../../base/mcda/MCDM.h"
 #include "../../base/Utilities.h"
 #include "../../modules/messages/Messages_m.h"
 #include "../stats/CollectStats.h"
+#include "modules/util/contract/IAddressResolver.h"
+
 #include <random>
 
 using namespace omnetpp;
@@ -66,6 +70,7 @@ public:
     //Decision method
     int takeDecision(cMessage*  msg);
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
+    void setIeee802CtrlInfo(cMessage* msg,int networkIndex);
 
     simsignal_t decisionSignal;
     bool withMovingDLT;
@@ -90,6 +95,8 @@ public:
     std::default_random_engine generator;
 
     std::bernoulli_distribution distribution;
+
+    IAddressResolver* addressResolver;
 
 
   private:
