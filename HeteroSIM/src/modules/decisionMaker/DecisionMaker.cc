@@ -25,7 +25,7 @@
 Define_Module(DecisionMaker);
 
 
-
+simsignal_t DecisionMaker::decisionSignal = cComponent::registerSignal("decision");
 
 void DecisionMaker::initialize()
 {
@@ -34,7 +34,6 @@ void DecisionMaker::initialize()
     pathToConfigFiles=par("pathToConfigFiles").stringValue();
     simpleWeights=par("simpleWeights").stringValue();
     criteriaType=par("criteriaType").stringValue();
-    decisionSignal=registerSignal("decision");
     hysteresisTh=par("hysteresisTh").doubleValue();
     withMovingDLT=par("withMovingDLT").boolValue();
 //    if(mode4)
@@ -127,6 +126,7 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
     {
         int gateId=gate("toRadio",networkIndex)->getId();
         send(msg, gateId);
+        emit(decisionSignal, networkIndex, msg);
     }
     else
     {
@@ -146,6 +146,7 @@ void DecisionMaker::sendToUpper(cMessage*  msg)
         {
         int gateId = gate("toApplication", id)->getId(); // To get Id
         send(msg, gateId);
+
         }
         else
         {
@@ -260,7 +261,6 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 std::cout<< "Node Id= " << nodeId << "\n"<< endl;
 
                 std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
-                emit(decisionSignal,networkIndex);
             }
         }
         else
@@ -277,7 +277,6 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 int nodeId=Utilities::extractNumber(name.c_str());
                 std::cout<< "Node Id= " << nodeId << "\n"<< endl;
                 std::cout<< "The random network is "<< networkIndex <<"\n" << endl;
-                emit(decisionSignal,networkIndex);
             }else{
                 networkIndex=dummyNetworkChoice;
                 std::cout<< "The dummy choice is "<< networkIndex <<"\n" << endl;

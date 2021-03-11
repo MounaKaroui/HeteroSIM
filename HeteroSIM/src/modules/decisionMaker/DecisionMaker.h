@@ -49,8 +49,10 @@ class DecisionMaker : public cSimpleModule, public cListener
 
 public:
 
+
     ~DecisionMaker();
 
+    static simsignal_t decisionSignal ;
 
   protected:
 
@@ -72,7 +74,6 @@ public:
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
     void setIeee802CtrlInfo(cMessage* msg,int networkIndex);
 
-    simsignal_t decisionSignal;
     bool withMovingDLT;
     double hysteresisTh;
 //    bool mode4;
