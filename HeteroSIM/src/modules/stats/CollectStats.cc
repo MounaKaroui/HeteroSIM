@@ -82,7 +82,7 @@ void CollectStats::registerSignals()
 
     for(auto const & x: interfaceToProtocolMap){
 
-        if (x.second.find("80211")== 0 || x.second.find("80215") == 0) {
+        if (x.second.find("80211")== 0) { //IEEE 802.11 case
 
             std::string macModuleName= "^.wlan["+ to_string(x.first) +"].mac";
             std::string radioModuleName= "^.wlan["+ to_string(x.first) +"].radio";
@@ -93,8 +93,6 @@ void CollectStats::registerSignals()
             //packet drop signals
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_PACKET_DROP);
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_LINK_BREAK);
-            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetFromUpperDroppedSignal); //TODO seek into replacing this signal by NF_PACKET_DROP --> modification of CSMA.cc
-
         }
 //        else if(x.second=="mode4")
 //        {
@@ -201,7 +199,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         recordStatTuple(interfaceId, delay, availableBandwidth, queueVacancy) ;
 
 
-    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal==LayeredProtocolBase::packetFromUpperDroppedSignal) // packet drop related calculations
+    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK) // packet drop related calculations
         {
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
 //            printMsg("Reading",msg);
