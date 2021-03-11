@@ -80,6 +80,12 @@ void CollectStats::initializeDLT()
 void CollectStats::registerSignals()
 {
 
+
+    //Decider module signal
+    subscribeToSignal<DecisionMaker>("^.decisionMaker",DecisionMaker::decisionSignal);
+
+
+    //Decider transmission interface module signal
     for(auto const & x: interfaceToProtocolMap){
 
         if (x.second.find("80211")== 0) { //IEEE 802.11 case
@@ -165,7 +171,7 @@ double CollectStats::getAvailableBandwidth(int64_t dataLength, double radioFrame
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
 
-    if ( comingSignal == LayeredProtocolBase::packetReceivedFromUpperSignal &&  sourceName==string("mac")){ //when packet enter to MAC layer
+    if ( comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker for access layer
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
 //        printMsg("Inserting",msg);
         return ;
@@ -466,9 +472,17 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 }
 
 
+void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, long value,cObject *details)
+{
+    if(signal==DecisionMaker::decisionSignal){
+        if(interfaceToProtocolMap[value].find("80211")==0){
+            recordStatsForWlan(signal,source->getName(),dynamic_cast<cMessage*>(details),value);
+        }
+    }
+
+}
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject* msg,cObject *details)
 {
-
     std::string interfaceName = Utilities::getInterfaceNameFromFullPath(source->getFullPath());
     int interfaceId=0;
     auto packet=dynamic_cast<cMessage*>(msg);

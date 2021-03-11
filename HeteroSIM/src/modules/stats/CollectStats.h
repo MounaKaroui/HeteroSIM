@@ -105,6 +105,7 @@ protected:
 
     double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, long value, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
 //    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
 
