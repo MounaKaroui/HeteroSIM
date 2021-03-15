@@ -73,7 +73,7 @@ void CollectStats::initializeDLT()
     for(auto const & x: interfaceToProtocolMap){
         dltByInterfaceIdByCriterion[x.first]["delay"]=0;
         dltByInterfaceIdByCriterion[x.first]["availableBandwidth"]=0;
-        dltByInterfaceIdByCriterion[x.first]["queueVacancy"]=0;
+        dltByInterfaceIdByCriterion[x.first]["reliability"]=0;
     }
 }
 
@@ -99,6 +99,8 @@ void CollectStats::registerSignals()
             //packet drop signals
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_PACKET_DROP);
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_LINK_BREAK);
+            //packet ack signals
+            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_PACKET_ACK_RECEIVED);
         }
 //        else if(x.second=="mode4")
 //        {
@@ -160,10 +162,10 @@ double CollectStats::getWlanCBR(int interfaceId){
 //}
 
 
-double CollectStats::getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr)
+double CollectStats::getThroughputIndicator(int64_t dataLength, double transmitTime)
 {
 
-    return (1-cbr)*(dataLength/radioFrameTime);
+    return dataLength/transmitTime;
 }
 
 
@@ -171,41 +173,58 @@ double CollectStats::getAvailableBandwidth(int64_t dataLength, double radioFrame
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
 
-    if ( comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker for access layer
+    if ( comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker toward transmission interface
+
+        //For delay metric
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
-//        printMsg("Inserting",msg);
+
+        // For reliability metric
+        std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
+
+        //utility
+        lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg});
+
         return ;
     }
 
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delay, availableBandwidth, cbr, queueVacancy;
+    double delay, throughputIndicator, reliability;
 
-    if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer --> transmission duration already elapsed
+    //retrieve last transmitted packet from its name
+    std::map<string,cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(msg->getName());
 
-        //Delay
-        ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-//        printMsg("Reading",msg);
-        simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
-        packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-        delay = SIMTIME_DBL(macAndRadioDelay);
-
-        //Transmission rate
-        RadioFrame *radioFrame = check_and_cast<RadioFrame *>(msg);
-        ASSERT(radioFrame && radioFrame->getDuration() != 0) ;
-        //CBR
-        cbr = getWlanCBR(interfaceId);
-        emit(cbr0,cbr);
-        availableBandwidth = getAvailableBandwidth((PK(msg)->getBitLength()),(radioFrame->getDuration()).dbl(),cbr);
-        // Queue vacancy
-//        queueVacancy=extractQueueVacancy(interfaceId);
+    if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer
 
 
-        recordStatTuple(interfaceId, delay, availableBandwidth, queueVacancy) ;
+        Ieee802Ctrl *controlInfo = dynamic_cast<Ieee802Ctrl*>(messageIt->second->getControlInfo());
+        if (!controlInfo->getDestinationAddress().isMulticast()) { // record statistics if transmitted frame do not require ACK
+
+            //Delay metric
+            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
+            simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]; //--> transmission duration already elapsed
+            delay = SIMTIME_DBL(macAndRadioDelay);
+
+            //Throughput metric
+            std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength();
+
+            double timeInterval = 0; //TODO
+            throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), timeInterval);
+
+            // Reliability metric
+            reliability=1 ; // consider the maximun
+
+            recordStatTuple(interfaceId, delay, throughputIndicator, reliability);
+
+            //purge
+            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+            lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
+        }
+        //else wait for ack or packet drop to record statistics
 
 
-    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK) // packet drop related calculations
+    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED)
         {
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
 //            printMsg("Reading",msg);
@@ -213,28 +232,34 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 
             if(macDelay == 0){ //case of packet drop due to queue overflow
-                //In case of full queue 802.15.4 interface sends "packetFromUpperDroppedSignal" signal
                 //In case of full queue 802.11 interface sends "NF_PACKET_DROP" signal
                 //so check the following assertion
-                ASSERT(comingSignal == NF_PACKET_DROP  || comingSignal == LayeredProtocolBase::packetFromUpperDroppedSignal);
-                ASSERT(false);
-                //TODO add delay penalties to consider in case of packet drop
-//                throw cRuntimeError("Packet drop due to queue overflow not supported yet");
+                ASSERT(comingSignal == NF_PACKET_DROP);
+                ASSERT2(false,"Packet drop due to queue overflow not supported yet"); //TODO add delay penalties to consider in case of packet drop
 
-            }else { //case of packet drop due failing CSMA process
 
-                //Delay
+            }else { //case of packet drop due failing CSMA/CA process or previous ACK received
+
+                //Delay metric
                 delay = SIMTIME_DBL(macDelay);
-                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-                //CBR
-                 cbr = getWlanCBR(interfaceId);
-                 emit(cbr0,cbr);
-                 //Transmission rate
-                availableBandwidth = getAvailableBandwidth(0,delay,cbr); //consider 0 bits are transmitted
-                // Queue vacancy
-//                queueVacancy=extractQueueVacancy(interfaceId);
 
-               recordStatTuple(interfaceId, delay, availableBandwidth, queueVacancy) ;
+                //For reliability
+                if (comingSignal == NF_PACKET_ACK_RECEIVED){
+                    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength();
+                }
+
+                 //Throughput metric
+                double timeInterval = 0; //TODO
+                throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), timeInterval);
+
+                // Reliability metric
+                reliability=std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])/std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+
+                recordStatTuple(interfaceId, delay, throughputIndicator, reliability) ;
+
+                //purge
+                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+                lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
             }
         }
 }
@@ -343,7 +368,7 @@ void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
     // update dtl according to coefficient of variation
     dltByInterfaceIdByCriterion[interfaceId]["delay"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delay)));
     dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->availableBandwidth)));
-    dltByInterfaceIdByCriterion[interfaceId]["queueVacancy"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->queueVacancy)));
+    dltByInterfaceIdByCriterion[interfaceId]["reliability"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliability)));
 }
 
 double CollectStats::getDLT(double CofficientOfVariation) {
@@ -368,7 +393,7 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 
     rList->delay= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->delay,dltByInterfaceIdByCriterion[interfaceId]["delay"] );
     rList->availableBandwidth= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->availableBandwidth,dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"] );
-    rList->queueVacancy= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->queueVacancy,dltByInterfaceIdByCriterion[interfaceId]["queueVacancy"] );
+    rList->reliability= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->reliability,dltByInterfaceIdByCriterion[interfaceId]["reliability"] );
 
     //update DLT
     updateDLT(rList, interfaceId);
@@ -376,8 +401,12 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
     //purge stats history
     delete listOfCriteriaByInterfaceId[interfaceId]->delay;
     delete listOfCriteriaByInterfaceId[interfaceId]->availableBandwidth;
-    delete listOfCriteriaByInterfaceId[interfaceId]->queueVacancy;
+    delete listOfCriteriaByInterfaceId[interfaceId]->reliability;
     delete listOfCriteriaByInterfaceId[interfaceId];
+
+    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
+    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
+
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
     return rList;
@@ -421,7 +450,7 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
             alternativeAttributes* listAttr=new alternativeAttributes();
             listAttr->delay=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->delay));
             listAttr->availableBandwidth=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->availableBandwidth));
-            listAttr->queueVacancy=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->queueVacancy));
+            listAttr->reliability=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->reliability));
             myList->data.insert({x.first,listAttr});
         }
     }else if(averageMethod==string("ema"))
@@ -432,12 +461,12 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
             Utilities::calculateEMA(Utilities::retrieveValues(x.second->delay),vEMADelay);
             std::vector<double> vEMATransmissionRate;
             Utilities::calculateEMA(Utilities::retrieveValues(x.second->availableBandwidth),vEMATransmissionRate);
-            std::vector<double> vEMAQueueVacancy;
-            Utilities::calculateEMA(Utilities::retrieveValues(x.second->queueVacancy),vEMAQueueVacancy);
+            std::vector<double> vEMAreliability;
+            Utilities::calculateEMA(Utilities::retrieveValues(x.second->reliability),vEMAreliability);
             alternativeAttributes* listAttr=new alternativeAttributes();
             listAttr->delay= vEMADelay.back() ;
             listAttr->availableBandwidth=vEMATransmissionRate.back();
-            listAttr->queueVacancy=vEMAQueueVacancy.back();
+            listAttr->reliability=vEMAreliability.back();
             myList->data.insert({x.first,listAttr});
         }
     }
@@ -452,10 +481,10 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareDummyNetAttributes
         alternativeAttributes* listAttr=new alternativeAttributes();
         vector<double>* d=Utilities::retrieveValues(x.second->delay);
         vector<double>* avb=Utilities::retrieveValues(x.second->availableBandwidth);
-        vector<double>* qc=Utilities::retrieveValues(x.second->queueVacancy);
+        vector<double>* qc=Utilities::retrieveValues(x.second->reliability);
         listAttr->delay=d->back();
         listAttr->availableBandwidth=avb->back();
-        listAttr->queueVacancy=qc->back();
+        listAttr->reliability=qc->back();
         myList->data.insert({x.first,listAttr});
     }
     return myList;
@@ -524,9 +553,9 @@ void CollectStats::printMsg(std::string type, cMessage*  msg)
 }
 
 
-void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy){
+void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double reliability){
 
-    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, queueVacancy) ;
+    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, reliability) ;
     if(interfaceId==0){
         emit(tr0,transmissionRate);
         emit(delay0,delay);
@@ -541,20 +570,20 @@ void CollectStats::recordStatTuple(int interfaceId, double delay, double transmi
 
 
 
-void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double queueVacancy){
+void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double reliability){
 
     // check and initialize list if necessary
     if(!list->delay)
         list->delay= new map<simtime_t,double>();
     if(!list->availableBandwidth)
         list->availableBandwidth = new  map<simtime_t,double>();
-    if(!list->queueVacancy)
-        list->queueVacancy= new  map<simtime_t,double>();
+    if(!list->reliability)
+        list->reliability= new  map<simtime_t,double>();
 
 
     list->delay->insert({timestamp,delay});
     list->availableBandwidth->insert({timestamp,availableBandwitdth});
-    list->queueVacancy->insert({timestamp,queueVacancy});
+    list->reliability->insert({timestamp,reliability});
 }
 
 

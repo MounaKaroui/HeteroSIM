@@ -52,6 +52,7 @@ module GenericNode
         wlan[numRadios]: <default("Ieee80211Nic")> like IWirelessNic {
             @display("p=220.51999,402.3,row,100;q=queue");
 			mgmtType=default("Ieee80211MgmtAdhoc");  // use adhoc management
+			rx.typename = default("heterosim.src.modules.cbrMeasurement.ChannelLoadRx");
         }
         mobility: <mobilityType> like IMobility {
             @display("p=1050.45,84.92999");

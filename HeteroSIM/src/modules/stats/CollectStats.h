@@ -20,6 +20,7 @@
 #include "inet/physicallayer/common/packetlevel/Radio.h"
 #include "inet/physicallayer/ieee80211/packetlevel/Ieee80211Radio.h"
 #include <inet/linklayer/ieee80211/mac/Ieee80211Mac.h>
+#include <inet/linklayer/ieee80211/mac/Ieee80211Frame_m.h>
 #include "inet/linklayer/csma/CSMA.h"
 #include "stack/pdcp_rrc/layer/LtePdcpRrc.h"
 #include <omnetpp.h>
@@ -46,14 +47,16 @@ public:
 
         map<simtime_t,double>*  delay;
         map<simtime_t,double>*  availableBandwidth;
-        map<simtime_t,double>* queueVacancy; // TODO compute queueVacancy
+        map<simtime_t,double>* reliability;
     };
+
+    typedef tuple<long,long>  LongIntegerPair;
 
     struct alternativeAttributes
     {
         double delay ;
         double availableBandwidth;
-        double queueVacancy;
+        double reliability;
     };
 
     struct listAlternativeAttributes
@@ -63,7 +66,14 @@ public:
 
 
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
+
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
+    map<int,LongIntegerPair> attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId; // To compute reliability and throughput metrics.
+                                                                                        //Tuple <0> is for attempted to be transmitted data and Tuple<1> successfully transmittedData
+
+    map<int,map<string,cMessage*>> lastTransmittedFramesByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
+
+
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
     map<int,map<string,double>> dltByInterfaceIdByCriterion;
@@ -103,7 +113,7 @@ protected:
 //    int getLteMcs();
 //    double getCapacity();
 
-    double getAvailableBandwidth(int64_t dataLength, double radioFrameTime, double cbr);
+    double getThroughputIndicator(int64_t dataLength, double radioFrameTime);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, long value, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);

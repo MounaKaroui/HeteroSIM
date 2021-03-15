@@ -164,7 +164,7 @@ std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlter
     {
         rStr+=to_string(x.second->availableBandwidth);
         rStr+=","+to_string(x.second->delay);
-        rStr+=","+to_string(x.second->queueVacancy)+",";
+        rStr+=","+to_string(x.second->reliability)+",";
     }
     return rStr.substr(0, rStr.size()-1);
 }
@@ -185,7 +185,7 @@ double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAltern
     {
         sumTh+=normalizeTh(newData.second->availableBandwidth,lastDecisionData->data[newData.first]->availableBandwidth)*weight.at(0,0);
         sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->delay)*weight.at(1,0);
-        sumTh+=normalizeTh(newData.second->queueVacancy,lastDecisionData->data[newData.first]->queueVacancy)*weight.at(2,0);
+        sumTh+=normalizeTh(newData.second->reliability,lastDecisionData->data[newData.first]->reliability)*weight.at(2,0);
     }
 
     return sumTh/weight.size(1);
