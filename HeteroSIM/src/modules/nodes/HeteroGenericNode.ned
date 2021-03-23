@@ -25,6 +25,8 @@ import inet.linklayer.contract.IWirelessNic;
 import inet.linklayer.ieee80211.mac.contract.IStatistics;
 
 
+import lte.stack.ILteNic;
+
 
 module GenericNode
 {
@@ -33,50 +35,60 @@ module GenericNode
         @networkNode();
         @labels(node,ethernet-node,wireless-node);
 
+        //# Common parameters 
         int numApps = default(1);
-        string wlanType = default("Ieee80211Nic");
-        int numRadios = default(1);
         string mobilityType = default("LinearMobility");
+        *.addressResolver = default(absPath(".addressResolver"));
 
+		//# WiFi interfaces related parameters
+        int numWiFiRadios = default(1);
         *.interfaceTableModule = default(absPath(".interfaceTable"));
-        *.addressResolver =default(absPath(".addressResolver"));
 
-		//*.macModule80211 = absPath(".wlan[0].mac");
+		//# LTE interfaces related parameters        
+        bool lteInterfaceIsActive = default(false);
+        int macNodeId = default(0); // This is not a real parameter, but the LteBinder assigns a correct value from c++ code
+        int masterId = default(1); //TODO why this necessary ?
+        int macCellId = default(1); // TODO: this is not a real parameter
 
 
     gates:
-        input radioIn[numRadios] @directIn;
+        input wifiRadioIn[numWiFiRadios] @directIn;
+
+        input lteRadioIn @directIn; // multiple LTE interfaces within a single node not supported. See why in LteBinder::registerNode method.
 
 
     submodules:
-        wlan[numRadios]: <default("Ieee80211Nic")> like IWirelessNic {
+
+        //# WiFi interfaces related submodules 		
+        wlan[numWiFiRadios]: <default("Ieee80211Nic")> like IWirelessNic {
             @display("p=220.51999,402.3,row,100;q=queue");
-			mgmtType=default("Ieee80211MgmtAdhoc");  // use adhoc management
-			rx.typename = default("heterosim.src.modules.cbrMeasurement.ChannelLoadRx");
+            mgmtType = default("Ieee80211MgmtAdhoc");  // use adhoc management
+            rx.typename = default("heterosim.src.modules.cbrMeasurement.ChannelLoadRx");
         }
         mobility: <mobilityType> like IMobility {
-            @display("p=1050.45,84.92999");
+            @display("p=56.62,67.049995");
         }
         interfaceTable: InterfaceTable {
-            @display("p=1066.84,435.08;is=s");
+            @display("p=56.62,312.9;is=s");
         }
 
+        //# LTE interface related submodules 	
+        lteNic: <default("LteNicUeD2DExperimental")> like ILteNic {
+            @display("p=482.75998,411.24");
+        }
+
+		//# Common submodules
+        addressResolver: AddressResolver {
+            @display("p=56.62,469.34998");
+        }
+        collectStatistics: <default("CollectStats")> like IStatistics {
+             @display("p=56.62,186.24998;is=s");
+        }
         decisionMaker: DecisionMaker {
             @display("p=402.966,223.992");
-
         }
         applLayer[numApps]: <default("VanetApp")> like IBaseAppl {
             @display("p=402.3,38.739998,row,200;q=queue,i,block/app2");
-        }
-        collectStatistics: <default("CollectStats")> like IStatistics {
-            parameters:
-                @display("p=1050.45,223.49998;is=s");
-
-        }
-
-        addressResolver: AddressResolver {
-
-            @display("p=1078.76,584.07996");
         }
 
 
@@ -86,14 +98,15 @@ module GenericNode
             applLayer[i].toDecisionMaker --> decisionMaker.fromApplication++;
         }
 
-
-
-        for i=0..sizeof(radioIn)-1 {
-            radioIn[i] --> { @display("m=s"); } --> wlan[i].radioIn;
+        for i=0..numWiFiRadios-1 {
+            wifiRadioIn[i] --> { @display("m=s"); } --> wlan[i].radioIn;
             decisionMaker.toRadio++ --> wlan[i].upperLayerIn;
             wlan[i].upperLayerOut --> decisionMaker.fromRadio++;
         }
 
-
-
+        if (lteInterfaceIsActive) {
+            decisionMaker.toRadio++ --> lteNic.upperLayerIn;
+            decisionMaker.fromRadio++ <-- lteNic.upperLayerOut;
+            lteNic.radioIn <-- lteRadioIn;
+        }
 }

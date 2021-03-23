@@ -28,7 +28,7 @@ simple DecisionMaker
         
         string addressResolver ;
                 
-        bool mode4IsActive = default(false);
+        bool lteInterfaceIsActive = default(false);
         //weights in this order Available bandwidth,access delai
         string simpleWeights=default("0.5,0.5");
         // criteria type for normalization 1--> "the larger the better", 0--> "the smaller the better" 

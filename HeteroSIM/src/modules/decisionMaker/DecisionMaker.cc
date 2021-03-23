@@ -30,21 +30,19 @@ simsignal_t DecisionMaker::decisionSignal = cComponent::registerSignal("decision
 void DecisionMaker::initialize()
 {
 
-//    mode4=par("mode4IsActive").boolValue();
+    lteInterfaceIsActive = par("lteInterfaceIsActive").boolValue();
+
     pathToConfigFiles=par("pathToConfigFiles").stringValue();
     simpleWeights=par("simpleWeights").stringValue();
     criteriaType=par("criteriaType").stringValue();
     hysteresisTh=par("hysteresisTh").doubleValue();
     withMovingDLT=par("withMovingDLT").boolValue();
-//    if(mode4)
-//    {
-//        registerNodeToBinder();
-//    }
+
+
     isDeciderActive=par("isDeciderActive").boolValue();
-    isRandomDecision=par("isRandomDecision").boolValue();
-    {
-       dummyNetworkChoice=par("dummyNetworkChoice").intValue();
-    }
+    isRandomDecision = par("isRandomDecision").boolValue() ;
+    dummyNetworkChoice = par("dummyNetworkChoice").intValue();
+
     isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
     lastDecision=-1;
 
@@ -56,18 +54,9 @@ void DecisionMaker::initialize()
 
     addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
 
-}
 
-//void DecisionMaker::registerNodeToBinder()
-//{
-//    binder_ = getBinder();
-//    // Get our UE
-//    cModule *ue = getContainingNode(this);
-//    //Register with the binder
-//    nodeId_ = binder_->registerNode(ue, UE, 0);
-//    // Register the nodeId_ with the binder.
-//    binder_->setMacNodeId(nodeId_, nodeId_);
-//}
+
+}
 
 /**
  * To create control info, mandatory to pass message lower layer protocol
@@ -310,10 +299,8 @@ void DecisionMaker::handleMessage(cMessage *msg)
 
 DecisionMaker::~DecisionMaker()
 {
-//    if(mode4)
-//    {
-//        binder_->unregisterNode(nodeId_);
-//    }
+    if(lteInterfaceIsActive)
+        binder_->unregisterNode(nodeId_);
 
 }
 

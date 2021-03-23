@@ -15,23 +15,20 @@
 
 package heterosim.simulations.networks;
 
-
 import heterosim.src.modules.nodes.car;
 import heterosim.src.modules.nodes.GenericNode;
 
-import inet.environment.common.PhysicalEnvironment;
-
+import inet.networklayer.ipv4.RoutingTableRecorder;
 import inet.physicallayer.common.packetlevel.RadioMedium;
 import inet.physicallayer.contract.packetlevel.IRadioMedium;
-import inet.physicallayer.ieee80211.packetlevel.Ieee80211ScalarRadioMedium;
+import inet.node.ethernet.Eth10G;
+import inet.networklayer.configurator.ipv4.IPv4NetworkConfigurator;
 
-//import inet.visualizer.integrated.IntegratedVisualizer;
-//import inet.visualizer.integrated.IntegratedCanvasVisualizer;
+import lte.corenetwork.binder.LteBinder;
+import lte.world.radio.LteChannelControl;
+import lte.corenetwork.nodes.eNodeB;
+import lte.epc.PgwStandardSimplified;
 
-
-//import lte.corenetwork.binder.LteBinder;
-//import lte.corenetwork.deployer.LteDeployer;
-//import lte.world.radio.LteChannelControl;
 
 network SimpleNetwork
 {
@@ -45,7 +42,7 @@ network SimpleNetwork
 
         radioMedium: <default("Ieee80211ScalarRadioMedium")> like IRadioMedium {
             parameters:
-                @display("p=60,20");
+                @display("p=52,49");
                 mediumLimitCache.carrierFrequency = 5.9GHz;
         }
 
@@ -73,9 +70,6 @@ network SimpleNetwork
           //  @display("p=53,352;is=s");
         //}
 
-//        narrowbandScalarRadioMedium: Ieee802154NarrowbandScalarRadioMedium {
-//            @display("p=392,328");
-//        }
 }
 
 
@@ -85,17 +79,31 @@ network SimpleNetwork2
         int numNodes = default(1);
         @display("bgb=587,415;i=background/budapest");
 
-    
+
     submodules:
 
-
+		//# WiFi interfaces related submodules 	
         radioMedium: <default("Ieee80211ScalarRadioMedium")> like IRadioMedium {
             parameters:
-                @display("p=60,20");
                // mediumLimitCache.carrierFrequency = 5.9GHz;
         }
 
+        //# LTE interface related submodules 	
+        channelControl: LteChannelControl;
+        routingRecorder: RoutingTableRecorder { //Needed only to initialize eNB layers. TODO seek into removing this dependency
+            enabled = default(false);
+        }
+        pgw: PgwStandardSimplified { // Also needed only to initialize eNB layers. TODO seek into removing this dependency
+            nodeType = "PGW";
+        }
+        binder: LteBinder;
+        configurator: IPv4NetworkConfigurator; // Also needed only to initialize eNB layers. TODO seek into removing this dependency
+        eNB: eNodeB;
+
+		//# Common scenario submodules
         node[numNodes]: GenericNode {
             @display("p=276,202;is=s");
         }
+
+    connections allowunconnected:
 }
