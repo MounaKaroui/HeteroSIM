@@ -88,7 +88,7 @@ void CollectStats::registerSignals()
     //Decider transmission interface module signal
     for(auto const & x: interfaceToProtocolMap){
 
-        if (x.second.find("WiFi")== 0) { //IEEE 802.11 case
+        if (x.second.find("WiFi") != std::string::npos) { //IEEE 802.11 case
 
             std::string macModuleName= "^.wlan["+ to_string(x.first) +"].mac";
             std::string radioModuleName= "^.wlan["+ to_string(x.first) +"].radio";
@@ -504,7 +504,7 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, long value,cObject *details)
 {
     if(signal==DecisionMaker::decisionSignal){
-        if(interfaceToProtocolMap[value].find("WiFi")==0){
+        if(interfaceToProtocolMap[value].find("WiFi")!= std::string::npos){
             recordStatsForWlan(signal,source->getName(),dynamic_cast<cMessage*>(details),value);
         }
     }
@@ -517,9 +517,9 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
     auto packet=dynamic_cast<cMessage*>(msg);
     std::string msgName=packet->getName();
 
-    if(interfaceName.find("wlan")==0)
+    if(interfaceName.find("wlan")!= std::string::npos)
     {
-        if((msgName.find("hetNets") == 0))
+        if((msgName.find("hetNets") != std::string::npos))
         {
           interfaceId = Utilities::extractNumber(interfaceName);
           recordStatsForWlan(signal,source->getName(),packet,interfaceId);

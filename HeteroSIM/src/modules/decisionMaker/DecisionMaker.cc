@@ -66,13 +66,12 @@ void DecisionMaker::setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIn
 
     string networkTypeName=getNetworkProtocolName(networkIndex);
 
-    if (networkTypeName.find("802") == 0)  { // IEEE 802 protocol family have common ctrlInfo
+    if (networkTypeName.find("WiFi") != std::string::npos)  { // IEEE 802 protocol family have common ctrlInfo
         setIeee802CtrlInfo(msg,networkIndex);
     }
-//    else if (networkTypeName == "lte") {
-//
-////        msg->setControlInfo(Utilities::LteCtrlInfo(nodeId_));
-//    }
+    else if (networkTypeName == "LTE") {
+        setLteCtrlInfo(msg);
+    }
     else
         throw cRuntimeError(string("Unknown protocol name '" + networkTypeName + "'").c_str());
 
@@ -128,7 +127,7 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
 
 void DecisionMaker::sendToUpper(cMessage*  msg)
 {
-    if (string(msg->getName()).find("hetNets") == 0) {
+    if (string(msg->getName()).find("hetNets") != std::string::npos) {
         BasicMsg* hetNetsMsg = dynamic_cast<BasicMsg*>(msg);
         int id = hetNetsMsg->getApplId();
         if(id<gateSize("toApplication"))
