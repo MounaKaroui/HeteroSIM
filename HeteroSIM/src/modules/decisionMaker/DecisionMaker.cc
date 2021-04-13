@@ -16,6 +16,9 @@
 
 #include "../decisionMaker/DecisionMaker.h"
 #include "../../modules/messages/Messages_m.h"
+#include "common/LteCommon.h"
+
+#include "common/LteControlInfo_m.h"
 
 #include <inet/common/ModuleAccess.h>
 //#include "stack/phy/packet/cbr_m.h"
@@ -27,34 +30,40 @@ Define_Module(DecisionMaker);
 
 simsignal_t DecisionMaker::decisionSignal = cComponent::registerSignal("decision");
 
-void DecisionMaker::initialize()
+void DecisionMaker::initialize(int stage)
 {
+    if (stage == inet::INITSTAGE_LOCAL)
+    {
+        lteInterfaceIsActive = par("lteInterfaceIsActive").boolValue();
 
-    lteInterfaceIsActive = par("lteInterfaceIsActive").boolValue();
-
-    pathToConfigFiles=par("pathToConfigFiles").stringValue();
-    simpleWeights=par("simpleWeights").stringValue();
-    criteriaType=par("criteriaType").stringValue();
-    hysteresisTh=par("hysteresisTh").doubleValue();
-    withMovingDLT=par("withMovingDLT").boolValue();
-
-
-    isDeciderActive=par("isDeciderActive").boolValue();
-    isRandomDecision = par("isRandomDecision").boolValue() ;
-    dummyNetworkChoice = par("dummyNetworkChoice").intValue();
-
-    isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
-    lastDecision=-1;
-
-    cModule* host = inet::getContainingNode(this);
-    std::string name=host->getFullName();
-    int nodeId=Utilities::extractNumber(name.c_str());
-    generator.seed(nodeId);
-    distribution.param(std::bernoulli_distribution::param_type(0.5));
-
-    addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
+        pathToConfigFiles=par("pathToConfigFiles").stringValue();
+        simpleWeights=par("simpleWeights").stringValue();
+        criteriaType=par("criteriaType").stringValue();
+        hysteresisTh=par("hysteresisTh").doubleValue();
+        withMovingDLT=par("withMovingDLT").boolValue();
 
 
+        isDeciderActive=par("isDeciderActive").boolValue();
+        isRandomDecision = par("isRandomDecision").boolValue() ;
+        dummyNetworkChoice = par("dummyNetworkChoice").intValue();
+
+        isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
+        lastDecision=-1;
+
+        cModule* host = inet::getContainingNode(this);
+        std::string name=host->getFullName();
+        int nodeId=Utilities::extractNumber(name.c_str());
+        generator.seed(nodeId);
+        distribution.param(std::bernoulli_distribution::param_type(0.5));
+
+        addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
+    }
+    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that nodeId_ be available
+        if(lteInterfaceIsActive){
+            const char* moduleName = getParentModule()->getFullName();
+            nodeId_ = getBinder()->getMacNodeIdByModuleName(moduleName);
+        }
+    }
 
 }
 
@@ -81,22 +90,42 @@ void DecisionMaker::setIeee802CtrlInfo(cMessage* msg, int networkIndex){
 
     auto basicMsg =dynamic_cast<BasicMsg*>(msg);
 
-    auto destAddress = basicMsg->getDestinationAddress();
+    auto destHost = basicMsg->getDestinationAddress();
     MACAddress destMacAddress;
 
-    if(!strcmp(destAddress, "all")){//broadcast
+    if(!strcmp(destHost, "all")){//broadcast
         destMacAddress.setBroadcast();
     }else{
-        destMacAddress = addressResolver->resolveIEEE802Address(destAddress, networkIndex);
+        destMacAddress = addressResolver->resolveIEEE802Address(destHost, networkIndex);
     }
 
-    //This means we assume that the receiver is using the same technology settings as the transmitter at its "networkIndex"^th interface
+    //There is an assumption here that the receiver is using the same technology settings as the transmitter at its "networkIndex"^th interface
     MACAddress scrMacAddress = addressResolver->resolveIEEE802Address(basicMsg->getSourceAddress(), networkIndex);
 
     auto controlInfo = new Ieee802Ctrl();
     controlInfo->setSourceAddress(scrMacAddress);
     controlInfo->setDestinationAddress(destMacAddress);
     msg->setControlInfo(controlInfo) ;
+}
+
+void DecisionMaker::setLteCtrlInfo(cMessage* msg){
+
+    auto basicMsg =dynamic_cast<BasicMsg*>(msg);
+    auto destHost = basicMsg->getDestinationAddress();
+
+    FlowControlInfo* ctrlInfo =new FlowControlInfo() ;
+
+    ctrlInfo->setSrcAddr(nodeId_);
+
+    if(!strcmp(destHost, "all")){//broadcast
+        ctrlInfo->setDstAddr(0xE0000000);// 0xE0000000=224.0.0.0 is as broadcast/multicast address
+    }else{
+        ctrlInfo->setDstAddr(addressResolver->resolveLTEMacAddress(destHost));//
+    }
+    ctrlInfo->setSrcPort(basicMsg->getApplId());
+    ctrlInfo->setDstPort(basicMsg->getApplId());
+    //ctrlInfo->setSequenceNumber(sequenceNumber) TODO ?
+    msg->setControlInfo(ctrlInfo);
 }
 
 string DecisionMaker::getNetworkProtocolName(int networkIndex){

@@ -47,8 +47,8 @@ module GenericNode
 		//# LTE interfaces related parameters        
         bool lteInterfaceIsActive = default(false);
         int macNodeId = default(0); // This is not a real parameter, but the LteBinder assigns a correct value from c++ code
-        int masterId = default(1); //TODO why this necessary ?
-        int macCellId = default(1); // TODO: this is not a real parameter
+        int masterId = default(1); // This is the MAC identifier of the relay node of this node which is typically the eNB. This identifier is assigned by the binder to the relay node incrementally as they are initialized in the simulation scene.  (see LteBinder::registerNode: Line 49-60) 
+        int macCellId = default(0); // TODO: this is not a real parameter
 
 
     gates:

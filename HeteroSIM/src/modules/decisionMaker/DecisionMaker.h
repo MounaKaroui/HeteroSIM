@@ -18,7 +18,6 @@
 
 #include <omnetpp.h>
 
-#include "corenetwork/binder/LteBinder.h"
 #include <iostream>
 
 
@@ -56,7 +55,8 @@ public:
 
   protected:
 
-    void initialize() override;
+    virtual void initialize(int stage);
+    virtual int numInitStages() const { return inet::NUM_INIT_STAGES; }
     virtual void handleMessage(cMessage *msg)  override;
     void sendToLower(cMessage* msg,int networkIndex);
     void sendToUpper(cMessage*  msg);
@@ -72,6 +72,7 @@ public:
     int takeDecision(cMessage*  msg);
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
     void setIeee802CtrlInfo(cMessage* msg,int networkIndex);
+    void setLteCtrlInfo(cMessage* msg); //"networkIndex" parameter is not needed parameter because multiple LTE interfaces within a node is note supported
 
     bool withMovingDLT;
     double hysteresisTh;

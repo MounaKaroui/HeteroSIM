@@ -29,7 +29,7 @@ void AddressResolver::initialize(int stage)
 {
     cSimpleModule::initialize(stage);
 
-    if (stage == INITSTAGE_NETWORK_LAYER_3 ) { // interfaces should be available
+    if (stage == INITSTAGE_NETWORK_LAYER_3 ) { // Interfaces should be available
 
         WATCH_PTRMAP(globalIeee80211ResolveCache);
 
@@ -46,7 +46,10 @@ void AddressResolver::initialize(int stage)
 
             globalIeee80211ResolveCache.insert({ie,host->getFullName()});
         }
+
+        binder_ =getBinder();
     }
+
 }
 
 
@@ -67,6 +70,10 @@ MACAddress AddressResolver::resolveIEEE802Address(const char *hostName, int inte
     ASSERT2(false,"Cannot resolve address"); // TODO add exception details
 }
 
+
+MacNodeId AddressResolver::resolveLTEMacAddress(const char * hostName){
+    return binder_->getMacNodeIdByModuleName(hostName);
+}
 
 void AddressResolver::handleMessage(cMessage *msg)
 {

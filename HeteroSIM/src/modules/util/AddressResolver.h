@@ -20,6 +20,7 @@
 
 #include "modules/util/contract/IAddressResolver.h"
 
+#include "corenetwork/binder/LteBinder.h"
 
 #include "inet/networklayer/common/InterfaceEntry.h"
 #include "inet/common/ModuleAccess.h"
@@ -39,6 +40,8 @@ public :
 
     virtual MACAddress resolveIEEE802Address(const char * hostName, int interfaceId);
 
+    virtual MacNodeId resolveLTEMacAddress(const char * hostName);
+
 
   protected:
     virtual void initialize(int stage);
@@ -48,6 +51,8 @@ public :
     cModule *host  = nullptr ;
 
     static IEEE80211ResolveCache globalIeee80211ResolveCache;
+
+    LteBinder* binder_; //
 
   public :
      AddressResolver();
