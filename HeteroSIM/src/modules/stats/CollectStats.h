@@ -43,18 +43,18 @@ public:
 //    LteAmc *amc_;
     struct listOfCriteria{
 
-        map<simtime_t,double>*  delay;
-        map<simtime_t,double>*  availableBandwidth;
-        map<simtime_t,double>* reliability;
+        map<simtime_t,double>*  delayIndicator;
+        map<simtime_t,double>*  throughputIndicator;
+        map<simtime_t,double>* reliabilityIndicator;
     };
 
     typedef tuple<long,long>  LongIntegerPair;
 
     struct alternativeAttributes
     {
-        double delay ;
-        double availableBandwidth;
-        double reliability;
+        double delayIndicator ;
+        double throughputIndicator;
+        double reliabilityIndicator;
     };
 
     struct listAlternativeAttributes

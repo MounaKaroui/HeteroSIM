@@ -71,9 +71,9 @@ void CollectStats::setInterfaceToProtocolMap()
 void CollectStats::initializeDLT()
 {
     for(auto const & x: interfaceToProtocolMap){
-        dltByInterfaceIdByCriterion[x.first]["delay"]=0;
-        dltByInterfaceIdByCriterion[x.first]["availableBandwidth"]=0;
-        dltByInterfaceIdByCriterion[x.first]["reliability"]=0;
+        dltByInterfaceIdByCriterion[x.first]["delayIndicator"]=0;
+        dltByInterfaceIdByCriterion[x.first]["throughputIndicator"]=0;
+        dltByInterfaceIdByCriterion[x.first]["reliabilityIndicator"]=0;
     }
 }
 
@@ -150,8 +150,8 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delay, throughputIndicator, reliability;
-    double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"];
+    double delayInidicator, throughputIndicator, reliabilityIndicator;
+    double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
 
     //retrieve last transmitted packet from its name
     std::map<string,cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(msg->getName());
@@ -164,16 +164,16 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             //Delay metric
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
             simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]; //--> transmission duration already elapsed
-            delay = SIMTIME_DBL(macAndRadioDelay);
+            delayInidicator = SIMTIME_DBL(macAndRadioDelay);
 
             //Throughput metric
             std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength();
             throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
             // Reliability metric
-            reliability=1 ; // consider the maximum
+            reliabilityIndicator=1 ; // consider the maximum
 
-            recordStatTuple(interfaceId, delay, throughputIndicator, reliability);
+            recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator);
 
             //purge
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
@@ -200,7 +200,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             }else { //case of packet drop due failing CSMA/CA process or previous ACK received
 
                 //Delay metric
-                delay = SIMTIME_DBL(macDelay);
+                delayInidicator = SIMTIME_DBL(macDelay);
 
 
                 if (comingSignal == NF_PACKET_ACK_RECEIVED){
@@ -211,9 +211,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
                 // Reliability metric
-                reliability=std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])/std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+                reliabilityIndicator=std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])/std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
 
-                recordStatTuple(interfaceId, delay, throughputIndicator, reliability) ;
+                recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator) ;
 
                 //purge
                 packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
@@ -268,9 +268,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {
     // update dtl according to coefficient of variation
-    dltByInterfaceIdByCriterion[interfaceId]["delay"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delay)));
-    dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->availableBandwidth)));
-    dltByInterfaceIdByCriterion[interfaceId]["reliability"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliability)));
+    dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delayIndicator)));
+    dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->throughputIndicator)));
+    dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliabilityIndicator)));
 }
 
 double CollectStats::getDLT(double CofficientOfVariation) {
@@ -293,17 +293,17 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 
     listOfCriteria* rList = new listOfCriteria();
 
-    rList->delay= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->delay,dltByInterfaceIdByCriterion[interfaceId]["delay"] );
-    rList->availableBandwidth= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->availableBandwidth,dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"] );
-    rList->reliability= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->reliability,dltByInterfaceIdByCriterion[interfaceId]["reliability"] );
+    rList->delayIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->delayIndicator,dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"] );
+    rList->throughputIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator,dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"] );
+    rList->reliabilityIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator,dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"] );
 
     //update DLT
     updateDLT(rList, interfaceId);
 
     //purge stats history
-    delete listOfCriteriaByInterfaceId[interfaceId]->delay;
-    delete listOfCriteriaByInterfaceId[interfaceId]->availableBandwidth;
-    delete listOfCriteriaByInterfaceId[interfaceId]->reliability;
+    delete listOfCriteriaByInterfaceId[interfaceId]->delayIndicator;
+    delete listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator;
+    delete listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator;
     delete listOfCriteriaByInterfaceId[interfaceId];
 
     std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
@@ -350,9 +350,9 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
         for (auto& x : dataSet)
         {
             alternativeAttributes* listAttr=new alternativeAttributes();
-            listAttr->delay=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->delay));
-            listAttr->availableBandwidth=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->availableBandwidth));
-            listAttr->reliability=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->reliability));
+            listAttr->delayIndicator=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->delayIndicator));
+            listAttr->throughputIndicator=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->throughputIndicator));
+            listAttr->reliabilityIndicator=Utilities::calculateMeanVec(Utilities::retrieveValues(x.second->reliabilityIndicator));
             myList->data.insert({x.first,listAttr});
         }
     }else if(averageMethod==string("ema"))
@@ -360,15 +360,15 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
         for (auto& x : dataSet)
         {
             std::vector<double> vEMADelay;
-            Utilities::calculateEMA(Utilities::retrieveValues(x.second->delay),vEMADelay);
+            Utilities::calculateEMA(Utilities::retrieveValues(x.second->delayIndicator),vEMADelay);
             std::vector<double> vEMATransmissionRate;
-            Utilities::calculateEMA(Utilities::retrieveValues(x.second->availableBandwidth),vEMATransmissionRate);
+            Utilities::calculateEMA(Utilities::retrieveValues(x.second->throughputIndicator),vEMATransmissionRate);
             std::vector<double> vEMAreliability;
-            Utilities::calculateEMA(Utilities::retrieveValues(x.second->reliability),vEMAreliability);
+            Utilities::calculateEMA(Utilities::retrieveValues(x.second->reliabilityIndicator),vEMAreliability);
             alternativeAttributes* listAttr=new alternativeAttributes();
-            listAttr->delay= vEMADelay.back() ;
-            listAttr->availableBandwidth=vEMATransmissionRate.back();
-            listAttr->reliability=vEMAreliability.back();
+            listAttr->delayIndicator= vEMADelay.back() ;
+            listAttr->throughputIndicator=vEMATransmissionRate.back();
+            listAttr->reliabilityIndicator=vEMAreliability.back();
             myList->data.insert({x.first,listAttr});
         }
     }
@@ -381,12 +381,12 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareDummyNetAttributes
     for (auto& x : listOfCriteriaByInterfaceId)
     {
         alternativeAttributes* listAttr=new alternativeAttributes();
-        vector<double>* d=Utilities::retrieveValues(x.second->delay);
-        vector<double>* avb=Utilities::retrieveValues(x.second->availableBandwidth);
-        vector<double>* qc=Utilities::retrieveValues(x.second->reliability);
-        listAttr->delay=d->back();
-        listAttr->availableBandwidth=avb->back();
-        listAttr->reliability=qc->back();
+        vector<double>* d=Utilities::retrieveValues(x.second->delayIndicator);
+        vector<double>* avb=Utilities::retrieveValues(x.second->throughputIndicator);
+        vector<double>* qc=Utilities::retrieveValues(x.second->reliabilityIndicator);
+        listAttr->delayIndicator=d->back();
+        listAttr->throughputIndicator=avb->back();
+        listAttr->reliabilityIndicator=qc->back();
         myList->data.insert({x.first,listAttr});
     }
     return myList;
@@ -475,17 +475,17 @@ void CollectStats::recordStatTuple(int interfaceId, double delay, double transmi
 void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double reliability){
 
     // check and initialize list if necessary
-    if(!list->delay)
-        list->delay= new map<simtime_t,double>();
-    if(!list->availableBandwidth)
-        list->availableBandwidth = new  map<simtime_t,double>();
-    if(!list->reliability)
-        list->reliability= new  map<simtime_t,double>();
+    if(!list->delayIndicator)
+        list->delayIndicator= new map<simtime_t,double>();
+    if(!list->throughputIndicator)
+        list->throughputIndicator = new  map<simtime_t,double>();
+    if(!list->reliabilityIndicator)
+        list->reliabilityIndicator= new  map<simtime_t,double>();
 
 
-    list->delay->insert({timestamp,delay});
-    list->availableBandwidth->insert({timestamp,availableBandwitdth});
-    list->reliability->insert({timestamp,reliability});
+    list->delayIndicator->insert({timestamp,delay});
+    list->throughputIndicator->insert({timestamp,availableBandwitdth});
+    list->reliabilityIndicator->insert({timestamp,reliability});
 }
 
 

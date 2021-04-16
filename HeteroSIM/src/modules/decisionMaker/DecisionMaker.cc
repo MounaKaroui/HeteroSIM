@@ -179,9 +179,9 @@ std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlter
 
     for (auto& x : listOfAlternativeAttributes->data)
     {
-        rStr+=to_string(x.second->availableBandwidth);
-        rStr+=","+to_string(x.second->delay);
-        rStr+=","+to_string(x.second->reliability)+",";
+        rStr+=to_string(x.second->throughputIndicator);
+        rStr+=","+to_string(x.second->delayIndicator);
+        rStr+=","+to_string(x.second->reliabilityIndicator)+",";
     }
     return rStr.substr(0, rStr.size()-1);
 }
@@ -200,9 +200,9 @@ double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAltern
 
     for (auto& newData : newDecisionData->data)
     {
-        sumTh+=normalizeTh(newData.second->availableBandwidth,lastDecisionData->data[newData.first]->availableBandwidth)*weight.at(0,0);
-        sumTh+=normalizeTh(newData.second->delay,lastDecisionData->data[newData.first]->delay)*weight.at(1,0);
-        sumTh+=normalizeTh(newData.second->reliability,lastDecisionData->data[newData.first]->reliability)*weight.at(2,0);
+        sumTh+=normalizeTh(newData.second->throughputIndicator,lastDecisionData->data[newData.first]->throughputIndicator)*weight.at(0,0);
+        sumTh+=normalizeTh(newData.second->delayIndicator,lastDecisionData->data[newData.first]->delayIndicator)*weight.at(1,0);
+        sumTh+=normalizeTh(newData.second->reliabilityIndicator,lastDecisionData->data[newData.first]->reliabilityIndicator)*weight.at(2,0);
     }
 
     return sumTh/weight.size(1);
