@@ -191,15 +191,15 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
     double delay, throughputIndicator, reliability;
+    double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["availableBandwidth"];
 
     //retrieve last transmitted packet from its name
     std::map<string,cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(msg->getName());
 
-    if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //when the packet comes out of the radio layer
-
+    if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //signal of packet coming out of the radio layer -> frame transmitter
 
         Ieee802Ctrl *controlInfo = dynamic_cast<Ieee802Ctrl*>(messageIt->second->getControlInfo());
-        if (!controlInfo->getDestinationAddress().isMulticast()) { // record statistics if transmitted frame do not require ACK
+        if (!controlInfo->getDestinationAddress().isMulticast()) { // record immediately statistics if transmitted frame do not require ACK
 
             //Delay metric
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
@@ -208,24 +208,23 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
             //Throughput metric
             std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength();
-
-            double timeInterval = 0; //TODO
-            throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), timeInterval);
+            throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
             // Reliability metric
-            reliability=1 ; // consider the maximun
+            reliability=1 ; // consider the maximum
 
             recordStatTuple(interfaceId, delay, throughputIndicator, reliability);
 
             //purge
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
             lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
+            lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
         }
         //else wait for ack or packet drop to record statistics
 
 
-    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED)
-        {
+    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED) { //otherwise it is MAC error signal
+
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
 //            printMsg("Reading",msg);
             simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
@@ -243,14 +242,13 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //Delay metric
                 delay = SIMTIME_DBL(macDelay);
 
-                //For reliability
+
                 if (comingSignal == NF_PACKET_ACK_RECEIVED){
                     std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength();
                 }
 
                  //Throughput metric
-                double timeInterval = 0; //TODO
-                throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), timeInterval);
+                throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
                 // Reliability metric
                 reliability=std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])/std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
