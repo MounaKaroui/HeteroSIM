@@ -28,8 +28,6 @@
 #include "../../base/mcda/MCDM.h"
 #include "../../base/Utilities.h"
 #include "../../modules/messages/Messages_m.h"
-//#include "stack/phy/layer/LtePhyVUeMode4.h"
-//#include "stack/mac/layer/LteMacVUeMode4.h"
 using namespace omnetpp;
 using namespace inet;
 using namespace inet::physicallayer;
@@ -103,15 +101,6 @@ protected:
     void initializeDLT();
     void setInterfaceToProtocolMap();
 
-    //Network attributes collection
-//    double extractQueueVacancy(int interfaceId);
-    double extractBufferOccupancy();
-    double getWlanCBR(int interfaceId);
-//    double extractLteBufferVacancy();
-    double getLteCBR();
-
-//    int getLteMcs();
-//    double getCapacity();
 
     double getThroughputIndicator(int64_t dataLength, double radioFrameTime);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
@@ -122,7 +111,6 @@ protected:
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);
     double getDLT(double CofficientOfVariation);
-    double getsendIntervalParam();
 
     //Network attributes processing
     void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);

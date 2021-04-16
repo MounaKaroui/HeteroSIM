@@ -119,47 +119,7 @@ void CollectStats::registerSignals()
     }
 }
 
-//double CollectStats::extractLteBufferVacancy()
-//{
-//    double queueVacancy=0;
-//    cModule* host=getContainingNode(this);
-//    std::string moduleName=string(host->getFullName())+".lteNic.mac";
-//    cModule* macModule=getModuleByPath(moduleName.c_str());
-//    LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
-//    double count=0;
-//    for(auto& buf: lteMac->macBuffers_)
-//    {
-//
-//        if(buf.second->getQueueLength()!=0)
-//            queueVacancy+=(buf.second->getQueueLength()-buf.second->getQueueOccupancy())/buf.second->getQueueLength();
-//        count++;
-//    }
-//
-//    return (queueVacancy/count)*100;
-//}
 
-double CollectStats::getWlanCBR(int interfaceId){
-
-    cModule* host=getContainingNode(this);
-    std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.rx";
-    cModule* rxModule=getModuleByPath(moduleName.c_str());
-    ChannelLoadAccess* channelLoadRx= dynamic_cast<ChannelLoadAccess*>(rxModule);
-    return channelLoadRx->getCBR();
-}
-
-//double CollectStats::extractQueueVacancy(int interfaceId)
-//{
-//    double queueVacancy=0;
-//    cModule* host=getContainingNode(this);
-//    std::string moduleName=string(host->getFullName())+".wlan["+to_string(interfaceId)+"].mac.dcf";
-//    cModule* dcfModule=getModuleByPath(moduleName.c_str());
-//    using namespace inet::ieee80211;
-//    Dcf* dcf= dynamic_cast<Dcf*>(dcfModule);
-//    queueVacancy = ((dcf->pendingQueue->getMaxQueueSize()
-//            - dcf->pendingQueue->getLength())
-//            / dcf->pendingQueue->getMaxQueueSize()) * 100;
-//    return queueVacancy;
-//}
 
 
 double CollectStats::getThroughputIndicator(int64_t dataLength, double transmitTime)
@@ -262,50 +222,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         }
 }
 
-
-//double CollectStats::getLteCBR()
-//{
-//    cModule* host=getContainingNode(this);
-//    std::string moduleName=string(host->getFullName())+".lteNic.phy";
-//    cModule* phyModule=getModuleByPath(moduleName.c_str());
-//    LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
-//    return ltePhy->mCBR;
-//}
-
-//int CollectStats::getLteMcs()
-//{
-//     cModule* host=getContainingNode(this);
-//     std::string moduleName=string(host->getFullName())+".lteNic.phy";
-//     cModule* phyModule=getModuleByPath(moduleName.c_str());
-//     LtePhyVUeMode4* ltePhy=dynamic_cast<LtePhyVUeMode4*>(phyModule);
-//     return ltePhy->getSciGrant()->getMcs();
-//}
-//
-//double CollectStats::getCapacity()
-//{
-//        cModule* host=getContainingNode(this);
-//        std::string moduleName=string(host->getFullName())+".lteNic.mac";
-//        cModule* macModule=getModuleByPath(moduleName.c_str());
-//        LteMacVUeMode4* lteMac=dynamic_cast<LteMacVUeMode4*>(macModule);
-//
-//        LteMod mod = _QPSK;
-//        int mcs=getLteMcs();
-//        if (mcs > 9 && mcs < 17)
-//        {
-//           mod = _16QAM;
-//        }
-//        else if (mcs> 16 && mcs < 29 )
-//        {
-//           mod = _64QAM;
-//        }
-//
-//        unsigned int i = (mod == _QPSK ? 0 : (mod == _16QAM ? 9 : (mod == _64QAM ? 15 : 0)));
-//
-//        const unsigned int* tbsVect = itbs2tbs(mod, SINGLE_ANTENNA_PORT0, 1, mcs-i);
-//        return tbsVect[(lteMac->numSubchannels_*lteMac->subchannelSize_)-1];
-//}
-
-
 //void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 //{
 //    double delay, availableBandwidth,cbr, queueVacancy;
@@ -348,18 +264,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 //}
 
 
-
-double CollectStats::getsendIntervalParam()
-{
-    cModule* host=getContainingNode(this);
-    std::string hostName=host->getFullName();
-    if(hostName=="car[20]")
-    {
-        std::string moduleName=hostName+".applLayer[0]"; // TODO: generalize this in case of many data applications
-        cModule* module=getModuleByPath(moduleName.c_str());
-        return module->par("sendInterval").doubleValue();
-    }
-}
 
 void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {
