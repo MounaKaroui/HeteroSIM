@@ -58,7 +58,7 @@ void DecisionMaker::initialize(int stage)
 
         addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
     }
-    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that lteInterfaceMacId_ be available
+    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that lteInterfaceUpperLayerAddress_ be available
         if(lteInterfaceIsActive){
             const char* moduleName = getParentModule()->getFullName();
             lteInterfaceUpperLayerAddress_ = getBinder()->getMacNodeIdByModuleName(moduleName);
@@ -105,7 +105,7 @@ void DecisionMaker::setIeee802CtrlInfo(cMessage* msg, int networkIndex){
     auto controlInfo = new Ieee802Ctrl();
     controlInfo->setSourceAddress(scrMacAddress);
     controlInfo->setDestinationAddress(destMacAddress);
-    msg->setControlInfo(controlInfo) ;
+    msg->setControlInfo(controlInfo);
 }
 
 void DecisionMaker::setLteCtrlInfo(cMessage* msg){
