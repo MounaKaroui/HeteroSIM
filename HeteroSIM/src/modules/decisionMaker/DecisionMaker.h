@@ -85,7 +85,7 @@ public:
     std::string criteriaType;
 
     LteBinder* binder_;
-    MacNodeId nodeId_;
+    MacNodeId lteInterfaceMacId_;
     int critNumb;
     std::string pathToConfigFiles;
 

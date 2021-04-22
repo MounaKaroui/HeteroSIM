@@ -34,7 +34,7 @@ void DecisionMaker::initialize(int stage)
 {
     if (stage == inet::INITSTAGE_LOCAL)
     {
-        lteInterfaceIsActive = par("lteInterfaceIsActive").boolValue();
+        lteInterfaceIsActive = getAncestorPar("lteInterfaceIsActive").boolValue();
 
         pathToConfigFiles=par("pathToConfigFiles").stringValue();
         simpleWeights=par("simpleWeights").stringValue();
@@ -61,7 +61,7 @@ void DecisionMaker::initialize(int stage)
     else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that nodeId_ be available
         if(lteInterfaceIsActive){
             const char* moduleName = getParentModule()->getFullName();
-            nodeId_ = getBinder()->getMacNodeIdByModuleName(moduleName);
+            lteInterfaceMacId_ = getBinder()->getMacNodeIdByModuleName(moduleName);
         }
     }
 
@@ -115,7 +115,7 @@ void DecisionMaker::setLteCtrlInfo(cMessage* msg){
 
     FlowControlInfo* ctrlInfo =new FlowControlInfo() ;
 
-    ctrlInfo->setSrcAddr(nodeId_);
+    ctrlInfo->setSrcAddr(lteInterfaceMacId_);
 
     if(!strcmp(destHost, "all")){//broadcast
         ctrlInfo->setDstAddr(0xE0000000);// 0xE0000000=224.0.0.0 is as broadcast/multicast address
@@ -328,7 +328,7 @@ void DecisionMaker::handleMessage(cMessage *msg)
 DecisionMaker::~DecisionMaker()
 {
     if(lteInterfaceIsActive)
-        binder_->unregisterNode(nodeId_);
+        binder_->unregisterNode(lteInterfaceMacId_);
 
 }
 

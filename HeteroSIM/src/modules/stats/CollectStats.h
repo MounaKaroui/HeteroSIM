@@ -83,6 +83,13 @@ public:
         T * mLinkLayer=dynamic_cast<T*>(module);
         mLinkLayer->subscribe(sigName, this);
     }
+    template<typename T>
+    void subscribeToSignal(std::string moduleName, const char * signalName)
+    {
+        cModule* module = getModuleByPath(moduleName.c_str());
+        T * mLinkLayer=dynamic_cast<T*>(module);
+        mLinkLayer->subscribe(signalName, this);
+    }
 
     //Final decision data to be used as an input for decider
     CollectStats::listAlternativeAttributes* prepareNetAttributes();
@@ -106,7 +113,7 @@ protected:
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, long value, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
-//    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
+    void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
 
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);
@@ -132,6 +139,9 @@ protected:
 
     simsignal_t cbr0;
     simsignal_t cbr1;
+
+    //to record LTE related statistics
+    simsignal_t lteMacSentPacketToLowerLayerSingal;
 
 };
 

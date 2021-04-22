@@ -102,19 +102,18 @@ void CollectStats::registerSignals()
             //packet ack signals
             subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, NF_PACKET_ACK_RECEIVED);
         }
-//        else if(x.second=="mode4")
-//        {
-//            std::string pdcpRrcModuleName = "^.lteNic.pdcpRrc";
-//            std::string phyModuleName = "^.lteNic.phy";
-//            std::string macModuleName = "^.lteNic.mac";
-//
-//            bool mode4 = getAncestorPar("withMode4");
-//            if (mode4)
-//            {
-//                    subscribeToSignal<LtePdcpRrcUeD2D>(pdcpRrcModuleName,receivedPacketFromUpperLayerLteSignal);
-//                    subscribeToSignal<LtePhyVUeMode4>(phyModuleName,LtePhyVUeMode4::sentToLowerLayerSignal);
-//            }
-//        }
+        else if(x.second.find("LTE")!= std::string::npos)
+        {
+            if (getAncestorPar("lteInterfaceIsActive"))
+            {
+                std::string macModuleName = "^.lteNic.mac";
+
+                cModule* module = getModuleByPath(macModuleName.c_str());
+                LteMacBase * macModule=check_and_cast<LteMacBase *>(module);
+                lteMacSentPacketToLowerLayerSingal =  macModule->registerSignal("sentPacketToLowerLayer");
+                macModule->subscribe(lteMacSentPacketToLowerLayerSingal, this);
+            }
+        }
 
     }
 }
@@ -159,7 +158,8 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //signal of packet coming out of the radio layer -> frame transmitter
 
         Ieee802Ctrl *controlInfo = dynamic_cast<Ieee802Ctrl*>(messageIt->second->getControlInfo());
-        if (!controlInfo->getDestinationAddress().isMulticast()) { // record immediately statistics if transmitted frame do not require ACK
+        //TODO why negation with !
+       if (!controlInfo->getDestinationAddress().isMulticast()) { // record immediately statistics if transmitted frame do not require ACK
 
             //Delay metric
             ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
@@ -218,8 +218,45 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 //purge
                 packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
                 lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
+                lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
             }
         }
+}
+
+void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
+{
+    if (comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker toward transmission interface
+
+            //packetFromUpperTimeStampsByInterfaceId record as in "recordStatsForWlan" for delay metric is not need since the interface sends delay signal
+
+            // For reliability metric
+            std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
+
+            //utility
+            lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg});
+
+
+            //FlowControlInfo* ctrlInfo = dynamic_cast<FlowControlInfo*>(msg->getControlInfo());
+
+            return ;
+        }
+
+    if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
+           listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
+
+    double delay, throughputIndicator, reliability;
+    double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
+
+
+    if(comingSignal==lteMacSentPacketToLowerLayerSingal){
+
+        //LteMacPdu *pduSent = check_and_cast<LteMacPdu*>(msg);
+
+
+    }
+
+
+
 }
 
 //void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
@@ -405,10 +442,15 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, long value,cObject *details)
 {
-    if(signal==DecisionMaker::decisionSignal){
-        if(interfaceToProtocolMap[value].find("WiFi")!= std::string::npos){
-            recordStatsForWlan(signal,source->getName(),dynamic_cast<cMessage*>(details),value);
-        }
+    if (signal == DecisionMaker::decisionSignal) {
+
+        if (interfaceToProtocolMap[value].find("WiFi") != std::string::npos) {
+            recordStatsForWlan(signal, source->getName(),dynamic_cast<cMessage*>(details), value);
+
+        }else if (interfaceToProtocolMap[value].find("LTE")!= std::string::npos) {
+            recordStatsForLte(signal, dynamic_cast<cMessage*>(details), value);
+
+        } else ASSERT2(false,"Can not find interface to protocol entry");
     }
 
 }
@@ -427,23 +469,15 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
           recordStatsForWlan(signal,source->getName(),packet,interfaceId);
         }
 
-        return;
+    } else if(interfaceName.find("lteNic")!= std::string::npos){
+
+        std::vector<int> result;
+        bool searchResult = Utilities::findKeyByValue(result, interfaceToProtocolMap, string("LTE"));
+        if (searchResult) {
+            recordStatsForLte(signal, packet, result.at(0));
+
+        }else ASSERT2(false,"Can not find interface to protocol entry");
     }
-    ASSERT (false);
-//    else if(interfaceName.find("lteNic")==0)
-//    {
-//
-//        std::vector<int> result;
-//        bool searchResult=Utilities::findKeyByValue(result, interfaceToProtocolMap, string("mode4"));
-//        if(searchResult)
-//        {
-//            interfaceId=result.at(0);
-//            recordStatsForLte(signal, packet, interfaceId);
-//
-//        }
-//       }
-
-
 }
 
 
