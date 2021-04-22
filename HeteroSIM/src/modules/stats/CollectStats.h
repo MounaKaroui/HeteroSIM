@@ -103,7 +103,8 @@ protected:
     int gamma;
 
     // Initialization and signal registration
-    virtual void initialize();
+    virtual void initialize(int stage);
+    virtual int numInitStages() const { return inet::NUM_INIT_STAGES; }
     void registerSignals();
     void initializeDLT();
     void setInterfaceToProtocolMap();
@@ -142,6 +143,7 @@ protected:
 
     //to record LTE related statistics
     simsignal_t lteMacSentPacketToLowerLayerSingal;
+    MacNodeId lteInterfaceMacId_;
 
 };
 

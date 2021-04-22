@@ -28,32 +28,42 @@
 #include "common/LteCommon.h"
 #include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
 
+#include "stack/mac/packet/LteMacPdu_m.h"
+
 
 Define_Module(CollectStats);
 static const simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
 
 
-void CollectStats::initialize()
+void CollectStats::initialize(int stage)
 {
 
-    interfaceToProtocolMapping =par("interfaceToProtocolMapping").stringValue();
-    averageMethod=par("averageMethod").stringValue();
-    setInterfaceToProtocolMap();
-    registerSignals();
-    initializeDLT();
+    if (stage == inet::INITSTAGE_LOCAL) {
+        interfaceToProtocolMapping =
+                par("interfaceToProtocolMapping").stringValue();
+        averageMethod = par("averageMethod").stringValue();
+        setInterfaceToProtocolMap();
+        registerSignals();
+        initializeDLT();
 
-    tr0 =registerSignal("tr0");
-    tr1 =registerSignal("tr1");
+        tr0 = registerSignal("tr0");
+        tr1 = registerSignal("tr1");
 
-    delay0 =registerSignal("delay0");
-    delay1 =registerSignal("delay1");
+        delay0 = registerSignal("delay0");
+        delay1 = registerSignal("delay1");
 
-    cbr0 =registerSignal("cbr0");
-    cbr1 =registerSignal("cbr1");
+        cbr0 = registerSignal("cbr0");
+        cbr1 = registerSignal("cbr1");
 
-
-    gamma=par("gamma").intValue();
-    sendInterval=par("sendPeriod").doubleValue();
+        gamma = par("gamma").intValue();
+        sendInterval = par("sendPeriod").doubleValue();
+    }
+    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that lteInterfaceMacId_ be available
+            if(getAncestorPar("lteInterfaceIsActive").boolValue()){
+                const char* moduleName = getParentModule()->getFullName();
+                lteInterfaceMacId_ = getBinder()->getMacNodeIdByModuleName(moduleName);
+            }
+        }
 }
 
 void CollectStats::setInterfaceToProtocolMap()
