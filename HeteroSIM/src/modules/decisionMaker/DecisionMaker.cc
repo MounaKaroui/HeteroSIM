@@ -58,10 +58,10 @@ void DecisionMaker::initialize(int stage)
 
         addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
     }
-    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that nodeId_ be available
+    else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that lteInterfaceMacId_ be available
         if(lteInterfaceIsActive){
             const char* moduleName = getParentModule()->getFullName();
-            lteInterfaceMacId_ = getBinder()->getMacNodeIdByModuleName(moduleName);
+            lteInterfaceUpperLayerAddress_ = getBinder()->getMacNodeIdByModuleName(moduleName);
         }
     }
 
@@ -115,7 +115,7 @@ void DecisionMaker::setLteCtrlInfo(cMessage* msg){
 
     FlowControlInfo* ctrlInfo =new FlowControlInfo() ;
 
-    ctrlInfo->setSrcAddr(lteInterfaceMacId_);
+    ctrlInfo->setSrcAddr(lteInterfaceUpperLayerAddress_);
 
     if(!strcmp(destHost, "all")){//broadcast
         ctrlInfo->setDstAddr(0xE0000000);// 0xE0000000=224.0.0.0 is as broadcast/multicast address
@@ -328,7 +328,7 @@ void DecisionMaker::handleMessage(cMessage *msg)
 DecisionMaker::~DecisionMaker()
 {
     if(lteInterfaceIsActive)
-        binder_->unregisterNode(lteInterfaceMacId_);
+        binder_->unregisterNode(lteInterfaceUpperLayerAddress_);
 
 }
 
