@@ -243,8 +243,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
 
             //utility
-            lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg});
-
+//            lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg});
 
             //FlowControlInfo* ctrlInfo = dynamic_cast<FlowControlInfo*>(msg->getControlInfo());
 
@@ -254,14 +253,32 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delay, throughputIndicator, reliability;
+    double delayInidicator, throughputIndicator, reliabilityIndicator;
     double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
 
+    LteMacPdu_Base *pduSent;
+    if((comingSignal==lteMacSentPacketToLowerLayerSingal) && (pduSent = dynamic_cast<LteMacPdu_Base*>(msg))){
 
-    if(comingSignal==lteMacSentPacketToLowerLayerSingal){
+        UserControlInfo *uinfo = check_and_cast<UserControlInfo*>(pduSent->getControlInfo());
+        bool isDataPacket = (uinfo->getFrameType() == DATAPKT) && (uinfo->getLcid() == SHORT_BSR);
+        bool isMulticastMessage = uinfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
 
-        //LteMacPdu *pduSent = check_and_cast<LteMacPdu*>(msg);
+        if (isDataPacket && isMulticastMessage) { //broadcast case record stats
 
+            //Delay metric
+            delayInidicator = TTI;
+            // Reliability metric
+            reliabilityIndicator=1 ; // consider the maximum
+
+            //Throughput metric
+             std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += pduSent->getByteLength();
+             throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
+
+            recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator);
+
+        } else if(isDataPacket ){//unicast cast  wait for HARQ feedback to record stats
+            //TODO
+        }
 
     }
 
