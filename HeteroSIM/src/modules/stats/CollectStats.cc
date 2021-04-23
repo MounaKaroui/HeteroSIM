@@ -29,10 +29,11 @@
 #include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
 
 #include "stack/mac/packet/LteMacPdu_m.h"
+#include "stack/mac/packet/LteHarqFeedback_m.h"
+#include "stack/phy/layer/LtePhyBase.h"
 
 
 Define_Module(CollectStats);
-static const simsignal_t receivedPacketFromUpperLayerLteSignal = cComponent::registerSignal("receivedPacketFromUpperLayer");
 
 
 void CollectStats::initialize(int stage)
@@ -122,9 +123,13 @@ void CollectStats::registerSignals()
                 LteMacBase * macModule=check_and_cast<LteMacBase *>(module);
                 lteMacSentPacketToLowerLayerSingal =  macModule->registerSignal("sentPacketToLowerLayer");
                 macModule->subscribe(lteMacSentPacketToLowerLayerSingal, this);
+
+                std::string phyModuleName = "^.lteNic.phy";
+                LtePhyBase * phyModule=check_and_cast<LtePhyBase *>(getModuleByPath(phyModuleName.c_str()));
+                ltePhyRecievedAirFrameSingal=phyModule->registerSignal("receivedAirFrame");
+                phyModule->subscribe(ltePhyRecievedAirFrameSingal, this);
             }
         }
-
     }
 }
 
@@ -133,8 +138,7 @@ void CollectStats::registerSignals()
 
 double CollectStats::getThroughputIndicator(int64_t dataLength, double transmitTime)
 {
-
-    return dataLength/transmitTime;
+    return (double)dataLength/transmitTime;
 }
 
 
@@ -221,7 +225,11 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
                 // Reliability metric
-                reliabilityIndicator=std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])/std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+                reliabilityIndicator =
+                        (double) std::get<1>(
+                                attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])
+                                / (double) std::get<0>(
+                                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
 
                 recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator) ;
 
@@ -235,20 +243,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
-    if (comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker toward transmission interface
-
-            //packetFromUpperTimeStampsByInterfaceId record as in "recordStatsForWlan" for delay metric is not need since the interface sends delay signal
-
-            // For reliability metric
-            std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
-
-            //utility
-//            lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg});
-
-            //FlowControlInfo* ctrlInfo = dynamic_cast<FlowControlInfo*>(msg->getControlInfo());
-
-            return ;
-        }
+    if (comingSignal == DecisionMaker::decisionSignal) {
+        return;// from here we do not know the IDs of MAC PDUs sent to initialize utility variables.
+    }
 
     if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
            listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
@@ -256,14 +253,17 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     double delayInidicator, throughputIndicator, reliabilityIndicator;
     double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
 
-    LteMacPdu_Base *pduSent;
-    if((comingSignal==lteMacSentPacketToLowerLayerSingal) && (pduSent = dynamic_cast<LteMacPdu_Base*>(msg))){
+    UserControlInfo *uInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+    bool isDataPacket = (uInfo->getFrameType() == DATAPKT) && (uInfo->getLcid() == SHORT_BSR); // the second condition is to ignore sent PDU sent just to ask grant. See LteMacUeD2D::macPduMake line 93.
+    bool isAckOrNackPacket = uInfo->getFrameType() == HARQPKT ;
 
-        UserControlInfo *uinfo = check_and_cast<UserControlInfo*>(pduSent->getControlInfo());
-        bool isDataPacket = (uinfo->getFrameType() == DATAPKT) && (uinfo->getLcid() == SHORT_BSR);
-        bool isMulticastMessage = uinfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
+    if((comingSignal==lteMacSentPacketToLowerLayerSingal) && (isDataPacket)){
 
-        if (isDataPacket && isMulticastMessage) { //broadcast case record stats
+        LteMacPdu_Base *pduSent = dynamic_cast<LteMacPdu_Base*>(msg);
+
+        bool isMulticastMessage = uInfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id is set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
+
+        if (isMulticastMessage) { //broadcast case record stats
 
             //Delay metric
             delayInidicator = TTI;
@@ -276,58 +276,58 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
             recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator);
 
-        } else if(isDataPacket ){//unicast cast  wait for HARQ feedback to record stats
-            //TODO
+        }else{ //unicast traffic: initialize utility variables and wait for HARQ feedback to record stats.
+              //this instruction block is equivalent to "when packet leave decision maker toward transmission interface" recordStatsForWlan
+
+            string pduName = "pdu"+std::to_string(pduSent->getMacPduId());
+
+            //For delay metric
+            packetFromUpperTimeStampsByInterfaceId[interfaceId][pduName]=NOW; //TODO consider the eventual static time between the instant this data packet starts to be handled by the MAC layer and the instant of the creation the corresponding PDU.
+
+            // For reliability metric
+            std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
+
+            //utility
+            lastTransmittedFramesByInterfaceId[interfaceId].insert({pduName,pduSent});
         }
 
+    }else if ((comingSignal == ltePhyRecievedAirFrameSingal) && (isAckOrNackPacket)){
+
+        LteAirFrame* frame = check_and_cast<LteAirFrame*>(msg);
+        LteHarqFeedback *harqFeedback = check_and_cast<LteHarqFeedback*>(frame->getEncapsulatedPacket());
+
+        if (harqFeedback->getResult()){ // H-ARQ feedback is ACK
+
+            string pduName = "pdu"+std::to_string(harqFeedback->getFbMacPduId());
+
+            if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pduName) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                //This feedback is for a D2D_SHORT_BSR packet sent just to ask grant. See LteMacUeD2D::macPduMake line 93.
+                return ;
+            }
+           simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][pduName];
+
+           //Delay metric
+           delayInidicator = SIMTIME_DBL(macDelay);
+
+           //Throughput metric
+            throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
+
+            // Reliability metric
+            reliabilityIndicator =
+                    (double) std::get<1>(
+                            attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])
+                            / (double) std::get<0>(
+                                    attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+
+            recordStatTuple(interfaceId, delayInidicator, throughputIndicator,reliabilityIndicator);
+
+            //purge
+            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(pduName);
+            lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
+
+        } //else TODO : Can a H-ARQ process fails to send a MAC PDU ? If yes record stats at failure.
     }
-
-
-
 }
-
-//void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
-//{
-//    double delay, availableBandwidth,cbr, queueVacancy;
-//
-//    if(listOfCriteriaByInterfaceId.find(interfaceId)== listOfCriteriaByInterfaceId.end())
-//        listOfCriteriaByInterfaceId.insert({interfaceId,new listOfCriteria()});
-//
-//    if ( comingSignal ==receivedPacketFromUpperLayerLteSignal){ // When a packet enter to PDCP_RRC layer
-//        std::string msgName=PK(msg)->getName();
-//        if((msgName.find("hetNets")==0))
-//        {
-//            FlowControlInfoNonIp* lteInfo = check_and_cast<FlowControlInfoNonIp*>(PK(msg)->getControlInfo());
-//            packetFromUpperTimeStampsByInterfaceId[interfaceId][to_string(lteInfo->getMsgFlag())]=NOW;
-//        }
-//    }
-//
-//
-//    if ( comingSignal ==  LtePhyVUeMode4::sentToLowerLayerSignal) { // when the  packet comes to the Phy layer for transmission
-//        LteAirFrame* lteAirFrame=dynamic_cast<LteAirFrame*>(msg);
-//        UserControlInfo* lteInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-//        if(Utilities::checkLteCtrlInfo(lteInfo)){
-//            //delay
-//            std::string msgFlag = to_string(lteInfo->getMsgFlag());
-//            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msgFlag)!= packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-//            simtime_t lteInterLayerDelay = lteAirFrame->getDuration()+(NOW- packetFromUpperTimeStampsByInterfaceId[interfaceId][msgFlag]);
-//            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgFlag);
-//            delay = SIMTIME_DBL(lteInterLayerDelay);
-//            // cbr
-//            cbr=getLteCBR();
-//            emit(cbr1,cbr);
-//            availableBandwidth = getAvailableBandwidth(
-//                    getCapacity(),
-//                lteAirFrame->getDuration().dbl(), cbr);
-//
-//            // buffer vacancy
-//            queueVacancy=extractLteBufferVacancy();
-//            recordStatTuple(interfaceId,delay,availableBandwidth,queueVacancy) ;
-//        }
-//    }
-//}
-
-
 
 void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {

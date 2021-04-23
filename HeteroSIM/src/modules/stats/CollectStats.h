@@ -143,6 +143,7 @@ protected:
 
     //to record LTE related statistics
     simsignal_t lteMacSentPacketToLowerLayerSingal;
+    simsignal_t ltePhyRecievedAirFrameSingal;
     MacNodeId lteInterfaceMacId_;
 
 };
