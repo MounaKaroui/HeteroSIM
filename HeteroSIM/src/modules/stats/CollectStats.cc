@@ -40,12 +40,8 @@ void CollectStats::initialize(int stage)
 {
 
     if (stage == inet::INITSTAGE_LOCAL) {
-        interfaceToProtocolMapping =
-                par("interfaceToProtocolMapping").stringValue();
+        interfaceToProtocolMapping = par("interfaceToProtocolMapping").stringValue();
         averageMethod = par("averageMethod").stringValue();
-        setInterfaceToProtocolMap();
-        registerSignals();
-        initializeDLT();
 
         tr0 = registerSignal("tr0");
         tr1 = registerSignal("tr1");
@@ -58,6 +54,10 @@ void CollectStats::initialize(int stage)
 
         gamma = par("gamma").intValue();
         sendInterval = par("sendPeriod").doubleValue();
+
+        setInterfaceToProtocolMap();
+        registerSignals();
+        initializeDLT();
     }
     else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that lteInterfaceMacId_ be available
             if(getAncestorPar("lteInterfaceIsActive").boolValue()){
@@ -82,9 +82,9 @@ void CollectStats::setInterfaceToProtocolMap()
 void CollectStats::initializeDLT()
 {
     for(auto const & x: interfaceToProtocolMap){
-        dltByInterfaceIdByCriterion[x.first]["delayIndicator"]=0;
-        dltByInterfaceIdByCriterion[x.first]["throughputIndicator"]=0;
-        dltByInterfaceIdByCriterion[x.first]["reliabilityIndicator"]=0;
+        dltByInterfaceIdByCriterion[x.first]["delayIndicator"]=getDLT(0);
+        dltByInterfaceIdByCriterion[x.first]["throughputIndicator"]=getDLT(0);
+        dltByInterfaceIdByCriterion[x.first]["reliabilityIndicator"]=getDLT(0);
     }
 }
 
