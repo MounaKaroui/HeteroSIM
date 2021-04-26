@@ -361,21 +361,28 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
 
     listOfCriteria* rList = new listOfCriteria();
 
-    rList->delayIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->delayIndicator,dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"] );
-    rList->throughputIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator,dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"] );
-    rList->reliabilityIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator,dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"] );
+    //Check if stats of "interfaceId" are recorded
+    if(listOfCriteriaByInterfaceId[interfaceId]->delayIndicator && listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator && listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator ){
 
-    //update DLT
-    updateDLT(rList, interfaceId);
+        rList->delayIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->delayIndicator,dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"] );
+        rList->throughputIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator,dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"] );
+        rList->reliabilityIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator,dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"] );
 
-    //purge stats history
-    delete listOfCriteriaByInterfaceId[interfaceId]->delayIndicator;
-    delete listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator;
-    delete listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator;
-    delete listOfCriteriaByInterfaceId[interfaceId];
+        //update DLT
+        updateDLT(rList, interfaceId);
 
-    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
-    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
+        //purge stats history
+        delete listOfCriteriaByInterfaceId[interfaceId]->delayIndicator;
+        delete listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator;
+        delete listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator;
+        delete listOfCriteriaByInterfaceId[interfaceId];
+
+        std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
+        std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
+
+    }else{ //This is the case where the feedback for recording stats of "interfaceId" are not know yet
+        insertStatTuple(rList, NOW, DBL_MAX, 0, 0); //consider these penalties
+    }
 
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
