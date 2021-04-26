@@ -216,6 +216,11 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
             }else { //case of packet drop due failing CSMA/CA process or previous ACK received
 
+                //This happens when the decision maker has already taken his decision meanwhile. So this ack is no logger needed.
+                if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                    return ; //ignore it
+                }
+
                 //Delay metric
                 delayInidicator = SIMTIME_DBL(macDelay);
 
