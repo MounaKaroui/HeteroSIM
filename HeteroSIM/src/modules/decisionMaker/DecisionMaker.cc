@@ -179,8 +179,8 @@ std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlter
 
     for (auto& x : listOfAlternativeAttributes->data)
     {
-        rStr+=to_string(x.second->throughputIndicator);
-        rStr+=","+to_string(x.second->delayIndicator);
+        rStr+=to_string(x.second-> delayIndicator);
+        rStr+=","+to_string(x.second->throughputIndicator);
         rStr+=","+to_string(x.second->reliabilityIndicator)+",";
     }
     return rStr.substr(0, rStr.size()-1);

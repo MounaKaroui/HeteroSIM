@@ -28,10 +28,10 @@ simple DecisionMaker
         
         string addressResolver ;
                 
-        //weights in this order Available bandwidth,access delai
-        string simpleWeights=default("0.5,0.5");
+        //weights in this order delay indicator, throughput indicator, reliability indicator
+        string simpleWeights=default("0.4,0.4,0.2");
         // criteria type for normalization 1--> "the larger the better", 0--> "the smaller the better" 
-        string criteriaType=default("1,0,1");
+        string criteriaType=default("0,1,1");
         // pathToConfigFiles only used to read pair wise matrix
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
  		bool isDeciderActive=default(true); 
