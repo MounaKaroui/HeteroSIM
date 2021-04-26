@@ -199,8 +199,11 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED) { //otherwise it is MAC error signal
 
-            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-//            printMsg("Reading",msg);
+            //This happens when the decision maker has already taken his decision meanwhile. So this ack is no logger needed.
+            if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                return ; //ignore it
+            }
+
             simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
 
@@ -300,9 +303,10 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
             string pduName = "pdu"+std::to_string(harqFeedback->getFbMacPduId());
 
+            //This condition is verified either because this feedback is for a D2D_SHORT_BSR packet sent just to ask grant (See LteMacUeD2D::macPduMake line 93)
+            //or because the decision maker has already taken his decision meanwhile.
             if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pduName) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
-                //This feedback is for a D2D_SHORT_BSR packet sent just to ask grant. See LteMacUeD2D::macPduMake line 93.
-                return ;
+                return ; //In the two case this feedback in not need. Ignore it.
             }
            simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][pduName];
 
@@ -377,12 +381,16 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
         delete listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator;
         delete listOfCriteriaByInterfaceId[interfaceId];
 
-        std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
-        std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
-
     }else{ //This is the case where the feedback for recording stats of "interfaceId" are not know yet
         insertStatTuple(rList, NOW, DBL_MAX, 0, 0); //consider these penalties
     }
+
+    //purge
+    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
+    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
+    //This is to ignore the statistics of all packets whose ack has not yet been received.
+    packetFromUpperTimeStampsByInterfaceId[interfaceId].clear(); //
+    lastTransmittedFramesByInterfaceId[interfaceId].clear();
 
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
