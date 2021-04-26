@@ -39,6 +39,7 @@ protected:
     int nodeId;
     int  msgLength;
     int appID;
+    const char *destAddress = nullptr;
     cMessage* msgSentTrigger;
 
 protected:

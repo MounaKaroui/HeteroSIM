@@ -23,7 +23,6 @@ import heterosim.src.base.BaseAppl;
 simple GenericApp extends BaseAppl
 {
      parameters:
-       string destAddress = default("all"); // all means broadcast message
        startTime=default(10s+uniform(0s, sendInterval)) ; // application start time (start of the first packet)
        stopTime=default(-1s) ;
        @class(GenericApp); 

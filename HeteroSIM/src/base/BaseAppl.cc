@@ -35,6 +35,7 @@ void BaseAppl::initialize()
 
     msgLength=par("msgLength").intValue();
     appID=par("appID").intValue();
+    destAddress = par("destAddress");
     setNodeId();
 
     sentPacket=registerSignal("sentPk");

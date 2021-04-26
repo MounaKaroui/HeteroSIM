@@ -25,6 +25,7 @@ simple BaseAppl like IBaseAppl
         int appID = default(0);
         string trafficType = default("Interactive");
         int msgLength @unit(B) = default(50B);  // 
+        string destAddress = default("all"); // all means broadcast message
 
         double startTime @unit(s) = default(0.0s); // application start time (start of the first packet)
         double stopTime @unit(s) = default(-1 s);

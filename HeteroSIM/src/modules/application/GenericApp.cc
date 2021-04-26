@@ -29,9 +29,8 @@ void GenericApp::initialize()
 {
     BaseAppl::initialize();
     trafficType=par("trafficType").stringValue();
-    destAddress = par("destAddress");
-
 }
+
 void GenericApp::handleAppMessage(cMessage *msg)
 {
     if(string(msg->getName()).find("hetNets-data")==0)
