@@ -49,7 +49,7 @@ BasicMsg* GenericApp::BuildMsg(std::string namePrefix)
     heteroMsg->setApplId(appID);
     heteroMsg->setNodeId(nodeId);
     heteroMsg->setSourceAddress(inet::getContainingNode(this)->getFullName());
-    heteroMsg->setDestinationAddress(destAddress);
+    heteroMsg->setDestinationAddress(destAddress.c_str());
 
     return  heteroMsg;
 }

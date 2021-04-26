@@ -39,7 +39,7 @@ protected:
     int nodeId;
     int  msgLength;
     int appID;
-    const char *destAddress = nullptr;
+    std:: string destAddress;
     cMessage* msgSentTrigger;
 
 protected:

@@ -32,7 +32,6 @@ using namespace omnetpp;
 class GenericApp : public BaseAppl
 {
    std::string trafficType;
-   const char *destAddress = nullptr;
 
   protected:
 
