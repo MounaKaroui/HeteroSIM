@@ -288,7 +288,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
 
             //utility
-            lastTransmittedFramesByInterfaceId[interfaceId].insert({pduName,pduSent});
+            lastTransmittedFramesByInterfaceId[interfaceId].insert({pduName,pduSent->dup()});
         }
 
     }else if ((comingSignal == ltePhyRecievedAirFrameSingal) && (isAckOrNackPacket)){
@@ -305,6 +305,10 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 return ;
             }
            simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][pduName];
+
+           //retrieve last transmitted packet from its name
+           std::map<string,cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(pduName);
+           std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength(); //To note that this packet length data has been successfully sent
 
            //Delay metric
            delayInidicator = SIMTIME_DBL(macDelay);
