@@ -95,7 +95,8 @@ public:
     CollectStats::listAlternativeAttributes* prepareNetAttributes();
     CollectStats::listAlternativeAttributes* prepareDummyNetAttributes();
 
-    double sendInterval;
+    map<int,double> sendIntervalByInterfaceId;
+    map<int,simtime_t> sendIntervalLastUpdateTimestampByInterfaceId;
 
 protected:
     //NED parameters:
@@ -108,6 +109,8 @@ protected:
     void registerSignals();
     void initializeDLT();
     void setInterfaceToProtocolMap();
+    void setSendIntervals(std::string strValues);
+    void updateSendInterval(int interfaceId);
 
 
     double getThroughputIndicator(int64_t dataLength, double radioFrameTime);
@@ -118,7 +121,7 @@ protected:
 
     // Data Life Time calculation
     void updateDLT(listOfCriteria* list,int interfaceId);
-    double getDLT(double CofficientOfVariation);
+    double getDLT(double CofficientOfVariation,int interfaceId);
 
     //Network attributes processing
     void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);

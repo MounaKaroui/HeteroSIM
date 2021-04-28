@@ -53,7 +53,7 @@ void CollectStats::initialize(int stage)
         cbr1 = registerSignal("cbr1");
 
         gamma = par("gamma").intValue();
-        sendInterval = par("sendPeriod").doubleValue();
+        setSendIntervals(par("initialSendIntervalByInterfaceId").stringValue());
 
         setInterfaceToProtocolMap();
         registerSignals();
@@ -79,12 +79,33 @@ void CollectStats::setInterfaceToProtocolMap()
       }
 }
 
+void CollectStats::setSendIntervals(std::string strValues)
+{
+    cStringTokenizer tokenizer(strValues.c_str(),string(",").c_str());
+      while (tokenizer.hasMoreTokens()){
+
+          std::string mappingEntry= tokenizer.nextToken();
+          vector<string> result;
+          boost::split(result, mappingEntry, boost::is_any_of(":"));
+          sendIntervalByInterfaceId.insert({stoi(result[0]),stod(result[0])});
+          sendIntervalLastUpdateTimestampByInterfaceId.insert({stoi(result[0]),NOW});
+      }
+}
+
+void CollectStats::updateSendInterval(int interfaceId)
+{
+   std::map<int, simtime_t>::iterator it1 = sendIntervalLastUpdateTimestampByInterfaceId.find(interfaceId);
+   std::map<int, double>::iterator it2 = sendIntervalByInterfaceId.find(interfaceId);
+   it2->second = (NOW - it1->second).dbl();
+   it1->second = NOW;
+}
+
 void CollectStats::initializeDLT()
 {
     for(auto const & x: interfaceToProtocolMap){
-        dltByInterfaceIdByCriterion[x.first]["delayIndicator"]=getDLT(0);
-        dltByInterfaceIdByCriterion[x.first]["throughputIndicator"]=getDLT(0);
-        dltByInterfaceIdByCriterion[x.first]["reliabilityIndicator"]=getDLT(0);
+        dltByInterfaceIdByCriterion[x.first]["delayIndicator"]=getDLT(0,x.first);
+        dltByInterfaceIdByCriterion[x.first]["throughputIndicator"]=getDLT(0,x.first);
+        dltByInterfaceIdByCriterion[x.first]["reliabilityIndicator"]=getDLT(0,x.first);
     }
 }
 
@@ -148,6 +169,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
     if ( comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker toward transmission interface
 
+        updateSendInterval(interfaceId);
         //For delay metric
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
 
@@ -252,6 +274,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
     if (comingSignal == DecisionMaker::decisionSignal) {
+        updateSendInterval(interfaceId);
         return;// from here we do not know the IDs of MAC PDUs sent to initialize utility variables.
     }
 
@@ -350,13 +373,13 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 {
     // update dtl according to coefficient of variation
-    dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delayIndicator)));
-    dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->throughputIndicator)));
-    dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliabilityIndicator)));
+    dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delayIndicator)),interfaceId);
+    dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->throughputIndicator)),interfaceId);
+    dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliabilityIndicator)),interfaceId);
 }
 
-double CollectStats::getDLT(double CofficientOfVariation) {
-    return exp(-1 * CofficientOfVariation + log(gamma * sendInterval));
+double CollectStats::getDLT(double CofficientOfVariation,int interfaceId) {
+    return exp(-1 * CofficientOfVariation + log(gamma * sendIntervalByInterfaceId[interfaceId]));
 }
 
 map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()

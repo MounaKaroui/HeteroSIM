@@ -25,9 +25,9 @@ simple CollectStats like IStatistics
 {
     
     parameters:    
-        string interfaceToProtocolMapping = default("0:WiFi:WiFi:LTE");
+        string interfaceToProtocolMapping = default("0:WiFi,1:LTE");
         string averageMethod = default("ema"); // simple average or with ema
-        double sendPeriod @unit(s) =default(0.1s) ;
+        string initialSendIntervalByInterfaceId =default("0:0.1,1:0.1") ; // comma separated v1:v2 values where v1 is the interface ID and v2 its inital send interval in second.
         int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time  
         
         // Mode 4 params, for MCS=7, Msg size =190 B
