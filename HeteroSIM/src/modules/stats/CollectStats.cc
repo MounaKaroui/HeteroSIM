@@ -289,6 +289,11 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
             string pduName = "pdu"+std::to_string(pduSent->getMacPduId());
 
+            //Check if this PDU is note already timestamped
+            if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pduName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                return ; //If yes this is a retransmission of it, ignore it.
+            }
+
             //For delay metric
             packetFromUpperTimeStampsByInterfaceId[interfaceId][pduName]=NOW; //TODO consider the eventual static time between the instant this data packet starts to be handled by the MAC layer and the instant of the creation the corresponding PDU.
 
