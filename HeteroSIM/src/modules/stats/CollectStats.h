@@ -40,7 +40,6 @@ class CollectStats : public cListener, public cSimpleModule
 
 public:
 
-//    LteAmc *amc_;
     struct listOfCriteria{
 
         map<simtime_t,double>*  delayIndicator;
@@ -93,7 +92,6 @@ public:
 
     //Final decision data to be used as an input for decider
     CollectStats::listAlternativeAttributes* prepareNetAttributes();
-    CollectStats::listAlternativeAttributes* prepareDummyNetAttributes();
 
     map<int,double> sendIntervalByInterfaceId;
     map<int,simtime_t> sendIntervalLastUpdateTimestampByInterfaceId;
@@ -131,8 +129,6 @@ protected:
     map<int,listOfCriteria*> getSublistByDLT();
     listAlternativeAttributes* applyAverageMethod(map<int,listOfCriteria*> dataSet);
 
-    //Print msg content
-    void printMsg(std::string type, cMessage*  msg);
 
     //Signals for stats
     simsignal_t tr0;

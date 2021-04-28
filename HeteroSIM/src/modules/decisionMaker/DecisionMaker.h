@@ -64,18 +64,12 @@ public:
     string getNetworkProtocolName(int networkIndex);
     std::string convertListOfCriteriaToString(CollectStats::listAlternativeAttributes* listOfAlternativeAttributes);
 
-    // Ping-pong methods
-    int reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData);
-    double normalizeTh(double x1, double x2);
-    double calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData);
     //Decision method
     int takeDecision(cMessage*  msg);
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
     void setIeee802CtrlInfo(cMessage* msg,int networkIndex);
     void setLteCtrlInfo(cMessage* msg); //"networkIndex" parameter is not needed parameter because multiple LTE interfaces within a node is note supported
 
-    bool withMovingDLT;
-    double hysteresisTh;
     bool lteInterfaceIsActive;
     bool isDeciderActive;
     int dummyNetworkChoice;
@@ -88,10 +82,6 @@ public:
     MacNodeId lteInterfaceUpperLayerAddress_;
     int critNumb;
     std::string pathToConfigFiles;
-
-    CollectStats::listAlternativeAttributes* lastDecisionData;
-    int lastDecision;
-    bool isPingPongReductionActive;
 
     std::default_random_engine generator;
 

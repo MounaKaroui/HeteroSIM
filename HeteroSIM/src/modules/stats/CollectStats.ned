@@ -30,10 +30,6 @@ simple CollectStats like IStatistics
         string initialSendIntervalByInterfaceId =default("0:0.1,1:0.1") ; // comma separated v1:v2 values where v1 is the interface ID and v2 its inital send interval in second.
         int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time  
         
-        // Mode 4 params, for MCS=7, Msg size =190 B
-        double numAvailableRb=default(13) ;
-        double codeRate=default(0.58);
-        
         // Statistics
         @signal[tr0];
         @statistic[tr0](title="tr0"; source="tr0"; record=vector,mean);

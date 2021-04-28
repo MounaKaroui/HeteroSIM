@@ -39,16 +39,11 @@ void DecisionMaker::initialize(int stage)
         pathToConfigFiles=par("pathToConfigFiles").stringValue();
         simpleWeights=par("simpleWeights").stringValue();
         criteriaType=par("criteriaType").stringValue();
-        hysteresisTh=par("hysteresisTh").doubleValue();
-        withMovingDLT=par("withMovingDLT").boolValue();
 
 
         isDeciderActive=par("isDeciderActive").boolValue();
         isRandomDecision = par("isRandomDecision").boolValue() ;
         dummyNetworkChoice = par("dummyNetworkChoice").intValue();
-
-        isPingPongReductionActive=par("isPingPongReductionActive").boolValue();
-        lastDecision=-1;
 
         cModule* host = inet::getContainingNode(this);
         std::string name=host->getFullName();
@@ -187,50 +182,6 @@ std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlter
 }
 
 
-double DecisionMaker::normalizeTh(double x1, double x2)
-{
-    return abs(x1-x2)/(x1+x2);
-}
-
-double DecisionMaker::calculateWeightedThresholdAverage(CollectStats::listAlternativeAttributes* newDecisionData)
-{
-    // Weight matrix [AB,Delay,Qv]
-    McdaAlg::Matrix weight=McdaAlg::simple_weighting(simpleWeights);
-    double sumTh=0;
-
-    for (auto& newData : newDecisionData->data)
-    {
-        sumTh+=normalizeTh(newData.second->throughputIndicator,lastDecisionData->data[newData.first]->throughputIndicator)*weight.at(0,0);
-        sumTh+=normalizeTh(newData.second->delayIndicator,lastDecisionData->data[newData.first]->delayIndicator)*weight.at(1,0);
-        sumTh+=normalizeTh(newData.second->reliabilityIndicator,lastDecisionData->data[newData.first]->reliabilityIndicator)*weight.at(2,0);
-    }
-
-    return sumTh/weight.size(1);
-}
-
-
-
-
-int DecisionMaker:: reducePingPongEffects(int newDecision, CollectStats::listAlternativeAttributes* newDecisionData ){
-
-
-    if(lastDecision==-1 ||newDecision==lastDecision)
-    {
-        return newDecision;
-    }
-    else
-    {
-        double meanTh =calculateWeightedThresholdAverage(newDecisionData);
-
-        if(meanTh > hysteresisTh)
-            return newDecision;
-       else
-            return lastDecision;
-    }
-
-}
-
-
 int DecisionMaker::takeDecision(cMessage* msg)
 {
     int networkIndex;
@@ -248,13 +199,8 @@ int DecisionMaker::takeDecision(cMessage* msg)
         {
             cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
             CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-            CollectStats::listAlternativeAttributes* decisionData;
-            if (!withMovingDLT) {
-                decisionData = stats->prepareDummyNetAttributes();
+            CollectStats::listAlternativeAttributes* decisionData = stats->prepareNetAttributes();
 
-            } else {
-                decisionData = stats->prepareNetAttributes();
-            }
             std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
             if(decisionDataStr!="")
             {
@@ -263,22 +209,15 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                         pathToConfigFiles, "simple", simpleWeights,
                         criteriaType, trafficType, "TOPSIS");
-                if(isPingPongReductionActive)
-                {
-                // Ping pong effects
-                networkIndex=reducePingPongEffects(networkIndex,decisionData);
-                // Store last decision data
-                lastDecisionData=decisionData;
-                // Store last decision
-                lastDecision=networkIndex;
-                }
+
                 cModule* host = inet::getContainingNode(this);
                 std::string name=host->getFullName();
                 int nodeId=Utilities::extractNumber(name.c_str());
                 std::cout<< "Node Id= " << nodeId << "\n"<< endl;
 
                 std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
-            }
+            } else
+                throw cRuntimeError("No stats for decision making ");
         }
         else
         {
@@ -303,10 +242,6 @@ int DecisionMaker::takeDecision(cMessage* msg)
 
     return networkIndex;
 }
-
-
-
-
 
 void DecisionMaker::handleMessage(cMessage *msg)
 {

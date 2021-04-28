@@ -16,7 +16,7 @@
 #include "../stats/CollectStats.h"
 
 #include <inet/common/ModuleAccess.h>
-//#include "stack/phy/packet/cbr_m.h"
+
 #include <numeric>
 #include<boost/lexical_cast.hpp>
 #include "stack/pdcp_rrc/layer/LtePdcpRrcUeD2D.h"
@@ -491,23 +491,6 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
     return myList;
 }
 
-CollectStats::listAlternativeAttributes* CollectStats::prepareDummyNetAttributes()
-{
-    listAlternativeAttributes * myList = new listAlternativeAttributes();
-    for (auto& x : listOfCriteriaByInterfaceId)
-    {
-        alternativeAttributes* listAttr=new alternativeAttributes();
-        vector<double>* d=Utilities::retrieveValues(x.second->delayIndicator);
-        vector<double>* avb=Utilities::retrieveValues(x.second->throughputIndicator);
-        vector<double>* qc=Utilities::retrieveValues(x.second->reliabilityIndicator);
-        listAttr->delayIndicator=d->back();
-        listAttr->throughputIndicator=avb->back();
-        listAttr->reliabilityIndicator=qc->back();
-        myList->data.insert({x.first,listAttr});
-    }
-    return myList;
-}
-
 CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 {
     // 1- get Data until NOW -DLT
@@ -560,14 +543,6 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 }
 
 
-void CollectStats::printMsg(std::string type, cMessage*  msg)
-{
-    std::cout<< simTime()<< ", "<< type  <<" id=" << msg->getTreeId()  << " ,tree id= " << msg->getTreeId()<<", Msg name=" << msg->getName()
-                  << ", Class Name=" << msg->getClassName()
-                  << ", Owner=" << msg->getOwner()->getName() << endl;
-}
-
-
 void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double reliability){
 
     insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, reliability) ;
@@ -581,8 +556,6 @@ void CollectStats::recordStatTuple(int interfaceId, double delay, double transmi
     }
 
 }
-
-
 
 
 void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double reliability){

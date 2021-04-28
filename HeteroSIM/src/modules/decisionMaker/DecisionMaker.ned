@@ -38,11 +38,7 @@ simple DecisionMaker
  		bool isRandomDecision=default(true);
  		
  		volatile int dummyNetworkChoice=default(0);     
- 		// Hysteresis per criteria
- 		double hysteresisTh=default(0.5);
  		
- 		bool isPingPongReductionActive=default(false);
- 		bool withMovingDLT=default(true);
  		
  		@signal[decision];
  		@statistic[decision](title="decision";source="decision"; record=vector,stats); 
