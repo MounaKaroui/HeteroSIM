@@ -70,6 +70,7 @@ public:
 
     map<int,map<string,cMessage*>> lastTransmittedFramesByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
 
+    listAlternativeAttributes recentCriteriaStatsByInterfaceId;
 
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
@@ -123,7 +124,9 @@ protected:
 
     //Network attributes processing
     void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);
-    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double queueVacancy);
+    void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator);
+    void insertStatTuple(int interfaceId, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator);
+
     listOfCriteria* getSublistByDLT(int interfaceID);
     map<simtime_t,double>* getSublistByDLTOfCriterion(map<simtime_t,double>* pCriterion,double pDlt);
     map<int,listOfCriteria*> getSublistByDLT();

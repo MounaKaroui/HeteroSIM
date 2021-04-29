@@ -56,8 +56,12 @@ void CollectStats::initialize(int stage)
         setSendIntervals(par("initialSendIntervalByInterfaceId").stringValue());
 
         setInterfaceToProtocolMap();
-        registerSignals();
-        initializeDLT();
+        DecisionMaker *decisionModule =dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
+        if (decisionModule->isDeciderActived()) {
+            registerSignals();
+            initializeDLT();
+        }
+
     }
     else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that lteInterfaceMacId_ be available
             if(getAncestorPar("lteInterfaceIsActive").boolValue()){
@@ -544,8 +548,13 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 
 
 void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double reliability){
+    DecisionMaker* decisionModule = dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
+    if(!decisionModule->isNaiveSingleCriterionBasedDecision())
+        insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, reliability) ;
+    else
+        insertStatTuple(interfaceId, NOW ,delay, transmissionRate, reliability) ;
 
-    insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, reliability) ;
+
     if(interfaceId==0){
         emit(tr0,transmissionRate);
         emit(delay0,delay);
@@ -555,10 +564,21 @@ void CollectStats::recordStatTuple(int interfaceId, double delay, double transmi
         emit(delay1,delay);
     }
 
+
 }
 
+void CollectStats::insertStatTuple(int interfaceId, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
 
-void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delay, double availableBandwitdth, double reliability){
+    // check and initialize map if necessary
+    if(recentCriteriaStatsByInterfaceId.data.find(interfaceId)== recentCriteriaStatsByInterfaceId.data.end() )
+        recentCriteriaStatsByInterfaceId.data.insert({interfaceId, new alternativeAttributes()});
+
+    recentCriteriaStatsByInterfaceId.data[interfaceId]->delayIndicator=delayIndicator;
+    recentCriteriaStatsByInterfaceId.data[interfaceId]->throughputIndicator=throughputIndicator;
+    recentCriteriaStatsByInterfaceId.data[interfaceId]->reliabilityIndicator=reliabilityIndicator;
+}
+
+void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
 
     // check and initialize list if necessary
     if(!list->delayIndicator)
@@ -569,9 +589,9 @@ void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, do
         list->reliabilityIndicator= new  map<simtime_t,double>();
 
 
-    list->delayIndicator->insert({timestamp,delay});
-    list->throughputIndicator->insert({timestamp,availableBandwitdth});
-    list->reliabilityIndicator->insert({timestamp,reliability});
+    list->delayIndicator->insert({timestamp,delayIndicator});
+    list->throughputIndicator->insert({timestamp,throughputIndicator});
+    list->reliabilityIndicator->insert({timestamp,reliabilityIndicator});
 }
 
 

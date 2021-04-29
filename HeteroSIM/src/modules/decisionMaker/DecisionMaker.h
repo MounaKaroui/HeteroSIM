@@ -53,6 +53,13 @@ public:
 
     static simsignal_t decisionSignal ;
 
+    bool isDeciderActived(){
+        return isDeciderActive;
+    }
+    bool isNaiveSingleCriterionBasedDecision(){
+        return naiveSingleCriterionBasedDecision ;
+    }
+
   protected:
 
     virtual void initialize(int stage);
@@ -66,12 +73,15 @@ public:
 
     //Decision method
     int takeDecision(cMessage*  msg);
+    int takeNaiveSingleCriterionBasedDecision();
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
     void setIeee802CtrlInfo(cMessage* msg,int networkIndex);
     void setLteCtrlInfo(cMessage* msg); //"networkIndex" parameter is not needed parameter because multiple LTE interfaces within a node is note supported
 
     bool lteInterfaceIsActive;
     bool isDeciderActive;
+    bool naiveSingleCriterionBasedDecision;
+    int naiveSingleCriterionBasedDecisionChoice ;
     int dummyNetworkChoice;
     bool isRandomDecision;
 

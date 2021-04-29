@@ -35,6 +35,9 @@ simple DecisionMaker
         // pathToConfigFiles only used to read pair wise matrix
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
  		bool isDeciderActive=default(true); 
+ 		bool naiveSingleCriterionBasedDecision= default(false); // this parameter is considered when "isDeciderActive" is true
+ 		int naiveSingleCriterionBasedDecisionChoice=default(0); // choice 0 is for  delay indicator, 1 for throughput indicator, and 2 for reliability indicator
+ 		
  		bool isRandomDecision=default(true);
  		
  		volatile int dummyNetworkChoice=default(0);     

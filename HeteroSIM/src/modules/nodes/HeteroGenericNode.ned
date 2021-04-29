@@ -81,11 +81,11 @@ module GenericNode
         addressResolver: AddressResolver {
             @display("p=56.62,469.34998");
         }
-        collectStatistics: <default("CollectStats")> like IStatistics {
-             @display("p=56.62,186.24998;is=s");
-        }
         decisionMaker: DecisionMaker {
             @display("p=402.966,223.992");
+        }
+        collectStatistics: <default("CollectStats")> like IStatistics {
+             @display("p=56.62,186.24998;is=s");
         }
         applLayer[numApps]: <default("VanetApp")> like IBaseAppl {
             @display("p=402.3,38.739998,row,200;q=queue,i,block/app2");

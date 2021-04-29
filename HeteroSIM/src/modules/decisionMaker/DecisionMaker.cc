@@ -43,6 +43,8 @@ void DecisionMaker::initialize(int stage)
 
         isDeciderActive=par("isDeciderActive").boolValue();
         isRandomDecision = par("isRandomDecision").boolValue() ;
+        naiveSingleCriterionBasedDecision = par("naiveSingleCriterionBasedDecision").boolValue();
+        naiveSingleCriterionBasedDecisionChoice = par("naiveSingleCriterionBasedDecisionChoice").intValue();
         dummyNetworkChoice = par("dummyNetworkChoice").intValue();
 
         cModule* host = inet::getContainingNode(this);
@@ -195,29 +197,35 @@ int DecisionMaker::takeDecision(cMessage* msg)
         HeterogeneousMessage* hetMsg=dynamic_cast<HeterogeneousMessage*>(msg);
         std::string trafficType=hetMsg->getTrafficType();
 
+        cModule* host = inet::getContainingNode(this);
+         std::string name=host->getFullName();
+         int nodeId=Utilities::extractNumber(name.c_str());
+         std::cout<< "Node Id= " << nodeId << "\n"<< endl;
+
         if(isDeciderActive)
         {
-            cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
-            CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-            CollectStats::listAlternativeAttributes* decisionData = stats->prepareNetAttributes();
+            if(! naiveSingleCriterionBasedDecision){
 
-            std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
-            if(decisionDataStr!="")
-            {
-                // MCDM decision
-                //std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
-                networkIndex = McdaAlg::decisionProcess(decisionDataStr,
-                        pathToConfigFiles, "simple", simpleWeights,
-                        criteriaType, trafficType, "TOPSIS");
+                cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
+                CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
+                CollectStats::listAlternativeAttributes* decisionData = stats->prepareNetAttributes();
 
-                cModule* host = inet::getContainingNode(this);
-                std::string name=host->getFullName();
-                int nodeId=Utilities::extractNumber(name.c_str());
-                std::cout<< "Node Id= " << nodeId << "\n"<< endl;
+                std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
+                if(decisionDataStr!="")
+                {
+                    // MCDM decision
+                    //std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
+                    networkIndex = McdaAlg::decisionProcess(decisionDataStr,
+                            pathToConfigFiles, "simple", simpleWeights,
+                            criteriaType, trafficType, "TOPSIS");
 
-                std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
-            } else
-                throw cRuntimeError("No stats for decision making ");
+                    std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
+                } else
+                    throw cRuntimeError("No stats for decision making ");
+            }else{
+                networkIndex = takeNaiveSingleCriterionBasedDecision();
+                std::cout<< "The naive single criteria based decision is "<< networkIndex <<"\n" << endl;
+            }
         }
         else
         {
@@ -228,10 +236,6 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 else
                     networkIndex=0;
 
-                cModule* host = inet::getContainingNode(this);
-                std::string name=host->getFullName();
-                int nodeId=Utilities::extractNumber(name.c_str());
-                std::cout<< "Node Id= " << nodeId << "\n"<< endl;
                 std::cout<< "The random network is "<< networkIndex <<"\n" << endl;
             }else{
                 networkIndex=dummyNetworkChoice;
@@ -241,6 +245,51 @@ int DecisionMaker::takeDecision(cMessage* msg)
     }
 
     return networkIndex;
+}
+
+int DecisionMaker::takeNaiveSingleCriterionBasedDecision(){
+
+    CollectStats* stats=dynamic_cast<CollectStats*>(getParentModule()->getSubmodule("collectStatistics"));
+
+    double min = DBL_MAX;
+    double max = DBL_MIN;
+    int rChoice=0;
+
+    for (const auto &pair : stats->recentCriteriaStatsByInterfaceId.data){
+
+        int interfaceId = pair.first;
+        double recentData ;
+        switch (naiveSingleCriterionBasedDecisionChoice){
+        case 0 : //delay criterion
+            recentData =pair.second->delayIndicator;
+            if( recentData < min ){ // look at minimum since this criterion is considered as smaller the better
+                min = recentData ;
+                rChoice = interfaceId ;
+            }
+            break ;
+
+        case 1 : //throughput criterion
+            recentData =pair.second->throughputIndicator;
+            if( recentData > max ){ // look at maximum since this criterion is considered as smaller the better
+                max = recentData ;
+                rChoice = interfaceId ;
+            }
+          break ;
+
+        case 2 : //reliability criterion
+             recentData =pair.second->reliabilityIndicator;
+            if( recentData > max ){ // look at maximum since this criterion is considered as smaller the better
+                max = recentData ;
+                rChoice = interfaceId ;
+            }
+            break;
+        default:  throw cRuntimeError("Can not find criterion that corresponds to the configured 'naiveSingleCriterionBasedDecisionChoice' parameter.");
+
+        }
+    }
+
+    return rChoice ;
+
 }
 
 void DecisionMaker::handleMessage(cMessage *msg)
