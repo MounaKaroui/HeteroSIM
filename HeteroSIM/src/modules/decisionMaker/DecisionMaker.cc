@@ -54,11 +54,12 @@ void DecisionMaker::initialize(int stage)
         distribution.param(std::bernoulli_distribution::param_type(0.5));
 
         addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
+        if (lteInterfaceIsActive) lteBinder_ =getBinder();
     }
     else if (stage == inet::INITSTAGE_NETWORK_LAYER) {// this is to wait that lteInterfaceUpperLayerAddress_ be available
         if(lteInterfaceIsActive){
             const char* moduleName = getParentModule()->getFullName();
-            lteInterfaceUpperLayerAddress_ = getBinder()->getMacNodeIdByModuleName(moduleName);
+            lteInterfaceUpperLayerAddress_ = lteBinder_->getMacNodeIdByModuleName(moduleName);
         }
     }
 
@@ -309,12 +310,9 @@ void DecisionMaker::handleMessage(cMessage *msg)
 }
 
 
-DecisionMaker::~DecisionMaker()
-{
+DecisionMaker::~DecisionMaker(){} ;
+
+void DecisionMaker::finish(){
     if(lteInterfaceIsActive)
-        binder_->unregisterNode(lteInterfaceUpperLayerAddress_);
-
-}
-
-
-
+            lteBinder_->unregisterNode(lteInterfaceUpperLayerAddress_);
+};

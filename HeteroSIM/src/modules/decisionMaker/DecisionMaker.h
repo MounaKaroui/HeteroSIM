@@ -65,6 +65,7 @@ public:
     virtual void initialize(int stage);
     virtual int numInitStages() const { return inet::NUM_INIT_STAGES; }
     virtual void handleMessage(cMessage *msg)  override;
+    virtual void finish();
     void sendToLower(cMessage* msg,int networkIndex);
     void sendToUpper(cMessage*  msg);
 
@@ -88,7 +89,7 @@ public:
     std::string simpleWeights;
     std::string criteriaType;
 
-    LteBinder* binder_;
+    LteBinder* lteBinder_;
     MacNodeId lteInterfaceUpperLayerAddress_;
     int critNumb;
     std::string pathToConfigFiles;
