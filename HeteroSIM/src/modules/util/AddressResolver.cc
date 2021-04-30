@@ -35,7 +35,8 @@ void AddressResolver::initialize(int stage)
 
         ift = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
 
-        ASSERT((host = findContainingNode(this)) != nullptr);
+        host = findContainingNode(this);
+        ASSERT( host != nullptr);
 
         // register our IEEE 802 addresses in the global cache
         for (int i = 0; i < ift->getNumInterfaces(); i++) {
