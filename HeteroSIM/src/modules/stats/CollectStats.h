@@ -105,6 +105,7 @@ protected:
     // Initialization and signal registration
     virtual void initialize(int stage);
     virtual int numInitStages() const { return inet::NUM_INIT_STAGES; }
+    virtual void finish();
     void registerSignals();
     void initializeDLT();
     void setInterfaceToProtocolMap();

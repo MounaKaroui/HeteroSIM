@@ -594,5 +594,21 @@ void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, do
     list->reliabilityIndicator->insert({timestamp,reliabilityIndicator});
 }
 
+void CollectStats::finish(){
+
+    //remove undisposed LTE PDUs;
+    for(const auto &pair1 : interfaceToProtocolMap){
+
+            if(pair1.second.find("LTE") != std::string::npos){
+
+            int lteInterfaceId = pair1.first;
+            for (const auto &pair2 : lastTransmittedFramesByInterfaceId[lteInterfaceId])
+                delete pair2.second ;
+
+            break; // leave looping since more than one LTE interface in not supported yet
+        }
+    }
+
+}
 
 
