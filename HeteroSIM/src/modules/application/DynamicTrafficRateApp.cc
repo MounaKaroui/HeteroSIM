@@ -82,6 +82,7 @@ void DynamicTrafficRateApp::sendData(){
 void DynamicTrafficRateApp::handleAppMessage(cMessage *msg)
 {
     emit(BaseAppl::rcvdPacket, msg);
+    delete msg;
 }
 
 BasicMsg* DynamicTrafficRateApp::BuildMsg(std::string namePrefix)
@@ -91,6 +92,8 @@ BasicMsg* DynamicTrafficRateApp::BuildMsg(std::string namePrefix)
     ctrlMsg->setNetworkId(interfaceId);
     ctrlMsg->setByteLength(msgLength);
     ctrlMsg->setApplId(appID);
+    ctrlMsg->setSourceAddress(inet::getContainingNode(this)->getFullName());
+    ctrlMsg->setDestinationAddress(destAddress.c_str());
     return  ctrlMsg;
 }
 
