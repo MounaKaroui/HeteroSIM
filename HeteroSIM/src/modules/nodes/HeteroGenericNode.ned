@@ -37,7 +37,7 @@ module GenericNode
 
         //# Common parameters 
         int numApps = default(1);
-        string mobilityType = default("LinearMobility");
+        string mobilityType = default("StationaryMobility");
         *.addressResolver = default(absPath(".addressResolver"));
 
 		//# WiFi interfaces related parameters
