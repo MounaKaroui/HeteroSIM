@@ -148,6 +148,9 @@ protected:
     simsignal_t lteMacSentPacketToLowerLayerSingal;
     simsignal_t ltePhyRecievedAirFrameSingal;
     MacNodeId lteInterfaceMacId_;
+    simtime_t lastRacSendTimestamp;
+    simtime_t lastRacReceptionTimestamp;
+    simtime_t lastMacGrantObtentionDelay=0 ;
 
 };
 

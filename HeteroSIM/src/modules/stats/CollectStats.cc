@@ -31,6 +31,7 @@
 #include "stack/mac/packet/LteMacPdu_m.h"
 #include "stack/mac/packet/LteHarqFeedback_m.h"
 #include "stack/phy/layer/LtePhyBase.h"
+#include "stack/mac/packet/LteRac_m.h"
 
 
 Define_Module(CollectStats);
@@ -289,88 +290,144 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
 
     UserControlInfo *uInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
-    bool isDataPacket = (uInfo->getFrameType() == DATAPKT) && (uInfo->getLcid() == SHORT_BSR); // the second condition is to ignore sent PDU sent just to ask grant. See LteMacUeD2D::macPduMake line 93.
-    bool isAckOrNackPacket = uInfo->getFrameType() == HARQPKT ;
 
-    if((comingSignal==lteMacSentPacketToLowerLayerSingal) && (isDataPacket)){
+    if((comingSignal==lteMacSentPacketToLowerLayerSingal)){
 
-        LteMacPdu_Base *pduSent = dynamic_cast<LteMacPdu_Base*>(msg);
-
-        bool isMulticastMessage = uInfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id is set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
-
-        if (isMulticastMessage) { //broadcast case record stats
-
-            //Delay metric
-            delayInidicator = TTI;
-            // Reliability metric
-            reliabilityIndicator=1 ; // consider the maximum
-
-            //Throughput metric
-             std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += pduSent->getByteLength();
-             throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
-
-            recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator);
-
-        }else{ //unicast traffic: initialize utility variables and wait for HARQ feedback to record stats.
-              //this instruction block is equivalent to "when packet leave decision maker toward transmission interface" recordStatsForWlan
-
-            string pduName = "pdu"+std::to_string(pduSent->getMacPduId());
-
-            //Check if this PDU is note already timestamped
-            if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pduName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
-                return ; //If yes this is a retransmission of it, ignore it.
+        if(uInfo->getFrameType() == RACPKT){
+            if (getFullPath() == "SimpleNetwork2.node[15].collectStatistics") {
+                EV_DEBUG << " A breakpoint here";
             }
-
-            //For delay metric
-            packetFromUpperTimeStampsByInterfaceId[interfaceId][pduName]=NOW; //TODO consider the eventual static time between the instant this data packet starts to be handled by the MAC layer and the instant of the creation the corresponding PDU.
-
-            // For reliability metric
-            std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
-
-            //utility
-            lastTransmittedFramesByInterfaceId[interfaceId].insert({pduName,pduSent->dup()});
+            lastRacSendTimestamp = NOW;
+            return ;
         }
 
-    }else if ((comingSignal == ltePhyRecievedAirFrameSingal) && (isAckOrNackPacket)){
+        if (uInfo->getFrameType() == DATAPKT){
+            LteMacPdu_Base *pduSent = dynamic_cast<LteMacPdu_Base*>(msg);
+
+            if (getFullPath() == "SimpleNetwork2.node[21].collectStatistics") {
+                EV_DEBUG << " A breakpoint here";
+            }
+
+            bool isMulticastMessage = uInfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id is set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
+
+            if (!isMulticastMessage) { //unicast traffic: initialize utility variables and wait for HARQ feedback to record stats.
+                  //this instruction block is equivalent to "when packet leave decision maker toward transmission interface" recordStatsForWlan
+
+                string pktName;
+
+                if(uInfo->getLcid() == D2D_SHORT_BSR){// RSR report case. (See in LteMacUeD2D::macPduMake)
+                    pktName = "BSR-pdu-"+std::to_string(pduSent->getMacPduId());
+
+                }else if(uInfo->getLcid() == SHORT_BSR){
+                    pktName = "data-pdu-"+std::to_string(pduSent->getMacPduId());
+
+                }else throw cRuntimeError("Unknown LCID type");
+
+
+                //Check if this PDU is note already timestamped. This may happen in  case of retransmission if it
+                if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pktName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                    return ; //If yes this is a retransmission of it, ignore it.
+                }
+
+                //For delay metric
+                 packetFromUpperTimeStampsByInterfaceId[interfaceId][pktName]=NOW;
+
+                if(uInfo->getLcid() == SHORT_BSR){// Data MAC PDU report case. (See in LteMacUeD2D::macPduMake)
+
+                    // For reliability metric
+                    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
+
+                    //utility
+                    lastTransmittedFramesByInterfaceId[interfaceId].insert({pktName,pduSent->dup()});
+                }
+
+            } //TODO move here code for broadcast/multicast traffic metric assumptions
+        }
+
+    }else if ((comingSignal == ltePhyRecievedAirFrameSingal)){
 
         LteAirFrame* frame = check_and_cast<LteAirFrame*>(msg);
-        LteHarqFeedback *harqFeedback = check_and_cast<LteHarqFeedback*>(frame->getEncapsulatedPacket());
 
-        if (harqFeedback->getResult()){ // H-ARQ feedback is ACK
+        if (uInfo->getFrameType() == RACPKT) { //RAC packet case
 
-            string pduName = "pdu"+std::to_string(harqFeedback->getFbMacPduId());
-
-            //This condition is verified either because this feedback is for a D2D_SHORT_BSR packet sent just to ask grant (See LteMacUeD2D::macPduMake line 93)
-            //or because the decision maker has already taken his decision meanwhile.
-            if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pduName) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
-                return ; //In the two case this feedback in not need. Ignore it.
+            LteRac *racPkt = check_and_cast<LteRac*>(frame->getEncapsulatedPacket());
+            if (getFullPath() == "SimpleNetwork2.node[15].collectStatistics") {
+                EV_DEBUG << " A breakpoint here";
             }
-           simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][pduName];
+            if (racPkt->getSuccess()){
 
-           //retrieve last transmitted packet from its name
-           std::map<string,cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(pduName);
-           std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength(); //To note that this packet length data has been successfully sent
+                lastRacReceptionTimestamp = NOW;
+            }
 
-           //Delay metric
-           delayInidicator = SIMTIME_DBL(macDelay);
+            return;
+        }
 
-           //Throughput metric
-            throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
+        if ( uInfo->getFrameType() == HARQPKT){ //it is ACK Or NACK Packet of a BSR or DATA packet
 
-            // Reliability metric
-            reliabilityIndicator =
-                    (double) std::get<1>(
-                            attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])
-                            / (double) std::get<0>(
-                                    attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+            LteHarqFeedback *harqFeedback = check_and_cast<LteHarqFeedback*>(frame->getEncapsulatedPacket());
 
-            recordStatTuple(interfaceId, delayInidicator, throughputIndicator,reliabilityIndicator);
+            if (getFullPath() == "SimpleNetwork2.node[21].collectStatistics") {
+                EV_DEBUG << " A breakpoint here" <<harqFeedback->getResult();
+            }
 
-            //purge
-            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(pduName);
-            lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
+            if (harqFeedback->getResult()){ // H-ARQ feedback is ACK
 
-        } //else TODO : Can a H-ARQ process fails to send a MAC PDU ? If yes record stats at failure.
+                string pktSuffixName = "pdu-"+std::to_string(harqFeedback->getFbMacPduId());
+                map<string,simtime_t>::iterator timeStampIt ;
+
+                //This KLUDGE is because harqFeedback's uInfo->getLcid() contains always the default value. Otherwise we do not know if this feedback is for a Data or BSR PDU. TODO fix this in eNodeB's feedback packet creation.
+                bool dataEntryfound = (timeStampIt=packetFromUpperTimeStampsByInterfaceId[interfaceId].find("data-"+pktSuffixName)) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end();
+                bool bsrEntryfound  = packetFromUpperTimeStampsByInterfaceId[interfaceId].find("BSR-"+pktSuffixName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end();
+
+                //This condition is only verified if the entry are removed because the decision maker has already taken his decision meanwhile.
+                if (!dataEntryfound && ! bsrEntryfound){
+                    return ; // So the feedback is considered as obsolete.  Ignore it.
+
+                }else if (bsrEntryfound){ //check if the feedback is for a BSR
+                    lastMacGrantObtentionDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][pktSuffixName];
+
+                    packetFromUpperTimeStampsByInterfaceId[interfaceId].erase("BSR-"+pktSuffixName);
+                    return ; // wait for the next DATA PDU to account this delay
+                }
+
+                simtime_t lastMacRACDelay = lastRacReceptionTimestamp - lastRacSendTimestamp;
+                simtime_t macDataPduHarqProcessTime = NOW - timeStampIt->second;
+
+                //Delay metric
+                delayInidicator = SIMTIME_DBL(TTI+lastMacRACDelay+TTI+lastMacGrantObtentionDelay+TTI+macDataPduHarqProcessTime);
+
+                //retrieve last transmitted packet from its name
+                std::map<string, cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(timeStampIt->first);
+
+                std::get<1>(
+                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) +=
+                        PK(messageIt->second) ->getByteLength(); //To note that this packet length data has been successfully sent
+
+                //Throughput metric
+                throughputIndicator =
+                        getThroughputIndicator(
+                                std::get<1>(
+                                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]),
+                                throughputMesureInterval);
+
+                // Reliability metric
+                reliabilityIndicator =
+                        (double) std::get<1>(
+                                attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])
+                                / (double) std::get<0>(
+                                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+
+                recordStatTuple(interfaceId, delayInidicator,
+                        throughputIndicator, reliabilityIndicator);
+
+
+                //purge
+                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(timeStampIt);
+                lastTransmittedFramesByInterfaceId[interfaceId].erase(messageIt);
+
+            } //else TODO : Can a H-ARQ process fails to send a MAC PDU ? If yes record stats at failure.
+        }
+
     }
 }
 
