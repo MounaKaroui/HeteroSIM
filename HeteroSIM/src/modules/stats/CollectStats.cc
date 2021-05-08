@@ -92,7 +92,7 @@ void CollectStats::setSendIntervals(std::string strValues)
           std::string mappingEntry= tokenizer.nextToken();
           vector<string> result;
           boost::split(result, mappingEntry, boost::is_any_of(":"));
-          sendIntervalByInterfaceId.insert({stoi(result[0]),stod(result[0])});
+          sendIntervalByInterfaceId.insert({stoi(result[0]),stod(result[1])});
           sendIntervalLastUpdateTimestampByInterfaceId.insert({stoi(result[0]),NOW});
       }
 }
