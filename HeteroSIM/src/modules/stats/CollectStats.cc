@@ -294,19 +294,12 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
     if((comingSignal==lteMacSentPacketToLowerLayerSingal)){
 
         if(uInfo->getFrameType() == RACPKT){
-            if (getFullPath() == "SimpleNetwork2.node[15].collectStatistics") {
-                EV_DEBUG << " A breakpoint here";
-            }
             lastRacSendTimestamp = NOW;
             return ;
         }
 
         if (uInfo->getFrameType() == DATAPKT){
             LteMacPdu_Base *pduSent = dynamic_cast<LteMacPdu_Base*>(msg);
-
-            if (getFullPath() == "SimpleNetwork2.node[21].collectStatistics") {
-                EV_DEBUG << " A breakpoint here";
-            }
 
             bool isMulticastMessage = uInfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id is set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
 
@@ -351,11 +344,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         if (uInfo->getFrameType() == RACPKT) { //RAC packet case
 
             LteRac *racPkt = check_and_cast<LteRac*>(frame->getEncapsulatedPacket());
-            if (getFullPath() == "SimpleNetwork2.node[15].collectStatistics") {
-                EV_DEBUG << " A breakpoint here";
-            }
             if (racPkt->getSuccess()){
-
                 lastRacReceptionTimestamp = NOW;
             }
 
@@ -365,10 +354,6 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         if ( uInfo->getFrameType() == HARQPKT){ //it is ACK Or NACK Packet of a BSR or DATA packet
 
             LteHarqFeedback *harqFeedback = check_and_cast<LteHarqFeedback*>(frame->getEncapsulatedPacket());
-
-            if (getFullPath() == "SimpleNetwork2.node[21].collectStatistics") {
-                EV_DEBUG << " A breakpoint here" <<harqFeedback->getResult();
-            }
 
             if (harqFeedback->getResult()){ // H-ARQ feedback is ACK
 
