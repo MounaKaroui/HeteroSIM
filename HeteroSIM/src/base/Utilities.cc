@@ -35,12 +35,15 @@ void calculateEMA(const vector<double> *vData, vector<double>& vEMA)
 
 double calculateCofficientOfVariation(const vector<double> *v) {
 
-    if (v->size() != 0)
-        if(calculateMeanVec(v)!=0)
-            return calculateStdVec(v) / calculateMeanVec(v);
-        else
-            return 0;
-    else
+    if (v->size() != 0){
+        double mean = calculateMeanVec(v);
+        double std = calculateStdVec(v) ;
+
+        if(isnan(mean) || isinf(mean) || isnan(std) || isinf(std))
+           return 0;
+
+        return std/ mean;;
+    } else
         return 0;
 }
 

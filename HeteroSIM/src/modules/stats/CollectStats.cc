@@ -164,9 +164,10 @@ void CollectStats::registerSignals()
 
 double CollectStats::getThroughputIndicator(int64_t dataLength, double transmitTime)
 {
+    if(isnan(transmitTime) || isinf(transmitTime) || transmitTime ==0)
+        throw cRuntimeError("%d is incorrect value to calculate throughput",transmitTime);
     return (double)dataLength/transmitTime;
 }
-
 
 
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
