@@ -219,15 +219,18 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             //purge
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
             lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
-            lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
         }
         //else wait for ack or packet drop to record statistics
 
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED) { //otherwise it is MAC error signal
 
+        if (getFullPath() == "SimpleNetwork2.node[15].collectStatistics") {
+                     EV_DEBUG << " A breakpoint here";
+                 }
+
             //This happens when the decision maker has already taken his decision meanwhile. So this ack is no logger needed.
-            if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+            if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
                 return ; //ignore it
             }
 
@@ -244,7 +247,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             }else { //case of packet drop due failing CSMA/CA process or previous ACK received
 
                 //This happens when the decision maker has already taken his decision meanwhile. So this ack is no logger needed.
-                if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
                     return ; //ignore it
                 }
 
