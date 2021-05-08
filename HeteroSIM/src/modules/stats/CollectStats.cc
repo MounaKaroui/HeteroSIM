@@ -54,12 +54,12 @@ void CollectStats::initialize(int stage)
         cbr1 = registerSignal("cbr1");
 
         gamma = par("gamma").intValue();
-        setSendIntervals(par("initialSendIntervalByInterfaceId").stringValue());
 
         setInterfaceToProtocolMap();
         DecisionMaker *decisionModule =dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
         if (decisionModule->isDeciderActived()) {
             registerSignals();
+            setSendIntervals(par("initialSendIntervalByInterfaceId").stringValue());
             initializeDLT();
         }
 
