@@ -44,14 +44,14 @@ void CollectStats::initialize(int stage)
         interfaceToProtocolMapping = par("interfaceToProtocolMapping").stringValue();
         averageMethod = par("averageMethod").stringValue();
 
-        tr0 = registerSignal("tr0");
-        tr1 = registerSignal("tr1");
+        throughputIndicator0Signal = registerSignal("throughputIndicator0");
+        throughputIndicator1Signal = registerSignal("throughputIndicator1");
 
-        delay0 = registerSignal("delay0");
-        delay1 = registerSignal("delay1");
+        delayIndicator0Signal = registerSignal("delayIndicator0");
+        delayIndicator1Signal = registerSignal("delayIndicator1");
 
-        cbr0 = registerSignal("cbr0");
-        cbr1 = registerSignal("cbr1");
+        reliabilityIndicator0Signal = registerSignal("reliabilityIndicator0");
+        reliabilityIndicator1Signal = registerSignal("reliabilityIndicator1");
 
         gamma = par("gamma").intValue();
 
@@ -130,7 +130,6 @@ void CollectStats::registerSignals()
             std::string macModuleName= "^.wlan["+ to_string(x.first) +"].mac";
             std::string radioModuleName= "^.wlan["+ to_string(x.first) +"].radio";
 
-            subscribeToSignal<inet::LayeredProtocolBase>(macModuleName, LayeredProtocolBase::packetReceivedFromUpperSignal);
             subscribeToSignal<inet::physicallayer::Radio>(radioModuleName, LayeredProtocolBase::packetSentToLowerSignal);
 
             //packet drop signals
@@ -274,7 +273,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
                 //purge
                 packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-                lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
                 lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
             }
         }
@@ -593,21 +591,21 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 }
 
 
-void CollectStats::recordStatTuple(int interfaceId, double delay, double transmissionRate, double reliability){
+void CollectStats::recordStatTuple(int interfaceId, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
     DecisionMaker* decisionModule = dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
     if(!decisionModule->isNaiveSingleCriterionBasedDecision())
-        insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delay, transmissionRate, reliability) ;
+        insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
     else
-        insertStatTuple(interfaceId, NOW ,delay, transmissionRate, reliability) ;
+        insertStatTuple(interfaceId, NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
 
 
     if(interfaceId==0){
-        emit(tr0,transmissionRate);
-        emit(delay0,delay);
+        emit(throughputIndicator0Signal,throughputIndicator);
+        emit(delayIndicator0Signal,delayIndicator);
     }
     else{
-        emit(tr1,transmissionRate);
-        emit(delay1,delay);
+        emit(throughputIndicator1Signal,throughputIndicator);
+        emit(delayIndicator1Signal,delayIndicator);
     }
 
 

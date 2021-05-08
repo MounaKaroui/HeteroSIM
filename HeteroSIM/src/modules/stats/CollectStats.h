@@ -135,14 +135,14 @@ protected:
 
 
     //Signals for stats
-    simsignal_t tr0;
-    simsignal_t tr1;
+    simsignal_t throughputIndicator0Signal;
+    simsignal_t throughputIndicator1Signal;
 
-    simsignal_t delay0;
-    simsignal_t delay1;
+    simsignal_t delayIndicator0Signal;
+    simsignal_t delayIndicator1Signal;
 
-    simsignal_t cbr0;
-    simsignal_t cbr1;
+    simsignal_t reliabilityIndicator0Signal;
+    simsignal_t reliabilityIndicator1Signal;
 
     //to record LTE related statistics
     simsignal_t lteMacSentPacketToLowerLayerSingal;
