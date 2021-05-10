@@ -39,7 +39,7 @@ double calculateCofficientOfVariation(const vector<double> *v) {
         double mean = calculateMeanVec(v);
         double std = calculateStdVec(v) ;
 
-        if(isnan(mean) || isinf(mean) || isnan(std) || isinf(std))
+        if(isnan(mean) || isinf(mean) || isnan(std) || isinf(std) || mean ==0)
            return 0;
 
         return std/ mean;;
