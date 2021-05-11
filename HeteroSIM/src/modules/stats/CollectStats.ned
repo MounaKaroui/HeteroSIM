@@ -31,22 +31,28 @@ simple CollectStats like IStatistics
         int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time  
         
         // Statistics
-        @signal[tr0];
-        @statistic[tr0](title="tr0"; source="tr0"; record=vector,mean);
+        @signal[throughputIndicator0];
+        @statistic[throughputIndicator0](title="throughputIndicator0"; source="throughputIndicator0"; record=vector,mean);
         
-        @signal[tr1];
-        @statistic[tr1](title="tr1"; source="tr1"; record=vector,mean);
+        @signal[throughputIndicator1];
+        @statistic[throughputIndicator1](title="throughputIndicator1"; source="throughputIndicator1"; record=vector,mean);
         
-        @signal[delay0];
-        @statistic[delay0](title="delay0"; source="delay0"; record=vector,mean);
+        @signal[delayIndicator0];
+        @statistic[delayIndicator0](title="delayIndicator0"; source="delayIndicator0"; record=vector,mean);
         
-        @signal[delay1];
-        @statistic[delay1](title="delay1"; source="delay1"; record=vector,mean);
+        @signal[delayIndicator1];
+        @statistic[delayIndicator1](title="delayIndicator1"; source="delayIndicator1"; record=vector,mean);
               
-        @signal[cbr0];
-        @statistic[cbr0](title="cbr0"; source="cbr0"; record=vector,mean);
+        @signal[reliabilityIndicator0];
+        @statistic[reliabilityIndicator0](title="reliabilityIndicator0"; source="reliabilityIndicator0"; record=vector,mean);
         
-        @signal[cbr1];
-        @statistic[cbr1](title="cbr1"; source="cbr1"; record=vector,mean);
+        @signal[reliabilityIndicator1];
+        @statistic[reliabilityIndicator1](title="reliabilityIndicator1"; source="reliabilityIndicator1"; record=vector,mean);
+        
+        @signal[utilBefore];
+        @statistic[utilBefore](title="utilBefore"; source="utilBefore"; record=vector,mean);
+        
+        @signal[utilAfter];
+        @statistic[utilAfter](title="utilAfter"; source="utilAfter"; record=vector,mean);
 }
 

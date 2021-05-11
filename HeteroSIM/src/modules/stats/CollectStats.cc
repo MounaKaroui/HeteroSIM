@@ -371,7 +371,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                     return ; // So the feedback is considered as obsolete.  Ignore it.
 
                 }else if (bsrEntryfound){ //check if the feedback is for a BSR
-                    lastMacGrantObtentionDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][pktSuffixName];
+                    lastMacGrantObtentionDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId]["BSR-"+pktSuffixName];
 
                     packetFromUpperTimeStampsByInterfaceId[interfaceId].erase("BSR-"+pktSuffixName);
                     return ; // wait for the next DATA PDU to account this delay
