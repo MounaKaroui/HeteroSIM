@@ -173,14 +173,16 @@ void DecisionMaker::sendToUpper(cMessage*  msg)
 
 std::string DecisionMaker::convertListOfCriteriaToString(CollectStats::listAlternativeAttributes* listOfAlternativeAttributes)
 {
-    std::string rStr="";
+    std::stringstream ss;
 
     for (auto& x : listOfAlternativeAttributes->data)
     {
-        rStr+=to_string(x.second-> delayIndicator);
-        rStr+=","+to_string(x.second->throughputIndicator);
-        rStr+=","+to_string(x.second->reliabilityIndicator)+",";
+        ss<<x.second->delayIndicator;
+        ss<<","<<x.second->throughputIndicator;
+        ss<<","<<x.second->reliabilityIndicator<<",";
     }
+
+    std::string rStr=ss.str();
     return rStr.substr(0, rStr.size()-1);
 }
 
