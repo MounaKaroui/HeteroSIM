@@ -263,11 +263,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
                 // Reliability metric
-                reliabilityIndicator =
-                        (double) std::get<1>(
-                                attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])
-                                / (double) std::get<0>(
-                                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+                double numerator = (double) std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) ;
+                double denominator =(double) std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+                reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
 
                 recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator) ;
 
@@ -398,11 +396,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                                 throughputMesureInterval);
 
                 // Reliability metric
-                reliabilityIndicator =
-                        (double) std::get<1>(
-                                attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])
-                                / (double) std::get<0>(
-                                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+                double numerator = (double) std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) ;
+                double denominator =(double) std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+                reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
 
                 recordStatTuple(interfaceId, delayInidicator,
                         throughputIndicator, reliabilityIndicator);
