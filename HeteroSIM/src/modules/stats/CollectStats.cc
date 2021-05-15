@@ -163,8 +163,8 @@ void CollectStats::registerSignals()
 
 double CollectStats::getThroughputIndicator(int64_t dataLength, double transmitTime)
 {
-    if(isnan(transmitTime) || isinf(transmitTime) || transmitTime ==0)
-        throw cRuntimeError("%d is incorrect value to calculate throughput",transmitTime);
+    if(isnan(transmitTime) || isinf(transmitTime) || transmitTime ==0 || dataLength<0)
+        throw cRuntimeError("Incorrect input parameter(s) to calculate throughput: transmit it is %d and data length is %d",transmitTime,dataLength);
     return (double)dataLength/transmitTime;
 }
 
@@ -422,8 +422,13 @@ void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
     dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliabilityIndicator)),interfaceId);
 }
 
-double CollectStats::getDLT(double CofficientOfVariation,int interfaceId) {
-    return exp(-1 * CofficientOfVariation + log(gamma * sendIntervalByInterfaceId[interfaceId]));
+double CollectStats::getDLT(double CofficientOfVariation, int interfaceId) {
+    double dlt = exp(
+            -1 * CofficientOfVariation
+                    + log(gamma * sendIntervalByInterfaceId[interfaceId]));
+    if (dlt < 0)
+        throw cRuntimeError("Data life time interval can not be negative.");
+    return dlt;
 }
 
 map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
