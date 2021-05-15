@@ -593,12 +593,15 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 
 
 void CollectStats::recordStatTuple(int interfaceId, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
+
+    if (delayIndicator < 0 ||  throughputIndicator < 0 || reliabilityIndicator < 0 )
+        throw cRuntimeError("A decision metric can not be negative.");
+
     DecisionMaker* decisionModule = dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
     if(!decisionModule->isNaiveSingleCriterionBasedDecision())
         insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
     else
         insertStatTuple(interfaceId, NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
-
 
     if(interfaceId==0){
         emit(throughputIndicator0Signal,throughputIndicator);
