@@ -57,7 +57,7 @@ void CollectStats::initialize(int stage)
         DecisionMaker *decisionModule =dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
         if (decisionModule->isDeciderActived()) {
             registerSignals();
-            setCommonDltMax(par("initialSendIntervalByInterfaceId").stringValue());
+            setCommonDltMax(par("commonDLTMaxByInterfaceId").stringValue());
             initializeDLT();
         }
 
