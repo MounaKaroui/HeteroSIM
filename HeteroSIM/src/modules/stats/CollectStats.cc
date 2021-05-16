@@ -161,11 +161,11 @@ void CollectStats::registerSignals()
 
 
 
-double CollectStats::getThroughputIndicator(int64_t dataLength, double transmitTime)
+double CollectStats::getThroughputIndicator(int64_t dataBitLength, double transmitTime)
 {
-    if(isnan(transmitTime) || isinf(transmitTime) || transmitTime ==0 || dataLength<0)
-        throw cRuntimeError("Incorrect input parameter(s) to calculate throughput: transmit it is %d and data length is %d",transmitTime,dataLength);
-    return (double)dataLength/transmitTime;
+    if(isnan(transmitTime) || isinf(transmitTime) || transmitTime ==0 || dataBitLength<0)
+        throw cRuntimeError("Incorrect input parameter(s) to calculate throughput: transmit it is %d and data length is %d",transmitTime,dataBitLength);
+    return ((double)dataBitLength/transmitTime)*0.000001; //times *0.000001 to convert from bps to mbps
 }
 
 
@@ -179,7 +179,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
 
         // For reliability metric
-        std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
+        std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getBitLength();
 
         //utility
         lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg});
@@ -208,7 +208,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             delayInidicator = SIMTIME_DBL(macAndRadioDelay);
 
             //Throughput metric
-            std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength();
+            std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getBitLength();
             throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
             // Reliability metric
@@ -224,10 +224,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED) { //otherwise it is MAC error signal
-
-        if (getFullPath() == "SimpleNetwork2.node[15].collectStatistics") {
-                     EV_DEBUG << " A breakpoint here";
-                 }
 
             //This happens when the decision maker has already taken his decision meanwhile. So this ack is no logger needed.
             if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
@@ -256,7 +252,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 
                 if (comingSignal == NF_PACKET_ACK_RECEIVED){
-                    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getByteLength();
+                    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getBitLength();
                 }
 
                  //Throughput metric
@@ -328,7 +324,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 if(uInfo->getLcid() == SHORT_BSR){// Data MAC PDU report case. (See in LteMacUeD2D::macPduMake)
 
                     // For reliability metric
-                    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getByteLength();
+                    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getBitLength();
 
                     //utility
                     lastTransmittedFramesByInterfaceId[interfaceId].insert({pktName,pduSent->dup()});
@@ -383,10 +379,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
                 //retrieve last transmitted packet from its name
                 std::map<string, cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(timeStampIt->first);
-
                 std::get<1>(
                         attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) +=
-                        PK(messageIt->second) ->getByteLength(); //To note that this packet length data has been successfully sent
+                        PK(messageIt->second) ->getBitLength(); //To note that this packet length data has been successfully sent
 
                 //Throughput metric
                 throughputIndicator =

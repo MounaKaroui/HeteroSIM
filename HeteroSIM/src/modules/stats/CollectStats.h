@@ -113,7 +113,7 @@ protected:
     void updateSendInterval(int interfaceId);
 
 
-    double getThroughputIndicator(int64_t dataLength, double radioFrameTime);
+    double getThroughputIndicator(int64_t dataBitLength, double radioFrameTime);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, long value, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
