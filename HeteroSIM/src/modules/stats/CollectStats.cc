@@ -170,7 +170,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getBitLength();
 
         //utility
-        lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg});
+        lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg->dup()});
 
         return ;
     }
@@ -213,9 +213,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
     } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED) { //otherwise it is MAC error signal
 
-            //This happens when the decision maker has already taken his decision meanwhile. So this ack is no logger needed.
+            //This happens when the instant at which the packet has been sent is no logger in current DLT. So, statistics related to it should be ignored.
             if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
-                return ; //ignore it
+               return;
             }
 
             simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
@@ -230,9 +230,13 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
             }else { //case of packet drop due failing CSMA/CA process or previous ACK received
 
-                //This happens when the decision maker has already taken his decision meanwhile. So this ack is no logger needed.
+               //If this packet drop is due to failing CSMA/CA process, the MAC module emit successfully NF_PACKET_DROP and NF_LINK_BREAK signals
+                if(comingSignal == NF_PACKET_DROP)
+                    return ; // so this is to ignore one of them
+
+                //This happens when the instant at which the packet has been sent is no logger in current DLT. So, statistics related to it should be ignored.
                 if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
-                    return ; //ignore it
+                   return;
                 }
 
                 //Delay metric
@@ -241,6 +245,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
                 if (comingSignal == NF_PACKET_ACK_RECEIVED){
                     std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getBitLength();
+                    lastTransmittedFramesAckByInterfaceId[interfaceId].insert({msg->getName(),true});
                 }
 
                  //Throughput metric
@@ -252,10 +257,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
 
                 recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator) ;
-
-                //purge
-                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-                lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
             }
         }
 }
@@ -347,9 +348,9 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 bool dataEntryfound = (timeStampIt=packetFromUpperTimeStampsByInterfaceId[interfaceId].find("data-"+pktSuffixName)) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end();
                 bool bsrEntryfound  = packetFromUpperTimeStampsByInterfaceId[interfaceId].find("BSR-"+pktSuffixName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end();
 
-                //This condition is only verified if the entry are removed because the decision maker has already taken his decision meanwhile.
+                //This happens when the instant at which the packet has been sent is no logger in current DLT. So, statistics related to it should be ignored.
                 if (!dataEntryfound && ! bsrEntryfound){
-                    return ; // So the feedback is considered as obsolete.  Ignore it.
+                    return; // So the feedback is considered as obsolete.  Ignore it.
 
                 }else if (bsrEntryfound){ //check if the feedback is for a BSR
                     lastMacGrantObtentionDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId]["BSR-"+pktSuffixName];
@@ -358,7 +359,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                     return ; // wait for the next DATA PDU to account this delay
                 }
 
-                simtime_t lastMacRACDelay = lastRacReceptionTimestamp - lastRacSendTimestamp;
+                simtime_t lastMacRACDelay = lastRacReceptionTimestamp > lastRacSendTimestamp ? lastRacReceptionTimestamp - lastRacSendTimestamp: SimTime::ZERO; //TODO
                 simtime_t macDataPduHarqProcessTime = NOW - timeStampIt->second;
 
                 //Delay metric
@@ -385,10 +386,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 recordStatTuple(interfaceId, delayInidicator,
                         throughputIndicator, reliabilityIndicator);
 
-
-                //purge
-                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(timeStampIt);
-                lastTransmittedFramesByInterfaceId[interfaceId].erase(messageIt);
+                lastTransmittedFramesAckByInterfaceId[interfaceId].insert({timeStampIt->first,true});
 
             } //else TODO : Can a H-ARQ process fails to send a MAC PDU ? If yes record stats at failure.
         }
@@ -446,16 +444,12 @@ CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
         delete listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator;
         delete listOfCriteriaByInterfaceId[interfaceId];
 
-    }else{ //This is the case where the feedback for recording stats of "interfaceId" are not know yet
+    }else{ //This is the case where the feedback for recording stats of "interfaceId" are not known yet
         insertStatTuple(rList, NOW, DBL_MAX, 0, 0); //consider these penalties
     }
 
-    //purge
-    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
-    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId])=0;
-    //This is to ignore the statistics of all packets whose ack has not yet been received.
-    packetFromUpperTimeStampsByInterfaceId[interfaceId].clear(); //
-    lastTransmittedFramesByInterfaceId[interfaceId].clear();
+    //purge packets in utility variables (for recording stats) that are no longer in the current DLT interval.
+    purgeUtilVars(interfaceId);
 
     listOfCriteriaByInterfaceId[interfaceId]=rList;
 
@@ -533,6 +527,47 @@ CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
 
 }
 
+void CollectStats::purgeUtilVars(int interfaceId) {
+
+    double minOfDlt = //TODO min really ? why not consider max of criterio's DLT instead
+            std::max(dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"],
+                    std::max(
+                            dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"],
+                            dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]));
+    simtime_t dltIntervalLowerBound = NOW - SimTime(minOfDlt);
+
+    for (auto it = lastTransmittedFramesByInterfaceId[interfaceId].begin();
+            it != lastTransmittedFramesByInterfaceId[interfaceId].end();){ //This may be computationally very heavy. TODO iterate by timestamp and do break after dltIntervalLowerBound
+
+        //retrieve the corresponding timeStamps
+        std::map<string, simtime_t>::iterator msgTimeStampIt =
+                packetFromUpperTimeStampsByInterfaceId[interfaceId].find(
+                        it->first);
+
+        if (msgTimeStampIt->second < dltIntervalLowerBound) {
+
+            std::get<0>(
+                    attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -=
+            PK(it->second)->getBitLength();
+
+            std::map<string, bool>::iterator msgAckIt =
+                    lastTransmittedFramesAckByInterfaceId[interfaceId].find(msgTimeStampIt->first);
+
+            if (msgAckIt != lastTransmittedFramesAckByInterfaceId[interfaceId].end()){
+
+                std::get<1>(
+                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -= PK(it->second) ->getBitLength();
+            }
+
+            delete it->second ;
+            lastTransmittedFramesByInterfaceId[interfaceId].erase(it++);
+            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgTimeStampIt);
+        }else{
+            it++;
+        }
+    }
+
+}
 
 void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, long value,cObject *details)
 {
@@ -625,21 +660,5 @@ void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, do
     list->reliabilityIndicator->insert({timestamp,reliabilityIndicator});
 }
 
-void CollectStats::finish(){
-
-    //remove undisposed LTE PDUs;
-    for(const auto &pair1 : interfaceToProtocolMap){
-
-            if(pair1.second.find("LTE") != std::string::npos){
-
-            int lteInterfaceId = pair1.first;
-            for (const auto &pair2 : lastTransmittedFramesByInterfaceId[lteInterfaceId])
-                delete pair2.second ;
-
-            break; // leave looping since more than one LTE interface in not supported yet
-        }
-    }
-
-}
 
 

@@ -68,7 +68,10 @@ public:
     map<int,LongIntegerPair> attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId; // To compute reliability and throughput metrics.
                                                                                         //Tuple <0> is for attempted to be transmitted data and Tuple<1> is successfully transmitted data
 
+
+
     map<int,map<string,cMessage*>> lastTransmittedFramesByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
+    map<int,std::map<string,bool>> lastTransmittedFramesAckByInterfaceId ;
 
     listAlternativeAttributes recentCriteriaStatsByInterfaceId;
 
@@ -103,7 +106,6 @@ protected:
     // Initialization and signal registration
     virtual void initialize(int stage);
     virtual int numInitStages() const { return inet::NUM_INIT_STAGES; }
-    virtual void finish();
     void registerSignals();
     void initializeDLT();
     void setInterfaceToProtocolMap();
@@ -129,6 +131,7 @@ protected:
     map<simtime_t,double>* getSublistByDLTOfCriterion(map<simtime_t,double>* pCriterion,double pDlt);
     map<int,listOfCriteria*> getSublistByDLT();
     listAlternativeAttributes* applyAverageMethod(map<int,listOfCriteria*> dataSet);
+    void purgeUtilVars(int interfaceId);
 
 
     //Signals for stats
