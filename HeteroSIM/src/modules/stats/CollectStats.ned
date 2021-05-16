@@ -27,8 +27,7 @@ simple CollectStats like IStatistics
     parameters:    
         string interfaceToProtocolMapping = default("0:WiFi,1:LTE");
         string averageMethod = default("ema"); // simple average or with ema
-        string initialSendIntervalByInterfaceId =default("0:0.1,1:0.1") ; // comma separated v1:v2 values where v1 is the interface ID and v2 its inital send interval in second.
-        int gamma=default(3); // is the maximun number of event to consider in calculation Data Life Time  
+        string commonDLTMaxByInterfaceId =default("0:1,1:1") ; // comma separated v1:v2 values where v1 is the interface ID and v2 the maximun Data Life Time (in second) for each of its criteria.
         
         // Statistics
         @signal[throughputIndicator0];

@@ -53,13 +53,11 @@ void CollectStats::initialize(int stage)
         reliabilityIndicator0Signal = registerSignal("reliabilityIndicator0");
         reliabilityIndicator1Signal = registerSignal("reliabilityIndicator1");
 
-        gamma = par("gamma").intValue();
-
         setInterfaceToProtocolMap();
         DecisionMaker *decisionModule =dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
         if (decisionModule->isDeciderActived()) {
             registerSignals();
-            setSendIntervals(par("initialSendIntervalByInterfaceId").stringValue());
+            setCommonDltMax(par("initialSendIntervalByInterfaceId").stringValue());
             initializeDLT();
         }
 
@@ -84,7 +82,7 @@ void CollectStats::setInterfaceToProtocolMap()
       }
 }
 
-void CollectStats::setSendIntervals(std::string strValues)
+void CollectStats::setCommonDltMax(std::string strValues)
 {
     cStringTokenizer tokenizer(strValues.c_str(),string(",").c_str());
       while (tokenizer.hasMoreTokens()){
@@ -92,17 +90,8 @@ void CollectStats::setSendIntervals(std::string strValues)
           std::string mappingEntry= tokenizer.nextToken();
           vector<string> result;
           boost::split(result, mappingEntry, boost::is_any_of(":"));
-          sendIntervalByInterfaceId.insert({stoi(result[0]),stod(result[1])});
-          sendIntervalLastUpdateTimestampByInterfaceId.insert({stoi(result[0]),NOW});
+          commonDLTMaxByInterfaceId.insert({stoi(result[0]),stod(result[1])});
       }
-}
-
-void CollectStats::updateSendInterval(int interfaceId)
-{
-   std::map<int, simtime_t>::iterator it1 = sendIntervalLastUpdateTimestampByInterfaceId.find(interfaceId);
-   std::map<int, double>::iterator it2 = sendIntervalByInterfaceId.find(interfaceId);
-   it2->second = (NOW - it1->second).dbl();
-   it1->second = NOW;
 }
 
 void CollectStats::initializeDLT()
@@ -174,7 +163,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
     if ( comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker toward transmission interface
 
-        updateSendInterval(interfaceId);
         //For delay metric
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
 
@@ -275,7 +263,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId)
 {
     if (comingSignal == DecisionMaker::decisionSignal) {
-        updateSendInterval(interfaceId);
         return;// from here we do not know the IDs of MAC PDUs sent to initialize utility variables.
     }
 
@@ -420,9 +407,10 @@ void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
 double CollectStats::getDLT(double CofficientOfVariation, int interfaceId) {
     double dlt = exp(
             -1 * CofficientOfVariation
-                    + log(gamma * sendIntervalByInterfaceId[interfaceId]));
+                    + log(commonDLTMaxByInterfaceId[interfaceId]));
     if (dlt < 0)
         throw cRuntimeError("Data life time interval can not be negative.");
+
     return dlt;
 }
 

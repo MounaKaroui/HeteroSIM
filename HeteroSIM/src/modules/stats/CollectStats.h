@@ -94,13 +94,11 @@ public:
     //Final decision data to be used as an input for decider
     CollectStats::listAlternativeAttributes* prepareNetAttributes();
 
-    map<int,double> sendIntervalByInterfaceId;
-    map<int,simtime_t> sendIntervalLastUpdateTimestampByInterfaceId;
+    map<int,double> commonDLTMaxByInterfaceId;
 
 protected:
     //NED parameters:
     std::string averageMethod;
-    int gamma;
 
     // Initialization and signal registration
     virtual void initialize(int stage);
@@ -109,8 +107,7 @@ protected:
     void registerSignals();
     void initializeDLT();
     void setInterfaceToProtocolMap();
-    void setSendIntervals(std::string strValues);
-    void updateSendInterval(int interfaceId);
+    void setCommonDltMax(std::string strValues);
 
 
     double getThroughputIndicator(int64_t dataBitLength, double radioFrameTime);
