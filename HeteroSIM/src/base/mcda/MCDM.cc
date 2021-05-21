@@ -258,8 +258,8 @@ Matrix entropy_weighting(Matrix D)
     }
     }
 
-    std::cout<<"r= \n" ;
-    r.print();
+//    std::cout<<"r= \n" ;
+//   r.print();
 
     double h=-1/std::log(alterNum);
     for (int i=0; i<n; i++)
@@ -271,8 +271,8 @@ Matrix entropy_weighting(Matrix D)
 
     }
     }
-    std::cout << "entropy " <<"\n";
-    H.print();
+//    std::cout << "entropy " <<"\n";
+//    H.print();
 
     for(int i=0; i<n; i++)
     {
@@ -475,10 +475,10 @@ Matrix VIKOR(Matrix D, Matrix W,  double v)
     Matrix antiIdeal = antiIdealSolution(D);    // anti-ideal
 
 
-    std::cout<<"\n Ideal solution:";
-    ideal.print();
-    std::cout<<"\n Anti-ideal solution:";
-    antiIdeal.print();
+//    std::cout<<"\n Ideal solution:";
+//    ideal.print();
+//    std::cout<<"\n Anti-ideal solution:";
+//    antiIdeal.print();
 
     Matrix S(altNumb,1);
     Matrix R(altNumb,1);
@@ -495,10 +495,10 @@ Matrix VIKOR(Matrix D, Matrix W,  double v)
 
 
     }
-    std::cout<< "R= ";
-    R.print();
-    std::cout<< "S= " ;
-    S.print();
+//    std::cout<< "R= ";
+//    R.print();
+//    std::cout<< "S= " ;
+//    S.print();
 
     double Rplus =  maxElement(R,0,"column");
     //std::cout<<"R+ "<<Rplus<<"\n";
@@ -599,15 +599,15 @@ int decisionProcess(std::string decisionData, std::string path,
 
     int critNumb =criteriaType.size()-std::count(criteriaType.begin(), criteriaType.end(), ',');
     Matrix C = parseInputString(decisionData,',',critNumb);
-    std::cout<<"Criteria matrix : " <<std::endl;
-    C.print();
+//    std::cout<<"Criteria matrix : " <<std::endl;
+//    C.print();
     std::vector<Norma> norm = readCriteriaType(criteriaType,C); //set norm parameters
 
-    std::cout<<"Normalized matrix : " <<std::endl;
+//    std::cout<<"Normalized matrix : " <<std::endl;
 
     // Normalization stage ...
     Matrix D = norm3(C,norm);
-    D.print();
+//    D.print();
 
     // weighting stage ...
     Matrix W(critNumb,1);
@@ -620,8 +620,8 @@ int decisionProcess(std::string decisionData, std::string path,
         Matrix A = readPreferences(trafficType,path,critNumb);
         W = wls_weighting(A);
     }
-    std::cout<<"Subjective Weighted matrix : " <<"\n";
-    W.print();
+//    std::cout<<"Subjective Weighted matrix : " <<"\n";
+//    W.print();
 
     // decision stage ...
     Matrix score(D.size(1),1);
@@ -638,8 +638,8 @@ int decisionProcess(std::string decisionData, std::string path,
     else
         std::cerr<<"Wrong entered name!!\n";
 
-    std::cout<<"Score with " << algName << ": "<<"\n";
-    score.print();
+//    std::cout<<"Score with " << algName << ": "<<"\n";
+//    score.print();
 
     int bestIndexFromGood=0;
     if (algName=="VIKOR")
@@ -660,10 +660,10 @@ double calculateConsistency(Matrix A,Matrix w,int n)
     {
         s.at(0,i)=sum(A,i,"column");
     }
-    //s.print();
+//    s.print();
     Matrix sp(1,n);
     sp=s*w;
-    //sp.print();
+//    sp.print();
     //double lambdaMax=sum(s*w,0, "row");
     double CI=(sp.at(0,0)-n) /(n-1);
     return CI/0.58;

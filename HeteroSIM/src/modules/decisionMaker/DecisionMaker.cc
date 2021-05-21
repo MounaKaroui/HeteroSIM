@@ -203,7 +203,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
         cModule* host = inet::getContainingNode(this);
          std::string name=host->getFullName();
          int nodeId=Utilities::extractNumber(name.c_str());
-         std::cout<< "Node Id= " << nodeId << "\n"<< endl;
+         EV_DEBUG<< "Node Id= " << nodeId << "\n"<< endl;
 
         if(isDeciderActive)
         {
@@ -217,17 +217,17 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 if(decisionDataStr!="")
                 {
                     // MCDM decision
-                    //std::cout<< "decision Data "<< decisionDataStr <<"\n" << endl;
+                    //EV_DEBUG<< "decision Data "<< decisionDataStr <<"\n" << endl;
                     networkIndex = McdaAlg::decisionProcess(decisionDataStr,
                             pathToConfigFiles, "simple", simpleWeights,
                             criteriaType, trafficType, "TOPSIS");
 
-                    std::cout<< "The best network is "<< networkIndex <<"\n" << endl;
+                    EV_DEBUG<< "The best network is "<< networkIndex <<"\n" << endl;
                 } else
                     throw cRuntimeError("No stats for decision making ");
             }else{
                 networkIndex = takeNaiveSingleCriterionBasedDecision();
-                std::cout<< "The naive single criteria based decision is "<< networkIndex <<"\n" << endl;
+                EV_DEBUG<< "The naive single criteria based decision is "<< networkIndex <<"\n" << endl;
             }
         }
         else
@@ -239,10 +239,10 @@ int DecisionMaker::takeDecision(cMessage* msg)
                 else
                     networkIndex=0;
 
-                std::cout<< "The random network is "<< networkIndex <<"\n" << endl;
+                EV_DEBUG<< "The random network is "<< networkIndex <<"\n" << endl;
             }else{
                 networkIndex=dummyNetworkChoice;
-                std::cout<< "The dummy choice is "<< networkIndex <<"\n" << endl;
+                EV_DEBUG<< "The dummy choice is "<< networkIndex <<"\n" << endl;
             }
         }
     }
