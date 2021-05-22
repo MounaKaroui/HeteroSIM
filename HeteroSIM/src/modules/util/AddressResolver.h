@@ -35,11 +35,10 @@ class AddressResolver : public cSimpleModule, public IAddressResolver
 {
 
 public :
-    typedef std::map<const InterfaceEntry*,const char *> IEEE80211ResolveCache;
+    typedef std::map<std::string,MACAddress> IEEE80211ResolveCache;
 
 
     virtual MACAddress resolveIEEE802Address(const char * hostName, int interfaceId);
-
     virtual MacNodeId resolveLTEMacAddress(const char * hostName);
 
 

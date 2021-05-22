@@ -31,8 +31,6 @@ void AddressResolver::initialize(int stage)
 
     if (stage == INITSTAGE_NETWORK_LAYER_3 ) { // Interfaces should be available
 
-        WATCH_PTRMAP(globalIeee80211ResolveCache);
-
         ift = getModuleFromPar<IInterfaceTable>(par("interfaceTableModule"), this);
 
         host = findContainingNode(this);
@@ -45,7 +43,9 @@ void AddressResolver::initialize(int stage)
             if (ie->isLoopback())
                 continue;
 
-            globalIeee80211ResolveCache.insert({ie,host->getFullName()});
+            string interfaceFullPath = string(ie->getInterfaceModule()->getFullPath());
+            MACAddress macAddress = ie->getMacAddress();
+            globalIeee80211ResolveCache.insert({interfaceFullPath,macAddress});
         }
 
         binder_ =getBinder();
@@ -58,14 +58,18 @@ MACAddress AddressResolver::resolveIEEE802Address(const char *hostName, int inte
 
     for (auto it = globalIeee80211ResolveCache.begin(); it != globalIeee80211ResolveCache.end();) {
 
-        bool hostNameMatches = !strcmp(it->second, hostName);
-        bool interfaceIdMatches = Utilities::extractNumber( it->first->getInterfaceModule()->getFullName()) == interfaceId;
+        bool hostNameMatches = it->first.find(hostName) != string::npos;
+        if (hostNameMatches) {
 
-        if (hostNameMatches && interfaceIdMatches) {
-            return it->first->getMacAddress();
+            string interfaceFullName = it->first.substr(it->first.size()-7, 7);
+            bool interfaceIdMatches = Utilities::extractNumber(interfaceFullName) == interfaceId;
+            if(interfaceIdMatches){
+                return it->second;
+            }
         }
-        else
+        else{
             ++it;
+        }
     }
 
     ASSERT2(false,"Cannot resolve address"); // TODO add exception details
@@ -85,9 +89,8 @@ AddressResolver::~AddressResolver() {
 
     // delete my 802.11 interface entries from the globalCache
     for (auto it = globalIeee80211ResolveCache.begin(); it != globalIeee80211ResolveCache.end();) {
-        if (it->second == host->getName()) {
+        if (it->first.find(host->getName()) != string::npos  )  {
             auto cur = it++;
-            delete cur->second;
             globalIeee80211ResolveCache.erase(cur);
         } else
             ++it;
