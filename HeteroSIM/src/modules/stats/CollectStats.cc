@@ -43,6 +43,8 @@ void CollectStats::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         interfaceToProtocolMapping = par("interfaceToProtocolMapping").stringValue();
         averageMethod = par("averageMethod").stringValue();
+        controlTrafficSendInterval = par("controlTrafficSendInterval").doubleValue();
+        minNumOfControlTrafficPktInDLT= par("minNumOfControlTrafficPktInDLT").intValue();
 
         throughputIndicator0Signal = registerSignal("throughputIndicator0");
         throughputIndicator1Signal = registerSignal("throughputIndicator1");
@@ -409,7 +411,8 @@ double CollectStats::getDLT(double CofficientOfVariation, int interfaceId) {
     if (dlt < 0)
         throw cRuntimeError("Data life time interval can not be negative.");
 
-    return dlt;
+    double minDLT= minNumOfControlTrafficPktInDLT*controlTrafficSendInterval;
+    return dlt+minDLT;
 }
 
 map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()

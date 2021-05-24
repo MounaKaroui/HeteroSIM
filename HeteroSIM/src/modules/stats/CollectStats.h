@@ -102,6 +102,8 @@ public:
 protected:
     //NED parameters:
     std::string averageMethod;
+    double controlTrafficSendInterval;
+    int minNumOfControlTrafficPktInDLT;
 
     // Initialization and signal registration
     virtual void initialize(int stage);

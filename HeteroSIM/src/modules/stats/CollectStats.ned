@@ -28,6 +28,9 @@ simple CollectStats like IStatistics
         string interfaceToProtocolMapping = default("0:WiFi,1:LTE");
         string averageMethod = default("ema"); // simple average or with ema
         string commonDLTMaxByInterfaceId =default("0:1,1:1") ; // comma separated v1:v2 values where v1 is the interface ID and v2 the maximun Data Life Time (in second) for each of its criteria.
+        double controlTrafficSendInterval @unit(s) =default(0.1s) ; // TODO separate per interface
+        int minNumOfControlTrafficPktInDLT = default(5) ; //TODO separate per interface
+        //int minDLT
         
         // Statistics
         @signal[throughputIndicator0];
