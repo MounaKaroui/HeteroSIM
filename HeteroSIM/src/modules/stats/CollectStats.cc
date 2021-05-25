@@ -236,11 +236,6 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
                 if(comingSignal == NF_PACKET_DROP)
                     return ; // so this is to ignore one of them
 
-                //This happens when the instant at which the packet has been sent is no logger in current DLT. So, statistics related to it should be ignored.
-                if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
-                   return;
-                }
-
                 //Delay metric
                 delayInidicator = SIMTIME_DBL(macDelay);
 

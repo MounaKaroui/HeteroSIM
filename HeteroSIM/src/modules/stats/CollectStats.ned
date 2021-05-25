@@ -50,11 +50,5 @@ simple CollectStats like IStatistics
         
         @signal[reliabilityIndicator1];
         @statistic[reliabilityIndicator1](title="reliabilityIndicator1"; source="reliabilityIndicator1"; record=vector,mean);
-        
-        @signal[utilBefore];
-        @statistic[utilBefore](title="utilBefore"; source="utilBefore"; record=vector,mean);
-        
-        @signal[utilAfter];
-        @statistic[utilAfter](title="utilAfter"; source="utilAfter"; record=vector,mean);
 }
 
