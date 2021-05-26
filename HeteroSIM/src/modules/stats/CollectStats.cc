@@ -658,5 +658,11 @@ void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, do
     list->reliabilityIndicator->insert({timestamp,reliabilityIndicator});
 }
 
+void CollectStats::finish(){
 
-
+    for (auto pair : lastTransmittedFramesByInterfaceId){
+        for (auto pair2 : pair.second){
+            delete pair2.second;
+        }
+    }
+}
