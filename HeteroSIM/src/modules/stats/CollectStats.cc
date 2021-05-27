@@ -172,7 +172,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
         std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getBitLength();
 
         //utility
-        lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg->dup()});
+        lastTransmittedFramesLengthByInterfaceId[interfaceId].insert({msg->getName(),PK(msg)->getBitLength()});
 
         return ;
     }
@@ -183,12 +183,12 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     double delayInidicator, throughputIndicator, reliabilityIndicator;
     double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
 
-    //retrieve last transmitted packet from its name
-    std::map<string,cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(msg->getName());
+    //retrieve info of last transmitted packet from its name
+    std::map<string,int64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(msg->getName());
 
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //signal of packet coming out of the radio layer -> frame transmitter
 
-        Ieee802Ctrl *controlInfo = dynamic_cast<Ieee802Ctrl*>(messageIt->second->getControlInfo());
+        Ieee802Ctrl *controlInfo = dynamic_cast<Ieee802Ctrl*>(msg->getControlInfo());
         //TODO why negation with !
        if (!controlInfo->getDestinationAddress().isMulticast()) { // record immediately statistics if transmitted frame do not require ACK
 
@@ -198,7 +198,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
             delayInidicator = SIMTIME_DBL(macAndRadioDelay);
 
             //Throughput metric
-            std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getBitLength();
+            std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += messageIt->second;
             throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
 
             // Reliability metric
@@ -208,7 +208,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
             //purge
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-            lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
+            lastTransmittedFramesLengthByInterfaceId[interfaceId].erase(msg->getName());
         }
         //else wait for ack or packet drop to record statistics
 
@@ -241,7 +241,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
 
                 if (comingSignal == NF_PACKET_ACK_RECEIVED){
-                    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(messageIt->second)->getBitLength();
+                    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += messageIt->second;
                     lastTransmittedFramesAckByInterfaceId[interfaceId].insert({msg->getName(),true});
                 }
 
@@ -312,7 +312,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                     std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getBitLength();
 
                     //utility
-                    lastTransmittedFramesByInterfaceId[interfaceId].insert({pktName,pduSent->dup()});
+                    lastTransmittedFramesLengthByInterfaceId[interfaceId].insert({pktName,PK(msg)->getBitLength()});
                 }
 
             } //TODO move here code for broadcast/multicast traffic metric assumptions
@@ -363,10 +363,10 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 delayInidicator = SIMTIME_DBL(TTI+lastMacRACDelay+TTI+lastMacGrantObtentionDelay+TTI+macDataPduHarqProcessTime);
 
                 //retrieve last transmitted packet from its name
-                std::map<string, cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(timeStampIt->first);
+                std::map<string, int64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(timeStampIt->first);
                 std::get<1>(
                         attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) +=
-                        PK(messageIt->second) ->getBitLength(); //To note that this packet length data has been successfully sent
+                        messageIt->second; //To note that this packet length data has been successfully sent
 
                 //Throughput metric
                 throughputIndicator =
@@ -534,8 +534,8 @@ void CollectStats::purgeUtilVars(int interfaceId) {
                             dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]));
     simtime_t dltIntervalLowerBound = NOW - SimTime(minOfDlt);
 
-    for (auto it = lastTransmittedFramesByInterfaceId[interfaceId].begin();
-            it != lastTransmittedFramesByInterfaceId[interfaceId].end();){ //This may be computationally very heavy. TODO iterate by timestamp and do break after dltIntervalLowerBound
+    for (auto it = lastTransmittedFramesLengthByInterfaceId[interfaceId].begin();
+            it != lastTransmittedFramesLengthByInterfaceId[interfaceId].end();){ //This may be computationally very heavy. TODO iterate by timestamp and do break after dltIntervalLowerBound
 
         //retrieve the corresponding timeStamps
         std::map<string, simtime_t>::iterator msgTimeStampIt =
@@ -545,8 +545,7 @@ void CollectStats::purgeUtilVars(int interfaceId) {
         if (msgTimeStampIt->second < dltIntervalLowerBound) {
 
             std::get<0>(
-                    attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -=
-            PK(it->second)->getBitLength();
+                    attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -= it->second;
 
             std::map<string, bool>::iterator msgAckIt =
                     lastTransmittedFramesAckByInterfaceId[interfaceId].find(msgTimeStampIt->first);
@@ -554,11 +553,10 @@ void CollectStats::purgeUtilVars(int interfaceId) {
             if (msgAckIt != lastTransmittedFramesAckByInterfaceId[interfaceId].end()){
 
                 std::get<1>(
-                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -= PK(it->second) ->getBitLength();
+                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -= it->second;
             }
 
-            delete it->second ;
-            lastTransmittedFramesByInterfaceId[interfaceId].erase(it++);
+            lastTransmittedFramesLengthByInterfaceId[interfaceId].erase(it++);
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgTimeStampIt);
         }else{
             it++;
@@ -660,9 +658,7 @@ void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, do
 
 void CollectStats::finish(){
 
-    for (auto pair : lastTransmittedFramesByInterfaceId){
-        for (auto pair2 : pair.second){
-            delete pair2.second;
-        }
+    for (auto pair : lastTransmittedFramesLengthByInterfaceId){
+        pair.second.clear();
     }
 }

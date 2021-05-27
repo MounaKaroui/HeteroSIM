@@ -31,9 +31,6 @@
 using namespace omnetpp;
 using namespace inet;
 using namespace inet::physicallayer;
-/**
- * TODO - Generated class
- */
 
 class CollectStats : public cListener, public cSimpleModule
 {
@@ -70,7 +67,7 @@ public:
 
 
 
-    map<int,map<string,cMessage*>> lastTransmittedFramesByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
+    map<int,map<string,int64_t>> lastTransmittedFramesLengthByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
     map<int,std::map<string,bool>> lastTransmittedFramesAckByInterfaceId ;
 
     listAlternativeAttributes recentCriteriaStatsByInterfaceId;
