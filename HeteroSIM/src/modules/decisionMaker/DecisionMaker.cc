@@ -18,6 +18,8 @@
 #include "../../modules/messages/Messages_m.h"
 #include "common/LteCommon.h"
 
+#include <boost/algorithm/string.hpp>
+
 #include "common/LteControlInfo_m.h"
 
 #include <inet/common/ModuleAccess.h>
@@ -37,14 +39,21 @@ void DecisionMaker::initialize(int stage)
         lteInterfaceIsActive = getAncestorPar("lteInterfaceIsActive").boolValue();
 
         pathToConfigFiles=par("pathToConfigFiles").stringValue();
-        simpleWeights=par("simpleWeights").stringValue();
+        std::string weights = par("simpleWeights").stringValue() ;
+        boost::split(simpleWeights,weights , boost::is_any_of(";"));
         criteriaType=par("criteriaType").stringValue();
 
 
         isDeciderActive=par("isDeciderActive").boolValue();
         isRandomDecision = par("isRandomDecision").boolValue() ;
         naiveSingleCriterionBasedDecision = par("naiveSingleCriterionBasedDecision").boolValue();
-        naiveSingleCriterionBasedDecisionChoice = par("naiveSingleCriterionBasedDecisionChoice").intValue();
+
+        std::string naiveChoice = par("naiveSingleCriterionBasedDecisionChoice").stringValue();
+        std::vector<string> naiveChoiceVector ;
+        boost::split(naiveChoiceVector,naiveChoice, boost::is_any_of(";"));
+        for (auto choice : naiveChoiceVector)
+            naiveSingleCriterionBasedDecisionChoice.push_back(stoi(choice));
+
         dummyNetworkChoice = par("dummyNetworkChoice").intValue();
 
         cModule* host = inet::getContainingNode(this);
@@ -219,14 +228,14 @@ int DecisionMaker::takeDecision(cMessage* msg)
                     // MCDM decision
                     //EV_DEBUG<< "decision Data "<< decisionDataStr <<"\n" << endl;
                     networkIndex = McdaAlg::decisionProcess(decisionDataStr,
-                            pathToConfigFiles, "simple", simpleWeights,
+                            pathToConfigFiles, "simple", simpleWeights[hetMsg->getApplId()],
                             criteriaType, trafficType, "TOPSIS");
 
                     EV_DEBUG<< "The best network is "<< networkIndex <<"\n" << endl;
                 } else
                     throw cRuntimeError("No stats for decision making ");
             }else{
-                networkIndex = takeNaiveSingleCriterionBasedDecision();
+                networkIndex = takeNaiveSingleCriterionBasedDecision(hetMsg->getApplId());
                 EV_DEBUG<< "The naive single criteria based decision is "<< networkIndex <<"\n" << endl;
             }
         }
@@ -250,7 +259,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
     return networkIndex;
 }
 
-int DecisionMaker::takeNaiveSingleCriterionBasedDecision(){
+int DecisionMaker::takeNaiveSingleCriterionBasedDecision(const int pAppID){
 
     CollectStats* stats=dynamic_cast<CollectStats*>(getParentModule()->getSubmodule("collectStatistics"));
 
@@ -262,7 +271,7 @@ int DecisionMaker::takeNaiveSingleCriterionBasedDecision(){
 
         int interfaceId = pair.first;
         double recentData ;
-        switch (naiveSingleCriterionBasedDecisionChoice){
+        switch (naiveSingleCriterionBasedDecisionChoice[pAppID]){
         case 0 : //delay criterion
             recentData =pair.second->delayIndicator;
             if( recentData < min ){ // look at minimum since this criterion is considered as smaller the better

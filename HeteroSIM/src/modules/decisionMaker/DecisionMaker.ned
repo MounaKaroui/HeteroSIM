@@ -28,15 +28,17 @@ simple DecisionMaker
         
         string addressResolver ;
                 
-        //weights in this order delay indicator, throughput indicator, reliability indicator
-        string simpleWeights=default("0.4,0.4,0.2");
+        //weights vectors for applications, each separated by ";". The first vector is for app with ID=0, the second vector is for app with ID=1, and so on...
+        //In a vector of form v1,v2,V3 :  v1 is the weight for delay indicator, v2 is the weight for throughput indicator and v3 is the weight for reliability indicator.
+        string simpleWeights=default("0.4,0.4,0.2;0.2,0.4,0.4");
         // criteria type for normalization 1--> "the larger the better", 0--> "the smaller the better" 
         string criteriaType=default("0,1,1");
         // pathToConfigFiles only used to read pair wise matrix
         string pathToConfigFiles=default("../../HeteroSIM/src/Base/mcda"); 
  		bool isDeciderActive=default(true); 
  		bool naiveSingleCriterionBasedDecision= default(false); // this parameter is considered when "isDeciderActive" is true
- 		int naiveSingleCriterionBasedDecisionChoice=default(0); // choice 0 is for  delay indicator, 1 for throughput indicator, and 2 for reliability indicator
+ 		// Naive for applications, each separated by ";". The first choice is for app with ID=0, the second choice is for app with ID=1, and so on ...
+ 		string naiveSingleCriterionBasedDecisionChoice=default("0;1;2"); // choice 0 is for delay indicator, 1 for throughput indicator, and 2 for reliability indicator
  		
  		bool isRandomDecision=default(true);
  		

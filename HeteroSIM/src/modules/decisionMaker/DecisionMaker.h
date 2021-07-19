@@ -74,7 +74,7 @@ public:
 
     //Decision method
     int takeDecision(cMessage*  msg);
-    int takeNaiveSingleCriterionBasedDecision();
+    int takeNaiveSingleCriterionBasedDecision(const int pAppID);
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
     void setIeee802CtrlInfo(cMessage* msg,int networkIndex);
     void setLteCtrlInfo(cMessage* msg); //"networkIndex" parameter is not needed parameter because multiple LTE interfaces within a node is note supported
@@ -82,11 +82,11 @@ public:
     bool lteInterfaceIsActive;
     bool isDeciderActive;
     bool naiveSingleCriterionBasedDecision;
-    int naiveSingleCriterionBasedDecisionChoice ;
+    std::vector<int> naiveSingleCriterionBasedDecisionChoice ;
     int dummyNetworkChoice;
     bool isRandomDecision;
 
-    std::string simpleWeights;
+    std::vector<string> simpleWeights;
     std::string criteriaType;
 
     LteBinder* lteBinder_;
