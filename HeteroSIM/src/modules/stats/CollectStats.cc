@@ -222,15 +222,22 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
             simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
+            double numerator = (double) std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) ;
+            double denominator =(double) std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
+            // Reliability metric
+            reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
 
-            if(macDelay == 0){ //case of packet drop due to queue overflow
+            if(macDelay == 0){ //case of packet drop due to queue overflow considering penalties
                 //In case of full queue 802.11 interface sends "NF_PACKET_DROP" signal
                 //so check the following assertion
                 ASSERT(comingSignal == NF_PACKET_DROP);
-                ASSERT2(false,"Packet drop due to queue overflow not supported yet"); //TODO add delay penalties to consider in case of packet drop
 
+                //Delay metric
+                delayInidicator = DBL_MAX;
+                //Throughput metric
+                throughputIndicator =0 ;
 
-            }else { //case of packet drop due failing CSMA/CA process or previous ACK received
+            }else { //case of packet drop due failing CSMA/CA process or previous ACK received considering penalties
 
                //If this packet drop is due to failing CSMA/CA process, the MAC module emit successfully NF_PACKET_DROP and NF_LINK_BREAK signals
                 if(comingSignal == NF_PACKET_DROP)
@@ -247,14 +254,9 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
                  //Throughput metric
                 throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
-
-                // Reliability metric
-                double numerator = (double) std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) ;
-                double denominator =(double) std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
-                reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
-
-                recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator) ;
             }
+
+            recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator) ;
         }
 }
 
