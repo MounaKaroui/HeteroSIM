@@ -28,7 +28,7 @@
 #include "common/LteCommon.h"
 #include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
 
-#include "stack/mac/packet/LteMacPdu_m.h"
+#include "stack/mac/packet/LteMacPdu.h"
 #include "stack/mac/packet/LteHarqFeedback_m.h"
 #include "stack/phy/layer/LtePhyBase.h"
 #include "stack/mac/packet/LteRac_m.h"
@@ -281,8 +281,11 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             return ;
         }
 
+        LteMacPdu *pduSent;
+
         if (uInfo->getFrameType() == DATAPKT){
-            LteMacPdu_Base *pduSent = dynamic_cast<LteMacPdu_Base*>(msg);
+
+            pduSent = dynamic_cast<LteMacPdu*>(msg);
 
             bool isMulticastMessage = uInfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id is set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
 
@@ -311,10 +314,10 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 if(uInfo->getLcid() == SHORT_BSR){// Data MAC PDU report case. (See in LteMacUeD2D::macPduMake)
 
                     // For reliability metric
-                    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getBitLength();
+                    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += pduSent->getBitLength();
 
                     //utility
-                    lastTransmittedFramesLengthByInterfaceId[interfaceId].insert({pktName,PK(msg)->getBitLength()});
+                    lastTransmittedFramesLengthByInterfaceId[interfaceId].insert({pktName,pduSent->getBitLength()});
                 }
 
             } //TODO move here code for broadcast/multicast traffic metric assumptions
