@@ -152,7 +152,7 @@ void CollectStats::registerSignals()
 
 
 
-double CollectStats::getThroughputIndicator(int64_t dataBitLength, double transmitTime)
+double CollectStats::getThroughputIndicator(uint64_t dataBitLength, double transmitTime)
 {
     if(isnan(transmitTime) || isinf(transmitTime) || transmitTime ==0 || dataBitLength<0)
         throw cRuntimeError("Incorrect input parameter(s) to calculate throughput: transmit it is %d and data length is %d",transmitTime,dataBitLength);
@@ -184,7 +184,7 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
     double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
 
     //retrieve info of last transmitted packet from its name
-    std::map<string,int64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(msg->getName());
+    std::map<string,uint64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(msg->getName());
 
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //signal of packet coming out of the radio layer -> frame transmitter
 
@@ -368,7 +368,7 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
                 delayInidicator = SIMTIME_DBL(TTI+lastMacRACDelay+TTI+lastMacGrantObtentionDelay+TTI+macDataPduHarqProcessTime);
 
                 //retrieve last transmitted packet from its name
-                std::map<string, int64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(timeStampIt->first);
+                std::map<string, uint64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(timeStampIt->first);
                 std::get<1>(
                         attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) +=
                         messageIt->second; //To note that this packet length data has been successfully sent

@@ -44,7 +44,7 @@ public:
         map<simtime_t,double>* reliabilityIndicator;
     };
 
-    typedef tuple<long,long>  LongIntegerPair;
+    typedef tuple<uint64_t,uint64_t>  unsignedLongIntegerPair;
 
     struct alternativeAttributes
     {
@@ -62,12 +62,12 @@ public:
     map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
 
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
-    map<int,LongIntegerPair> attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId; // To compute reliability and throughput metrics.
+    map<int,unsignedLongIntegerPair> attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId; // To compute reliability and throughput metrics.
                                                                                         //Tuple <0> is for attempted to be transmitted data and Tuple<1> is successfully transmitted data
 
 
 
-    map<int,map<string,int64_t>> lastTransmittedFramesLengthByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
+    map<int,map<string,uint64_t>> lastTransmittedFramesLengthByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
     map<int,std::map<string,bool>> lastTransmittedFramesAckByInterfaceId ;
 
     listAlternativeAttributes recentCriteriaStatsByInterfaceId;
@@ -112,7 +112,7 @@ protected:
     void setCommonDltMax(std::string strValues);
 
 
-    double getThroughputIndicator(int64_t dataBitLength, double radioFrameTime);
+    double getThroughputIndicator(uint64_t dataBitLength, double radioFrameTime);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, cObject *obj, cObject *details);
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, long value, cObject *details);
     void recordStatsForWlan(simsignal_t comingSignal, string sourceName ,cMessage* msg,  int interfaceId);
