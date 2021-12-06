@@ -42,11 +42,17 @@ simple DecisionMaker
  		
  		bool isRandomDecision=default(true);
  		
- 		volatile int dummyNetworkChoice=default(0);     
+ 		string dummyNetworkChoice=default("0;0;0");
  		
  		
  		@signal[decision];
  		@statistic[decision](title="decision";source="decision"; record=vector,stats); 
+ 		@signal[decision0];
+ 		@statistic[decision0](title="decision0";source="decision0"; record=vector,stats); 
+ 		@signal[decision1];
+ 		@statistic[decision1](title="decision1";source="decision1"; record=vector,stats); 
+ 		@signal[decision2];
+ 		@statistic[decision2](title="decision2";source="decision2"; record=vector,stats); 
  		     
  		     
         gates:

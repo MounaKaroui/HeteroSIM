@@ -14,6 +14,7 @@
 // 
 
 #include "../stats/CollectStats.h"
+#include "../../modules/messages/Messages_m.h"
 
 #include <inet/common/ModuleAccess.h>
 
@@ -29,9 +30,13 @@
 #include "inet/linklayer/ieee80211/mac/coordinationfunction/Hcf.h"
 
 #include "stack/mac/packet/LteMacPdu.h"
+#include "stack/mac/buffer/harq/LteHarqBufferTx.h"
+#include "stack/rlc/packet/LteRlcDataPdu.h"
 #include "stack/mac/packet/LteHarqFeedback_m.h"
 #include "stack/phy/layer/LtePhyBase.h"
 #include "stack/mac/packet/LteRac_m.h"
+
+#include <random>
 
 
 Define_Module(CollectStats);
@@ -44,7 +49,6 @@ void CollectStats::initialize(int stage)
         interfaceToProtocolMapping = par("interfaceToProtocolMapping").stringValue();
         averageMethod = par("averageMethod").stringValue();
         controlTrafficSendInterval = par("controlTrafficSendInterval").doubleValue();
-        minNumOfControlTrafficPktInDLT= par("minNumOfControlTrafficPktInDLT").intValue();
 
         throughputIndicator0Signal = registerSignal("throughputIndicator0");
         throughputIndicator1Signal = registerSignal("throughputIndicator1");
@@ -57,9 +61,12 @@ void CollectStats::initialize(int stage)
 
         setInterfaceToProtocolMap();
         DecisionMaker *decisionModule =dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
+        deciderIsNaiveSingleCriterionBasedDecision=decisionModule->isNaiveSingleCriterionBasedDecision();
+
         if (decisionModule->isDeciderActived()) {
             registerSignals();
-            setCommonDltMax(par("commonDLTMaxByInterfaceId").stringValue());
+            setCommonDltMax(par("dltMaxByAppByInterfaceId").stringValue());
+            setMinNumOfControlTrafficPktsInDLT(par("minNumOfControlTrafficPktInDLTByApp").stringValue());
             initializeDLT();
         }
 
@@ -86,22 +93,39 @@ void CollectStats::setInterfaceToProtocolMap()
 
 void CollectStats::setCommonDltMax(std::string strValues)
 {
-    cStringTokenizer tokenizer(strValues.c_str(),string(",").c_str());
+    cStringTokenizer tokenizer(strValues.c_str(),string(";").c_str());
       while (tokenizer.hasMoreTokens()){
 
           std::string mappingEntry= tokenizer.nextToken();
           vector<string> result;
           boost::split(result, mappingEntry, boost::is_any_of(":"));
-          commonDLTMaxByInterfaceId.insert({stoi(result[0]),stod(result[1])});
+          dltMaxByAppByInterfaceId[stoi(result[0])][stoi(result[1])]=stod(result[2]);
+//          DLTMaxByAppByInterfaceId.insert({stoi(result[0]),stod(result[1])});
+      }
+}
+
+void CollectStats::setMinNumOfControlTrafficPktsInDLT(const char * strValues)
+{
+    cStringTokenizer tokenizer(strValues,string(",").c_str());
+      while (tokenizer.hasMoreTokens()){
+
+          std::string mappingEntry= tokenizer.nextToken();
+          vector<string> result;
+          boost::split(result, mappingEntry, boost::is_any_of(":"));
+          minNumOfControlTrafficPktInDLTByApp.insert({stoi(result[0]),stod(result[1])});
       }
 }
 
 void CollectStats::initializeDLT()
 {
     for(auto const & x: interfaceToProtocolMap){
-        dltByInterfaceIdByCriterion[x.first]["delayIndicator"]=getDLT(0,x.first);
-        dltByInterfaceIdByCriterion[x.first]["throughputIndicator"]=getDLT(0,x.first);
-        dltByInterfaceIdByCriterion[x.first]["reliabilityIndicator"]=getDLT(0,x.first);
+        vector<int>* appIDs = Utilities::retrieveKeys(&minNumOfControlTrafficPktInDLTByApp) ;
+
+        for(auto it = appIDs->begin(); it != appIDs->end(); ++it ){
+            dltByInterfaceIdByCriterionByApp[x.first]["delayIndicator"][*it]=getDLT(0,x.first,*it);
+            dltByInterfaceIdByCriterionByApp[x.first]["throughputIndicator"][*it]=getDLT(0,x.first,*it);
+            dltByInterfaceIdByCriterionByApp[x.first]["reliabilityIndicator"][*it]=getDLT(0,x.first,*it);
+        }
     }
 }
 
@@ -139,6 +163,12 @@ void CollectStats::registerSignals()
                 LteMacBase * macModule=check_and_cast<LteMacBase *>(module);
                 lteMacSentPacketToLowerLayerSingal =  macModule->registerSignal("sentPacketToLowerLayer");
                 macModule->subscribe(lteMacSentPacketToLowerLayerSingal, this);
+                lteMacBufferOverflowUl_ = macModule->registerSignal("macBufferOverFlowUl");
+                macModule->subscribe(lteMacBufferOverflowUl_, this);
+                lteMacBufferOverflowDl_ = macModule->registerSignal("macBufferOverFlowDl");
+                macModule->subscribe(lteMacBufferOverflowDl_, this);
+                lteMacBufferOverflowD2D_ = macModule->registerSignal("macBufferOverFlowD2D");
+                macModule->subscribe(lteMacBufferOverflowD2D_, this);
 
                 std::string phyModuleName = "^.lteNic.phy";
                 LtePhyBase * phyModule=check_and_cast<LtePhyBase *>(getModuleByPath(phyModuleName.c_str()));
@@ -155,66 +185,58 @@ void CollectStats::registerSignals()
 double CollectStats::getThroughputIndicator(uint64_t dataBitLength, double transmitTime)
 {
     if(isnan(transmitTime) || isinf(transmitTime) || transmitTime ==0 || dataBitLength<0)
-        throw cRuntimeError("Incorrect input parameter(s) to calculate throughput: transmit it is %d and data length is %d",transmitTime,dataBitLength);
+        throw cRuntimeError("Incorrect input parameter(s) to calculate throughput: transmit time is %d and data length is %d",transmitTime,dataBitLength);
     return ((double)dataBitLength/transmitTime)*0.000001; //times *0.000001 to convert from bps to mbps
 }
 
 
 void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceName, cMessage* msg,  int interfaceId)
 {
+    BasicMsg* hetMsg;
+    int currentAppID ;
 
     if ( comingSignal == DecisionMaker::decisionSignal){ //when packet leave decision maker toward transmission interface
+
+        hetMsg=dynamic_cast<BasicMsg*>(msg);
+        currentAppID = hetMsg->getApplId();
 
         //For delay metric
         packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]=NOW;
 
         // For reliability metric
-        std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += PK(msg)->getBitLength();
+        if(!deciderIsNaiveSingleCriterionBasedDecision)
+            std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) += PK(msg)->getBitLength();
+        else
+            std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) = PK(msg)->getBitLength();
 
         //utility
-        lastTransmittedFramesLengthByInterfaceId[interfaceId].insert({msg->getName(),PK(msg)->getBitLength()});
+        lastTransmittedFramesByInterfaceId[interfaceId].insert({msg->getName(),msg->dup()});
 
         return ;
     }
 
-    if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
-           listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
 
-    double delayInidicator, throughputIndicator, reliabilityIndicator;
-    double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
+    double delayIndicator, throughputIndicator, reliabilityIndicator;
+    double throughputMesureInterval;
 
     //retrieve info of last transmitted packet from its name
-    std::map<string,uint64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(msg->getName());
+    std::map<string,cMessage*>::iterator messageIt = lastTransmittedFramesByInterfaceId[interfaceId].find(msg->getName());
+    //This happens when the instant at which the packet has been sent is no logger in current DLT.
+    if(messageIt==lastTransmittedFramesByInterfaceId[interfaceId].end())
+        return ;//So, statistics related to it should be ignored.
+
+    hetMsg=dynamic_cast<BasicMsg*>(messageIt->second);
+    currentAppID = hetMsg->getApplId();
 
     if (comingSignal == LayeredProtocolBase::packetSentToLowerSignal && sourceName==string("radio")) { //signal of packet coming out of the radio layer -> frame transmitter
 
+        throughputMesureInterval = dltByInterfaceIdByCriterionByApp[interfaceId]["throughputIndicator"][currentAppID];
+
         Ieee802Ctrl *controlInfo = dynamic_cast<Ieee802Ctrl*>(msg->getControlInfo());
-        //TODO why negation with !
-       if (!controlInfo->getDestinationAddress().isMulticast()) { // record immediately statistics if transmitted frame do not require ACK
 
-            //Delay metric
-            ASSERT(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end());
-            simtime_t macAndRadioDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()]; //--> transmission duration already elapsed
-            delayInidicator = SIMTIME_DBL(macAndRadioDelay);
+        ASSERT(!controlInfo->getDestinationAddress().isMulticast());
 
-            //Throughput metric
-            std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += messageIt->second;
-            throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
-
-            // Reliability metric
-            reliabilityIndicator=1 ; // consider the maximum
-
-            recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator);
-
-            //purge
-            packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
-            lastTransmittedFramesLengthByInterfaceId[interfaceId].erase(msg->getName());
-        }
-        //else wait for ack or packet drop to record statistics
-
-
-    } else if (comingSignal== NF_PACKET_DROP || comingSignal== NF_LINK_BREAK || comingSignal == NF_PACKET_ACK_RECEIVED) { //otherwise it is MAC error signal
-
+    } else if (comingSignal== NF_PACKET_DROP || /*comingSignal== NF_LINK_BREAK ||*/ comingSignal == NF_PACKET_ACK_RECEIVED) { //otherwise it is MAC error signal
             //This happens when the instant at which the packet has been sent is no logger in current DLT. So, statistics related to it should be ignored.
             if(packetFromUpperTimeStampsByInterfaceId[interfaceId].find(msg->getName()) == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
                return;
@@ -222,41 +244,50 @@ void CollectStats::recordStatsForWlan(simsignal_t comingSignal, string sourceNam
 
             simtime_t macDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId][msg->getName()];
 
-            double numerator = (double) std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) ;
-            double denominator =(double) std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
-            // Reliability metric
-            reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
-
             if(macDelay == 0){ //case of packet drop due to queue overflow considering penalties
                 //In case of full queue 802.11 interface sends "NF_PACKET_DROP" signal
                 //so check the following assertion
                 ASSERT(comingSignal == NF_PACKET_DROP);
 
                 //Delay metric
-                delayInidicator = DBL_MAX;
+                delayIndicator = recentValidWlanDelay;
                 //Throughput metric
-                throughputIndicator =0 ;
+                throughputIndicator =0; //TODO is this safe ?
 
             }else { //case of packet drop due failing CSMA/CA process or previous ACK received considering penalties
 
-               //If this packet drop is due to failing CSMA/CA process, the MAC module emit successfully NF_PACKET_DROP and NF_LINK_BREAK signals
-                if(comingSignal == NF_PACKET_DROP)
-                    return ; // so this is to ignore one of them
-
                 //Delay metric
-                delayInidicator = SIMTIME_DBL(macDelay);
-
+                delayIndicator = SIMTIME_DBL(macDelay);
+                recentValidWlanDelay = delayIndicator;
 
                 if (comingSignal == NF_PACKET_ACK_RECEIVED){
-                    std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += messageIt->second;
-                    lastTransmittedFramesAckByInterfaceId[interfaceId].insert({msg->getName(),true});
+                    if(!deciderIsNaiveSingleCriterionBasedDecision){
+                        std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) += PK(messageIt->second)->getBitLength();
+                        lastTransmittedFramesAckByInterfaceId[interfaceId].insert({msg->getName(),true});
+                    }else{
+                        std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) = PK(messageIt->second)->getBitLength();
+                    }
                 }
-
                  //Throughput metric
-                throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]), throughputMesureInterval);
+                throughputMesureInterval = dltByInterfaceIdByCriterionByApp[interfaceId]["throughputIndicator"][currentAppID];
+                // In case of decider using NaiveSingleCriterionBasedDecision, this interval is used instead of the MAC delay to avoid correlation of delay metric and throughput
+                throughputIndicator = getThroughputIndicator(std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]), throughputMesureInterval);
             }
 
-            recordStatTuple(interfaceId, delayInidicator, throughputIndicator, reliabilityIndicator) ;
+            double numerator = (double) std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) ;
+            double denominator =(double) std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]);
+            // Reliability metric
+            reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
+
+            // All traffic stats (for data or control) are to be shared with each data application  //TODO avoid "hard coding" of 3 applications
+            recordStatTuple(interfaceId,0,delayIndicator, throughputIndicator, reliabilityIndicator) ;
+            recordStatTuple(interfaceId,1,delayIndicator, throughputIndicator, reliabilityIndicator) ;
+            recordStatTuple(interfaceId,2,delayIndicator, throughputIndicator, reliabilityIndicator) ;
+
+            if(deciderIsNaiveSingleCriterionBasedDecision){
+                lastTransmittedFramesByInterfaceId[interfaceId].erase(msg->getName());
+                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msg->getName());
+            }
         }
 }
 
@@ -266,13 +297,12 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
         return;// from here we do not know the IDs of MAC PDUs sent to initialize utility variables.
     }
 
-    if(listOfCriteriaByInterfaceId.find(interfaceId) == listOfCriteriaByInterfaceId.end()) // initialize stats data structure in case of the first record
-           listOfCriteriaByInterfaceId.insert({ interfaceId, new listOfCriteria()});
-
     double delayInidicator, throughputIndicator, reliabilityIndicator;
-    double throughputMesureInterval = dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"];
 
     UserControlInfo *uInfo = check_and_cast<UserControlInfo*>(msg->getControlInfo());
+
+    int currentAppID ;
+    LteMacPdu *pduSent;
 
     if((comingSignal==lteMacSentPacketToLowerLayerSingal)){
 
@@ -281,44 +311,80 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
             return ;
         }
 
-        LteMacPdu *pduSent;
 
         if (uInfo->getFrameType() == DATAPKT){
 
-            pduSent = dynamic_cast<LteMacPdu*>(msg);
+            pduSent = dynamic_cast<LteMacPdu*>(msg)->dup();
 
             bool isMulticastMessage = uInfo->getDestId() == lteInterfaceMacId_;  // by convention the node self mac id is set as the destId for multicast message. See LtePdcpRrcUeD2D::fromDataPort line 63.
 
             if (!isMulticastMessage) { //unicast traffic: initialize utility variables and wait for HARQ feedback to record stats.
                   //this instruction block is equivalent to "when packet leave decision maker toward transmission interface" recordStatsForWlan
 
-                string pktName;
-
                 if(uInfo->getLcid() == D2D_SHORT_BSR){// RSR report case. (See in LteMacUeD2D::macPduMake)
-                    pktName = "BSR-pdu-"+std::to_string(pduSent->getMacPduId());
+                   string pktName = "BSR-pdu-"+std::to_string(pduSent->getMacPduId());
 
-                }else if(uInfo->getLcid() == SHORT_BSR){
-                    pktName = "data-pdu-"+std::to_string(pduSent->getMacPduId());
+                    //Check if this PDU is note already timestamped. This may happen in  case of retransmission of it
+                    if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pktName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                        return ; //If yes this is a retransmission of it, ignore it.
+                    }
 
-                }else throw cRuntimeError("Unknown LCID type");
+                    //For delay metric
+                    packetFromUpperTimeStampsByInterfaceId[interfaceId][pktName]=NOW;
+                    lastTransmittedFramesByInterfaceId[interfaceId].insert({pktName,(msg)->dup()});
+                    return;
 
+                } else if (uInfo->getLcid() == SHORT_BSR) {
 
-                //Check if this PDU is note already timestamped. This may happen in  case of retransmission if it
-                if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(pktName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
-                    return ; //If yes this is a retransmission of it, ignore it.
-                }
+                    string pktNamePrefix = "data-pdu-"+std::to_string(pduSent->getMacPduId());
 
-                //For delay metric
-                 packetFromUpperTimeStampsByInterfaceId[interfaceId][pktName]=NOW;
+                    map<uint16_t, int64_t> appIdToSDUbytes;
+                    map<uint16_t, int64_t>::iterator it;
+                    ASSERT(pduSent->hasSdu());
 
-                if(uInfo->getLcid() == SHORT_BSR){// Data MAC PDU report case. (See in LteMacUeD2D::macPduMake)
+                    bool isRetransmittedPDU = false;
 
-                    // For reliability metric
-                    std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) += pduSent->getBitLength();
+                    while (pduSent->hasSdu()) {
 
-                    //utility
-                    lastTransmittedFramesLengthByInterfaceId[interfaceId].insert({pktName,pduSent->getBitLength()});
-                }
+                        cPacket *sdu = pduSent->popSdu();
+                        FlowControlInfo *fInfo = check_and_cast<FlowControlInfo*>(sdu->getControlInfo());
+                        currentAppID = fInfo->getSrcPort();
+
+                        string currentSduName = pktNamePrefix + "-app-" + std::to_string(currentAppID) + "-sdu";
+
+                        //Check if the PDU containing this SDU is note already timestamped. This may happen in  case of retransmission of it
+                        if (packetFromUpperTimeStampsByInterfaceId[interfaceId].find(currentSduName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end()){
+                            isRetransmittedPDU = true;
+                            break; // we break because, since it is the same PDU that carries the SDUs; if one SDU of them is not found then the others should not be found also
+                        }
+
+                        //For delay metric
+                        packetFromUpperTimeStampsByInterfaceId[interfaceId][currentSduName]=NOW;
+
+                        cPacket *sduCopy = sdu->dup();
+                        sduCopy->setControlInfo(fInfo->dup());
+                        lastTransmittedFramesByInterfaceId[interfaceId].insert( {currentSduName, sduCopy });
+
+                        map<uint16_t, int64_t>::iterator it = appIdToSDUbytes.find(currentAppID);
+
+                        if (it == appIdToSDUbytes.end())
+                            appIdToSDUbytes.insert( { currentAppID, 0 });
+
+                        appIdToSDUbytes[currentAppID] += sdu->getBitLength();
+
+                    }
+
+                    if(isRetransmittedPDU)
+                        return ; //If yes this is a retransmission of it, ignore it.
+
+                    // For reliability metric of each application
+                    for (it = appIdToSDUbytes.begin();it != appIdToSDUbytes.end(); it++)
+                        std::get<0>(
+                                attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[it->first][interfaceId]) +=
+                                it->second;
+
+                } else
+                    throw cRuntimeError("Unknown LCID type");
 
             } //TODO move here code for broadcast/multicast traffic metric assumptions
         }
@@ -339,122 +405,221 @@ void CollectStats::recordStatsForLte(simsignal_t comingSignal, cMessage* msg, in
 
         if ( uInfo->getFrameType() == HARQPKT){ //it is ACK Or NACK Packet of a BSR or DATA packet
 
-            LteHarqFeedback *harqFeedback = check_and_cast<LteHarqFeedback*>(frame->getEncapsulatedPacket());
+            LteHarqFeedback *harqFeedback = check_and_cast<LteHarqFeedback*>(
+                    frame->getEncapsulatedPacket());
 
-            if (harqFeedback->getResult()){ // H-ARQ feedback is ACK
+            string pktSuffixName = "pdu-"
+                    + std::to_string(harqFeedback->getFbMacPduId());
 
-                string pktSuffixName = "pdu-"+std::to_string(harqFeedback->getFbMacPduId());
-                map<string,simtime_t>::iterator timeStampIt ;
+            //This KLUDGE is because harqFeedback's uInfo->getLcid() contains always the default value. Otherwise we do not know if this feedback is for a Data or BSR PDU. TODO fix this in eNodeB's feedback packet creation.
+            bool bsrEntryfound =
+                    packetFromUpperTimeStampsByInterfaceId[interfaceId].find(
+                            "BSR-" + pktSuffixName)
+                            != packetFromUpperTimeStampsByInterfaceId[interfaceId].end();
 
-                //This KLUDGE is because harqFeedback's uInfo->getLcid() contains always the default value. Otherwise we do not know if this feedback is for a Data or BSR PDU. TODO fix this in eNodeB's feedback packet creation.
-                bool dataEntryfound = (timeStampIt=packetFromUpperTimeStampsByInterfaceId[interfaceId].find("data-"+pktSuffixName)) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end();
-                bool bsrEntryfound  = packetFromUpperTimeStampsByInterfaceId[interfaceId].find("BSR-"+pktSuffixName) != packetFromUpperTimeStampsByInterfaceId[interfaceId].end();
+            if (bsrEntryfound) { //check if the feedback is for a BSR
+                lastMacGrantObtentionDelay =
+                        NOW
+                                - packetFromUpperTimeStampsByInterfaceId[interfaceId]["BSR-"
+                                        + pktSuffixName];
 
-                //This happens when the instant at which the packet has been sent is no logger in current DLT. So, statistics related to it should be ignored.
-                if (!dataEntryfound && ! bsrEntryfound){
-                    return; // So the feedback is considered as obsolete.  Ignore it.
+                //purge related stat utilities
+                packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(
+                        "BSR-" + pktSuffixName);
+                map<string, cMessage*>::iterator it =
+                        lastTransmittedFramesByInterfaceId[interfaceId].find(
+                                "BSR-" + pktSuffixName);
+                delete it->second;
+                lastTransmittedFramesByInterfaceId[interfaceId].erase(
+                        it->first);
 
-                }else if (bsrEntryfound){ //check if the feedback is for a BSR
-                    lastMacGrantObtentionDelay = NOW - packetFromUpperTimeStampsByInterfaceId[interfaceId]["BSR-"+pktSuffixName];
+                return; // wait for the next DATA PDU to account this delay
+            }
 
-                    packetFromUpperTimeStampsByInterfaceId[interfaceId].erase("BSR-"+pktSuffixName);
-                    return ; // wait for the next DATA PDU to account this delay
+            bool dataEntryNotFound = false;
+
+            //Retrieve the PDU of this feedback in HARQ buffer
+            cModule *module = getModuleByPath(string("^.lteNic.mac").c_str());
+            LteMacBase *lteMacModule = check_and_cast<LteMacBase*>(module);
+            HarqTxBuffers *harqTxBuffers = lteMacModule->getHarqTxBuffers();
+
+            HarqTxBuffers::iterator hit = harqTxBuffers->find(
+                    uInfo->getSourceId());
+            ASSERT( hit != harqTxBuffers->end());
+
+            LteHarqBufferTx *txBuf = hit->second;
+            LteMacPdu *pduSent =
+                    txBuf->getProcess(harqFeedback->getAcid())->getPdu(
+                            harqFeedback->getCw())->dup();
+            string pktNamePrefix = "data-pdu-"
+                    + std::to_string(pduSent->getMacPduId());
+
+            map<uint16_t, int64_t> appIdToSDUbytes;
+            map<uint16_t, int64_t>::iterator it;
+            map<string, simtime_t>::iterator timeStampIt;
+
+            while (pduSent->hasSdu()) {
+
+                cPacket *sdu = pduSent->popSdu();
+                FlowControlInfo *fInfo = check_and_cast<FlowControlInfo*>(
+                        sdu->getControlInfo());
+                currentAppID = fInfo->getSrcPort();
+
+                string currentSduName = pktNamePrefix + "-app-"
+                        + std::to_string(currentAppID) + "-sdu";
+
+                if ((timeStampIt =
+                        packetFromUpperTimeStampsByInterfaceId[interfaceId].find(
+                                currentSduName))
+                        == packetFromUpperTimeStampsByInterfaceId[interfaceId].end()) {
+                    dataEntryNotFound = true;
+                    break; // we break because, since it is the same PDU that carries the SDUs;
+                            //if one SDU of them is not found then the others should not be found also
                 }
 
-                simtime_t lastMacRACDelay = lastRacReceptionTimestamp > lastRacSendTimestamp ? lastRacReceptionTimestamp - lastRacSendTimestamp: SimTime::ZERO; //TODO
-                simtime_t macDataPduHarqProcessTime = NOW - timeStampIt->second;
+                it = appIdToSDUbytes.find(currentAppID);
+                if (it == appIdToSDUbytes.end())
+                    appIdToSDUbytes.insert( { currentAppID, 0 });
+                appIdToSDUbytes[currentAppID] += sdu->getBitLength();
 
-                //Delay metric
-                delayInidicator = SIMTIME_DBL(TTI+lastMacRACDelay+TTI+lastMacGrantObtentionDelay+TTI+macDataPduHarqProcessTime);
+                if (harqFeedback->getResult()) { // H-ARQ feedback is ACK
+                    lastTransmittedFramesAckByInterfaceId[interfaceId].insert( {
+                            currentSduName, true });
+                }
+            }
+            delete pduSent;
 
-                //retrieve last transmitted packet from its name
-                std::map<string, uint64_t>::iterator messageIt = lastTransmittedFramesLengthByInterfaceId[interfaceId].find(timeStampIt->first);
-                std::get<1>(
-                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) +=
-                        messageIt->second; //To note that this packet length data has been successfully sent
+            //This happens when the instant at which the packet has been sent is no logger in current DLT. So, statistics related to it should be ignored.
+            if (dataEntryNotFound)
+                return; // So the feedback is considered as obsolete.  Ignore it.
+
+            simtime_t lastMacRACDelay =
+                    lastRacReceptionTimestamp > lastRacSendTimestamp ?
+                            lastRacReceptionTimestamp - lastRacSendTimestamp :
+                            SimTime::ZERO; //TODO
+            simtime_t macDataPduHarqProcessTime = NOW - timeStampIt->second;
+
+            //Delay metric
+            delayInidicator =
+                    SIMTIME_DBL(
+                            TTI+lastMacRACDelay+TTI+lastMacGrantObtentionDelay+TTI+macDataPduHarqProcessTime);
+
+            for (it = appIdToSDUbytes.begin(); it != appIdToSDUbytes.end();
+                    it++) {
+                currentAppID = it->first;
+
+                if (harqFeedback->getResult()) { // H-ARQ feedback is ACK
+                    std::get<1>(
+                            attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) +=
+                            it->second; //To note that this packet length data has been successfully sent
+                }
 
                 //Throughput metric
+                double throughputMesureInterval = dltByInterfaceIdByCriterionByApp[interfaceId]["throughputIndicator"][currentAppID];
+                // In case of decider using NaiveSingleCriterionBasedDecision, this interval is used instead of the MAC delay to avoid correlation of delay metric and throughput
+
                 throughputIndicator =
                         getThroughputIndicator(
                                 std::get<1>(
-                                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]),
+                                        attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]),
                                 throughputMesureInterval);
 
                 // Reliability metric
-                double numerator = (double) std::get<1>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) ;
-                double denominator =(double) std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]);
-                reliabilityIndicator = denominator==0 ? 0 : numerator/denominator ;
+                double numerator =
+                        (double) std::get<1>(
+                                attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]);
+                double denominator =
+                        (double) std::get<0>(
+                                attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]);
+                reliabilityIndicator =
+                        denominator == 0 ? 0 : numerator / denominator;
 
-                recordStatTuple(interfaceId, delayInidicator,
-                        throughputIndicator, reliabilityIndicator);
+                // All traffic stats (for data or control) are to be shared with each data application  //TODO avoid "hard coding" of 3 applications
+                recordStatTuple(interfaceId, 0, delayInidicator,
+                            throughputIndicator, reliabilityIndicator);
+                recordStatTuple(interfaceId, 1, delayInidicator,
+                            throughputIndicator, reliabilityIndicator);
+                recordStatTuple(interfaceId, 2, delayInidicator,
+                            throughputIndicator, reliabilityIndicator);
 
-                lastTransmittedFramesAckByInterfaceId[interfaceId].insert({timeStampIt->first,true});
+                if(deciderIsNaiveSingleCriterionBasedDecision){
+                        std::get<0>(
+                                attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) -=
+                                it->second;
+                        if (harqFeedback->getResult()) { // H-ARQ feedback is ACKstd::get<1>(
+                            std::get<0>(attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[currentAppID][interfaceId]) -=
+                                it->second;
+                        }
+                    }
 
-            } //else TODO : Can a H-ARQ process fails to send a MAC PDU ? If yes record stats at failure.
+            }
+
         }
 
+    }else if (comingSignal == lteMacBufferOverflowDl_ || comingSignal == lteMacBufferOverflowUl_  || comingSignal == lteMacBufferOverflowD2D_ ){
+        cRuntimeError("LTE interface buffer overflow not supported yet");
     }
 }
 
-void CollectStats::updateDLT(listOfCriteria* list, int interfaceId)
+void CollectStats::updateDLT(listOfCriteria* list, int interfaceId,int appID)
 {
     // update dtl according to coefficient of variation
-    dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delayIndicator)),interfaceId);
-    dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->throughputIndicator)),interfaceId);
-    dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliabilityIndicator)),interfaceId);
+    dltByInterfaceIdByCriterionByApp[interfaceId]["delayIndicator"][appID]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->delayIndicator)),interfaceId,appID);
+    dltByInterfaceIdByCriterionByApp[interfaceId]["throughputIndicator"][appID]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->throughputIndicator)),interfaceId,appID);
+    dltByInterfaceIdByCriterionByApp[interfaceId]["reliabilityIndicator"][appID]= getDLT(Utilities::calculateCofficientOfVariation(Utilities::retrieveValues(list->reliabilityIndicator)),interfaceId,appID);
 }
 
-double CollectStats::getDLT(double CofficientOfVariation, int interfaceId) {
+double CollectStats::getDLT(double CofficientOfVariation, int interfaceId, int appID) {
     double dlt = exp(
             -1 * CofficientOfVariation
-                    + log(commonDLTMaxByInterfaceId[interfaceId]));
+                    + log(dltMaxByAppByInterfaceId[appID][interfaceId]));
     if (dlt < 0)
         throw cRuntimeError("Data life time interval can not be negative.");
 
-    double minDLT= minNumOfControlTrafficPktInDLT*controlTrafficSendInterval;
+    double minDLT= minNumOfControlTrafficPktInDLTByApp[appID]*controlTrafficSendInterval;
     return dlt+minDLT;
 }
 
-map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT()
+map<int,CollectStats::listOfCriteria*> CollectStats::getSublistByDLT(int appID)
 {
     map<int,CollectStats::listOfCriteria*> rMap;
 
-    for (const auto &pair : listOfCriteriaByInterfaceId){
+    for (const auto &pair : listOfCriteriaByInterfaceIdByAppId){
        int interfaceId = pair.first;
-       rMap.insert({interfaceId, getSublistByDLT(interfaceId)}) ;
+       rMap.insert({interfaceId, getSublistByDLT(interfaceId,appID)}) ;
     }
 
     return rMap;
 }
 
-CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId) {
+CollectStats::listOfCriteria* CollectStats::getSublistByDLT(int interfaceId,int appID) {
 
     listOfCriteria* rList = new listOfCriteria();
 
     //Check if stats of "interfaceId" are recorded
-    if(listOfCriteriaByInterfaceId[interfaceId]->delayIndicator && listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator && listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator ){
+    if(listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->delayIndicator && listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->throughputIndicator && listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->reliabilityIndicator ){
 
-        rList->delayIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->delayIndicator,dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"] );
-        rList->throughputIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator,dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"] );
-        rList->reliabilityIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator,dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"] );
+        rList->delayIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->delayIndicator,dltByInterfaceIdByCriterionByApp[interfaceId]["delayIndicator"][appID]);
+        rList->throughputIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->throughputIndicator,dltByInterfaceIdByCriterionByApp[interfaceId]["throughputIndicator"][appID] );
+        rList->reliabilityIndicator= getSublistByDLTOfCriterion(listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->reliabilityIndicator,dltByInterfaceIdByCriterionByApp[interfaceId]["reliabilityIndicator"][appID] );
 
         //update DLT
-        updateDLT(rList, interfaceId);
+        updateDLT(rList, interfaceId,appID);
 
         //purge stats history
-        delete listOfCriteriaByInterfaceId[interfaceId]->delayIndicator;
-        delete listOfCriteriaByInterfaceId[interfaceId]->throughputIndicator;
-        delete listOfCriteriaByInterfaceId[interfaceId]->reliabilityIndicator;
-        delete listOfCriteriaByInterfaceId[interfaceId];
+        delete listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->delayIndicator;
+        delete listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->throughputIndicator;
+        delete listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]->reliabilityIndicator;
+        delete listOfCriteriaByInterfaceIdByAppId[interfaceId][appID];
 
     }else{ //This is the case where the feedback for recording stats of "interfaceId" are not known yet
-        insertStatTuple(rList, NOW, DBL_MAX, 0, 0); //consider these penalties
+        insertStatTuple(rList, NOW, 10, 0, 0); //consider these penalties
     }
 
     //purge packets in utility variables (for recording stats) that are no longer in the current DLT interval.
-    purgeUtilVars(interfaceId);
+    purgeUtilVars(interfaceId,appID); //TODO purge stats related to control traffic apps
 
-    listOfCriteriaByInterfaceId[interfaceId]=rList;
+    listOfCriteriaByInterfaceIdByAppId[interfaceId][appID]=rList;
 
     return rList;
 }
@@ -520,27 +685,33 @@ CollectStats::listAlternativeAttributes* CollectStats::applyAverageMethod(map<in
     return myList;
 }
 
-CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes()
+CollectStats::listAlternativeAttributes* CollectStats::prepareNetAttributes(int appID)
 {
     // 1- get Data until NOW -DLT
-    map<int,listOfCriteria*> dataSet= getSublistByDLT();
+    map<int,listOfCriteria*> dataSet= getSublistByDLT(appID);
     // 2- Apply average method
     listAlternativeAttributes* a=applyAverageMethod(dataSet);
     return a;
 
 }
 
-void CollectStats::purgeUtilVars(int interfaceId) {
+void CollectStats::purgeUtilVars(int interfaceId,int appID) {
 
     double minOfDlt = //TODO min really ? why not consider max of criterio's DLT instead
-            std::max(dltByInterfaceIdByCriterion[interfaceId]["delayIndicator"],
+            std::max(dltByInterfaceIdByCriterionByApp[interfaceId]["delayIndicator"][appID],
                     std::max(
-                            dltByInterfaceIdByCriterion[interfaceId]["throughputIndicator"],
-                            dltByInterfaceIdByCriterion[interfaceId]["reliabilityIndicator"]));
+                            dltByInterfaceIdByCriterionByApp[interfaceId]["throughputIndicator"][appID],
+                            dltByInterfaceIdByCriterionByApp[interfaceId]["reliabilityIndicator"][appID]));
     simtime_t dltIntervalLowerBound = NOW - SimTime(minOfDlt);
 
-    for (auto it = lastTransmittedFramesLengthByInterfaceId[interfaceId].begin();
-            it != lastTransmittedFramesLengthByInterfaceId[interfaceId].end();){ //This may be computationally very heavy. TODO iterate by timestamp and do break after dltIntervalLowerBound
+    for (auto it = lastTransmittedFramesByInterfaceId[interfaceId].begin();
+            it != lastTransmittedFramesByInterfaceId[interfaceId].end();){ //This may be computationally very heavy. TODO iterate by timestamp and do break after dltIntervalLowerBound
+
+
+        if((it->first.rfind("BSR-",0)==0) || (getAppId(it->second,interfaceId)!=appID)){
+            it++;
+            continue;
+        }
 
         //retrieve the corresponding timeStamps
         std::map<string, simtime_t>::iterator msgTimeStampIt =
@@ -550,7 +721,7 @@ void CollectStats::purgeUtilVars(int interfaceId) {
         if (msgTimeStampIt->second < dltIntervalLowerBound) {
 
             std::get<0>(
-                    attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -= it->second;
+                    attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[appID][interfaceId]) -= PK(it->second)->getBitLength();
 
             std::map<string, bool>::iterator msgAckIt =
                     lastTransmittedFramesAckByInterfaceId[interfaceId].find(msgTimeStampIt->first);
@@ -558,15 +729,33 @@ void CollectStats::purgeUtilVars(int interfaceId) {
             if (msgAckIt != lastTransmittedFramesAckByInterfaceId[interfaceId].end()){
 
                 std::get<1>(
-                        attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId[interfaceId]) -= it->second;
+                        attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId[appID][interfaceId]) -= PK(it->second)->getBitLength();
             }
 
-            lastTransmittedFramesLengthByInterfaceId[interfaceId].erase(it++);
+            delete it->second;
+            lastTransmittedFramesByInterfaceId[interfaceId].erase(it++);
             packetFromUpperTimeStampsByInterfaceId[interfaceId].erase(msgTimeStampIt);
+
         }else{
             it++;
         }
     }
+
+}
+
+int CollectStats::getAppId(cMessage * msg, int pInterfaceId){
+
+    if(pInterfaceId==0){
+
+        return dynamic_cast<BasicMsg*>(msg)->getApplId();
+
+    }else if(pInterfaceId==1 ){
+
+        cPacket* sdu = PK(msg);
+        FlowControlInfo* fInfo = check_and_cast<FlowControlInfo*>(sdu->getControlInfo());
+        return  fInfo->getSrcPort();
+
+    } else throw cRuntimeError("Unknown Interface Id type");
 
 }
 
@@ -610,39 +799,70 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
     }
 }
 
+/**
+ * To initialize stats data structure in case of the first record
+ */
+void CollectStats::checkAndInitializeListOfCriteria(int isPositiveRealNumberinterfaceId, int appID){
 
-void CollectStats::recordStatTuple(int interfaceId, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
+    if(listOfCriteriaByInterfaceIdByAppId.find(interfaceId) == listOfCriteriaByInterfaceIdByAppId.end()){
 
-    if (delayIndicator < 0 ||  throughputIndicator < 0 || reliabilityIndicator < 0 )
-        throw cRuntimeError("A decision metric can not be negative.");
+        map<int,listOfCriteria*> newMap = {{appID, new listOfCriteria()}};
+        listOfCriteriaByInterfaceIdByAppId.insert( {interfaceId, newMap });
 
-    DecisionMaker* decisionModule = dynamic_cast<DecisionMaker*>(getParentModule()->getSubmodule("decisionMaker"));
-    if(!decisionModule->isNaiveSingleCriterionBasedDecision())
-        insertStatTuple(listOfCriteriaByInterfaceId[interfaceId], NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
-    else
-        insertStatTuple(interfaceId, NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
+    }else if(listOfCriteriaByInterfaceIdByAppId[interfaceId].find(appID)==listOfCriteriaByInterfaceIdByAppId[interfaceId].end()){
+        listOfCriteriaByInterfaceIdByAppId[interfaceId].insert({appID, new listOfCriteria()});
+    }
+}
+
+void CollectStats::recordStatTuple(int interfaceId, int appID, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
+
+    if (!Utilities::isPositiveRealNumber(delayIndicator)
+            || !Utilities::isPositiveRealNumber(throughputIndicator)
+            || !Utilities::isPositiveRealNumber(reliabilityIndicator < 0))
+        throw cRuntimeError("Invalid decision statistic.");
+
+    if(!deciderIsNaiveSingleCriterionBasedDecision){
+        checkAndInitializeListOfCriteria(interfaceId, appID);
+        insertStatTuple(listOfCriteriaByInterfaceIdByAppId[interfaceId][appID], NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
+    } else
+        insertStatTupleAsRecentStat(interfaceId,appID, NOW ,delayIndicator, throughputIndicator, reliabilityIndicator) ;
 
     if(interfaceId==0){
-        emit(throughputIndicator0Signal,throughputIndicator);
-        emit(delayIndicator0Signal,delayIndicator);
+        if (appID == 0)
+            emit(delayIndicator0Signal, delayIndicator);
+        else if (appID == 1)
+            emit(throughputIndicator0Signal, throughputIndicator);
+        else if (appID == 2)
+            emit(reliabilityIndicator0Signal, reliabilityIndicator);
     }
     else{
-        emit(throughputIndicator1Signal,throughputIndicator);
-        emit(delayIndicator1Signal,delayIndicator);
+        if (appID == 0)
+            emit(delayIndicator1Signal, delayIndicator);
+        else if (appID == 1)
+            emit(throughputIndicator1Signal, throughputIndicator);
+        else if (appID == 2)
+            emit(reliabilityIndicator1Signal, reliabilityIndicator);
     }
 
 
 }
 
-void CollectStats::insertStatTuple(int interfaceId, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
+void CollectStats::insertStatTupleAsRecentStat(int interfaceId, int appID, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
 
     // check and initialize map if necessary
-    if(recentCriteriaStatsByInterfaceId.data.find(interfaceId)== recentCriteriaStatsByInterfaceId.data.end() )
-        recentCriteriaStatsByInterfaceId.data.insert({interfaceId, new alternativeAttributes()});
+    if(recentCriteriaStatsByAppIdByInterfaceId.find(appID)== recentCriteriaStatsByAppIdByInterfaceId.end()){
 
-    recentCriteriaStatsByInterfaceId.data[interfaceId]->delayIndicator=delayIndicator;
-    recentCriteriaStatsByInterfaceId.data[interfaceId]->throughputIndicator=throughputIndicator;
-    recentCriteriaStatsByInterfaceId.data[interfaceId]->reliabilityIndicator=reliabilityIndicator;
+        listAlternativeAttributes* listAltAtt = new listAlternativeAttributes();
+        listAltAtt->data.insert({interfaceId, new alternativeAttributes()});
+        recentCriteriaStatsByAppIdByInterfaceId.insert({appID, listAltAtt});
+
+    }else if(recentCriteriaStatsByAppIdByInterfaceId[appID]->data.find(interfaceId)==recentCriteriaStatsByAppIdByInterfaceId[appID]->data.end()){
+        recentCriteriaStatsByAppIdByInterfaceId[appID]->data.insert({interfaceId, new alternativeAttributes()});
+    }
+
+    recentCriteriaStatsByAppIdByInterfaceId[appID]->data[interfaceId]->delayIndicator=delayIndicator;
+    recentCriteriaStatsByAppIdByInterfaceId[appID]->data[interfaceId]->throughputIndicator=throughputIndicator;
+    recentCriteriaStatsByAppIdByInterfaceId[appID]->data[interfaceId]->reliabilityIndicator=reliabilityIndicator;
 }
 
 void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator){
@@ -663,7 +883,9 @@ void CollectStats::insertStatTuple(listOfCriteria* list, simtime_t timestamp, do
 
 void CollectStats::finish(){
 
-    for (auto pair : lastTransmittedFramesLengthByInterfaceId){
-        pair.second.clear();
+    for (auto pair1  : lastTransmittedFramesByInterfaceId){
+        for (auto pair2  : pair1.second)
+               delete pair2.second;
+        pair1.second.clear();
     }
 }

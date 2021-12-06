@@ -39,6 +39,7 @@ double calculateMeanVec(const std::vector<double> *v);
 double calculateRollingMean(std::vector<double> v, int windowSize);
 double calculateCofficientOfVariation(const std::vector<double> *v);
 bool checkLteCtrlInfo(UserControlInfo* lteInfo);
+bool isPositiveRealNumber(double value);
 
 template<typename K, typename V>
 vector<V>* retrieveValues(const std::map<K, V>* mapOfElements){

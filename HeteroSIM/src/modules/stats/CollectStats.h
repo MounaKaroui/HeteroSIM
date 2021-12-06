@@ -59,22 +59,22 @@ public:
     };
 
 
-    map<int,listOfCriteria*> listOfCriteriaByInterfaceId;
+    map<int,map<int,listOfCriteria*>> listOfCriteriaByInterfaceIdByAppId;
 
     map<int,map<string,simtime_t>> packetFromUpperTimeStampsByInterfaceId; // To compute delays
-    map<int,unsignedLongIntegerPair> attemptedToBeAndSuccessfullyTransmittedDataByInterfaceId; // To compute reliability and throughput metrics.
+    map<int,map<int,unsignedLongIntegerPair>> attemptedToBeAndSuccessfullyTransmittedDataByAppIdByInterfaceId; // To compute reliability and throughput metrics.
                                                                                         //Tuple <0> is for attempted to be transmitted data and Tuple<1> is successfully transmitted data
-
-
-
-    map<int,map<string,uint64_t>> lastTransmittedFramesLengthByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
+    map<int,map<string,cMessage*>> lastTransmittedFramesByInterfaceId ; // utility map to record statistics depending on whether transmitted is unicast or broadcast/multicast frame
     map<int,std::map<string,bool>> lastTransmittedFramesAckByInterfaceId ;
 
-    listAlternativeAttributes recentCriteriaStatsByInterfaceId;
+//    std::queue<int> lastTransmittedFramesAppIDOverLTE;
+
+    map<int,listAlternativeAttributes*> recentCriteriaStatsByAppIdByInterfaceId;
+    double recentValidWlanDelay;
 
     std::string  interfaceToProtocolMapping ;
     map<int,std::string> interfaceToProtocolMap;
-    map<int,map<string,double>> dltByInterfaceIdByCriterion;
+    map<int,map<string,map<int,double>>> dltByInterfaceIdByCriterionByApp;
 
     template<typename T>
     void subscribeToSignal(std::string moduleName, simsignal_t sigName)
@@ -91,16 +91,18 @@ public:
         mLinkLayer->subscribe(signalName, this);
     }
 
-    //Final decision data to be used as an input for decider
-    CollectStats::listAlternativeAttributes* prepareNetAttributes();
+    //Final decision data to be used as an input for decider for a given application
+    CollectStats::listAlternativeAttributes* prepareNetAttributes(int appID);
 
-    map<int,double> commonDLTMaxByInterfaceId;
+    map<int,map<int,double>> dltMaxByAppByInterfaceId;
 
 protected:
+    bool deciderIsNaiveSingleCriterionBasedDecision;
+
     //NED parameters:
     std::string averageMethod;
     double controlTrafficSendInterval;
-    int minNumOfControlTrafficPktInDLT;
+    map<int,double>  minNumOfControlTrafficPktInDLTByApp;
 
     // Initialization and signal registration
     virtual void initialize(int stage);
@@ -110,6 +112,8 @@ protected:
     void initializeDLT();
     void setInterfaceToProtocolMap();
     void setCommonDltMax(std::string strValues);
+    void setMinNumOfControlTrafficPktsInDLT(const char *strValues);
+    void checkAndInitializeListOfCriteria(int interfaceId, int appID);
 
 
     double getThroughputIndicator(uint64_t dataBitLength, double radioFrameTime);
@@ -119,19 +123,21 @@ protected:
     void recordStatsForLte(simsignal_t comingSignal, cMessage* msg, int interfaceId);
 
     // Data Life Time calculation
-    void updateDLT(listOfCriteria* list,int interfaceId);
-    double getDLT(double CofficientOfVariation,int interfaceId);
+    void updateDLT(listOfCriteria* list,int interfaceId,int appID);
+    double getDLT(double CofficientOfVariation,int interfaceId,int appID);
 
     //Network attributes processing
-    void recordStatTuple(int interfaceId, double delay, double transmissionRate, double queueVacancy);
+    void recordStatTuple(int interfaceId, int appID, double delay, double transmissionRate, double reliabilityIndicator);
     void insertStatTuple(listOfCriteria* list, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator);
-    void insertStatTuple(int interfaceId, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator);
+    void insertStatTupleAsRecentStat(int interfaceId, int appID, simtime_t timestamp, double delayIndicator, double throughputIndicator, double reliabilityIndicator);
 
-    listOfCriteria* getSublistByDLT(int interfaceID);
+    listOfCriteria* getSublistByDLT(int interfaceID,int appID);
     map<simtime_t,double>* getSublistByDLTOfCriterion(map<simtime_t,double>* pCriterion,double pDlt);
-    map<int,listOfCriteria*> getSublistByDLT();
+    map<int,listOfCriteria*> getSublistByDLT(int appID);
     listAlternativeAttributes* applyAverageMethod(map<int,listOfCriteria*> dataSet);
-    void purgeUtilVars(int interfaceId);
+    void purgeUtilVars(int interfaceId,int appID);
+
+    int getAppId(cMessage* msg,int pInterfaceId);
 
 
     //Signals for stats
@@ -146,6 +152,9 @@ protected:
 
     //to record LTE related statistics
     simsignal_t lteMacSentPacketToLowerLayerSingal;
+    simsignal_t lteMacBufferOverflowDl_;
+    simsignal_t lteMacBufferOverflowUl_;
+    simsignal_t lteMacBufferOverflowD2D_;
     simsignal_t ltePhyRecievedAirFrameSingal;
     MacNodeId lteInterfaceMacId_;
     simtime_t lastRacSendTimestamp;

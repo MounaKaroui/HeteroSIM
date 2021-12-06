@@ -52,6 +52,9 @@ public:
     ~DecisionMaker();
 
     static simsignal_t decisionSignal ;
+    static simsignal_t decision0Signal ;
+    static simsignal_t decision1Signal ;
+    static simsignal_t decision2Signal ;
 
     bool isDeciderActived(){
         return isDeciderActive;
@@ -83,7 +86,7 @@ public:
     bool isDeciderActive;
     bool naiveSingleCriterionBasedDecision;
     std::vector<int> naiveSingleCriterionBasedDecisionChoice ;
-    int dummyNetworkChoice;
+    std::vector <int> dummyNetworkChoice;
     bool isRandomDecision;
 
     std::vector<string> simpleWeights;

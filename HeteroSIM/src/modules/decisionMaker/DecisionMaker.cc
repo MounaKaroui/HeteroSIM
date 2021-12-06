@@ -31,6 +31,9 @@ Define_Module(DecisionMaker);
 
 
 simsignal_t DecisionMaker::decisionSignal = cComponent::registerSignal("decision");
+simsignal_t DecisionMaker::decision0Signal = cComponent::registerSignal("decision0");
+simsignal_t DecisionMaker::decision1Signal = cComponent::registerSignal("decision1");
+simsignal_t DecisionMaker::decision2Signal = cComponent::registerSignal("decision2");
 
 void DecisionMaker::initialize(int stage)
 {
@@ -48,13 +51,16 @@ void DecisionMaker::initialize(int stage)
         isRandomDecision = par("isRandomDecision").boolValue() ;
         naiveSingleCriterionBasedDecision = par("naiveSingleCriterionBasedDecision").boolValue();
 
-        std::string naiveChoice = par("naiveSingleCriterionBasedDecisionChoice").stringValue();
-        std::vector<string> naiveChoiceVector ;
-        boost::split(naiveChoiceVector,naiveChoice, boost::is_any_of(";"));
-        for (auto choice : naiveChoiceVector)
+        std::string tmpString = par("naiveSingleCriterionBasedDecisionChoice").stringValue();
+        std::vector<string> tmpVector ;
+        boost::split(tmpVector,tmpString, boost::is_any_of(";"));
+        for (auto choice : tmpVector)
             naiveSingleCriterionBasedDecisionChoice.push_back(stoi(choice));
 
-        dummyNetworkChoice = par("dummyNetworkChoice").intValue();
+        tmpString = par("dummyNetworkChoice").stringValue();
+        boost::split(tmpVector,tmpString, boost::is_any_of(";"));
+        for (auto choice : tmpVector)
+        	dummyNetworkChoice.push_back(stoi(choice));
 
         cModule* host = inet::getContainingNode(this);
         std::string name=host->getFullName();
@@ -153,6 +159,17 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
         int gateId=gate("toRadio",networkIndex)->getId();
         send(msg, gateId);
         emit(decisionSignal, networkIndex, msg);
+
+        BasicMsg * basicMsg =dynamic_cast<BasicMsg*>(msg);
+        int appID = basicMsg->getApplId();
+
+        if (appID == 0)
+            emit(decision0Signal, networkIndex);
+        else if (appID == 1)
+            emit(decision1Signal, networkIndex);
+        else if (appID == 2)
+            emit(decision2Signal, networkIndex);
+
     }
     else
     {
@@ -222,7 +239,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
 
                 cModule* mStats=getParentModule()->getSubmodule("collectStatistics");
                 CollectStats* stats=dynamic_cast<CollectStats*>(mStats);
-                CollectStats::listAlternativeAttributes* decisionData = stats->prepareNetAttributes();
+                CollectStats::listAlternativeAttributes* decisionData = stats->prepareNetAttributes(hetMsg->getApplId());
 
                 std::string decisionDataStr=convertListOfCriteriaToString(decisionData);
                 if(decisionDataStr!="")
@@ -252,7 +269,7 @@ int DecisionMaker::takeDecision(cMessage* msg)
 
                 EV_DEBUG<< "The random network is "<< networkIndex <<"\n" << endl;
             }else{
-                networkIndex=dummyNetworkChoice;
+                networkIndex=dummyNetworkChoice[hetMsg->getApplId()];
                 EV_DEBUG<< "The dummy choice is "<< networkIndex <<"\n" << endl;
             }
         }
@@ -269,7 +286,7 @@ int DecisionMaker::takeNaiveSingleCriterionBasedDecision(const int pAppID){
     double max = DBL_MIN;
     int rChoice=0;
 
-    for (const auto &pair : stats->recentCriteriaStatsByInterfaceId.data){
+    for (const auto &pair : stats->recentCriteriaStatsByAppIdByInterfaceId[pAppID]->data){
 
         int interfaceId = pair.first;
         double recentData ;

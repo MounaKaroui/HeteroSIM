@@ -93,6 +93,13 @@ Ieee802Ctrl* Ieee802CtrlInfo(std::string ModuleName)
 //    return lteControlInfo;
 //}
 
+bool isPositiveRealNumber(double value){
+    if(isnan(value) || isinf(value) || (value<0))
+        return false;
+
+    return true;
+}
+
 bool checkLteCtrlInfo(UserControlInfo* lteInfo)
 {
     if (lteInfo)
