@@ -59,7 +59,9 @@ void DecisionMaker::initialize(int stage)
         cModule* host = inet::getContainingNode(this);
         std::string name=host->getFullName();
         int nodeId=Utilities::extractNumber(name.c_str());
-        generator.seed(nodeId);
+        auto config=dynamic_cast<cConfigurationEx*>(getEnvir()->getConfig());
+        int simSeedSet=stoi(config->getVariable(CFGVAR_SEEDSET));
+        generator.seed(nodeId+simSeedSet);
         distribution.param(std::bernoulli_distribution::param_type(0.5));
 
         addressResolver=getModuleFromPar<IAddressResolver>(par("addressResolver"), this);
