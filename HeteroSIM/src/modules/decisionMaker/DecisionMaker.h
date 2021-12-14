@@ -79,6 +79,7 @@ public:
     int takeDecision(cMessage*  msg);
     int takeNaiveSingleCriterionBasedDecision(const int pAppID);
     void setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIndex);
+    bool flowMacQueueIsEmpty(cMessage* msg, int networkIndex);
     void setIeee802CtrlInfo(cMessage* msg,int networkIndex);
     void setLteCtrlInfo(cMessage* msg); //"networkIndex" parameter is not needed parameter because multiple LTE interfaces within a node is note supported
 

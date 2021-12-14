@@ -21,6 +21,8 @@
 #include <boost/algorithm/string.hpp>
 
 #include "common/LteControlInfo_m.h"
+#include "stack/mac/buffer/LteMacBuffer.h"
+#include "stack/mac/layer/LteMacUe.h"
 
 #include <inet/common/ModuleAccess.h>
 //#include "stack/phy/packet/cbr_m.h"
@@ -101,6 +103,42 @@ void DecisionMaker::setCtrlInfoWithRespectToNetType(cMessage* msg, int networkIn
 
 }
 
+
+/**
+ *
+ */
+bool DecisionMaker::flowMacQueueIsEmpty(cMessage* msg, int networkIndex) {
+
+    string networkTypeName=getNetworkProtocolName(networkIndex);
+
+    if (networkTypeName.find("WiFi") != std::string::npos)  { // IEEE 802 protocol family have common ctrlInfo
+        return true; //TODO
+    }
+    else if (networkTypeName == "LTE") {
+
+        std::string macModuleName = "^.lteNic.mac";
+        LteMacUe * lteMacModule=check_and_cast<LteMacUe *>(getModuleByPath(macModuleName.c_str()));
+        FlowControlInfo* lteInfo = check_and_cast<FlowControlInfo*>(msg->getControlInfo());
+        //Normally these information are set by the Mac layer.
+        lteInfo->setDirection(Direction::D2D);
+        lteInfo->setLcid(MacCidToLcid(D2D_SHORT_BSR)); //TODO
+        lteInfo->setDestId(lteInfo->getDstAddr());
+        // obtain the cid from the packet informations
+        MacCid cid = ctrlInfoToMacCid(lteInfo);
+
+        LteMacBufferMap::iterator it = lteMacModule->getMacBuffers()->find(cid);
+        if(it == lteMacModule->getMacBuffers()->end())
+            return true;
+        else
+            return it->second->isEmpty();
+
+    }
+    else
+        throw cRuntimeError(string("Unknown protocol name '" + networkTypeName + "'").c_str());
+
+}
+
+
 void DecisionMaker::setIeee802CtrlInfo(cMessage* msg, int networkIndex){
 
     auto basicMsg =dynamic_cast<BasicMsg*>(msg);
@@ -157,6 +195,13 @@ void DecisionMaker:: sendToLower(cMessage*  msg, int networkIndex)
     if(networkIndex<gateSize("toRadio"))
     {
         int gateId=gate("toRadio",networkIndex)->getId();
+
+        //This is because we assume that sending control traffic to interface is necessary only if its transmission queue is empty
+        if( dynamic_cast<ControlMsg*>(msg) and !flowMacQueueIsEmpty(msg,networkIndex)){
+            delete msg;
+            return ;
+        }
+
         send(msg, gateId);
         emit(decisionSignal, networkIndex, msg);
 
