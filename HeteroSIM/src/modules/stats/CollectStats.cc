@@ -802,7 +802,7 @@ void CollectStats::receiveSignal(cComponent* source, simsignal_t signal, cObject
 /**
  * To initialize stats data structure in case of the first record
  */
-void CollectStats::checkAndInitializeListOfCriteria(int isPositiveRealNumberinterfaceId, int appID){
+void CollectStats::checkAndInitializeListOfCriteria(int interfaceId, int appID){
 
     if(listOfCriteriaByInterfaceIdByAppId.find(interfaceId) == listOfCriteriaByInterfaceIdByAppId.end()){
 
